@@ -40,9 +40,9 @@ async fn main() {
     let mut smoothed_magnitude = 0.;
 
     let gravity_strength = 3000.;
-    let air_friction = 0.1;
+    let air_friction = 0.17;
     let bounciness = 0.9;
-    let terminal_velocity = 8000.;
+    let terminal_velocity = 10000.;
     let radius = 60.;
     let mut ball_position = Vec2::ZERO;
     let mut ball_velocity = Vec2::ZERO;

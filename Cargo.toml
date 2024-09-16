@@ -1,0 +1,10 @@
+[package]
+name = "ball_in_a_box"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+macroquad = "0.4.13"
+
+[patch.crates-io]
+miniquad = {git = "https://github.com/not-fl3/miniquad"}

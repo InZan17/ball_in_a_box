@@ -23,18 +23,28 @@ pub fn window_conf() -> miniquad::conf::Conf {
 
 pub trait FromTuple {
     fn from_u32_tuple(tuple: (u32, u32)) -> Self;
+    fn from_f32_tuple(tuple: (f32, f32)) -> Self;
 }
 
 impl FromTuple for Vec2 {
     fn from_u32_tuple(tuple: (u32, u32)) -> Self {
         Vec2::new(tuple.0 as f32, tuple.1 as f32)
     }
+
+    fn from_f32_tuple(tuple: (f32, f32)) -> Self {
+        Vec2::new(tuple.0, tuple.1)
+    }
 }
 
 #[macroquad::main(window_conf)]
 async fn main() {
     let mut last_window_position = Vec2::from_u32_tuple(miniquad::window::get_window_position());
+    let mut current_window_position = last_window_position;
     let mut delta_window_position = Vec2::ZERO;
+    let mut last_mouse_position = Vec2::ZERO;
+    let mut last_raw_mouse_position = Vec2::ZERO;
+
+    let mut screen_space_mouse_pos = Vec2::ZERO;
 
     let mut smoothed_delta = Vec2::ZERO;
     let mut smoothed_magnitude = 0.;
@@ -47,20 +57,43 @@ async fn main() {
     let mut ball_position = Vec2::ZERO;
     let mut ball_velocity = Vec2::ZERO;
 
+    let mut mouse_offset = Vec2::ZERO;
+
+    let mut additions = Vec2::ZERO;
+
     loop {
-        if is_mouse_button_down(MouseButton::Left) {
-            delta_window_position = mouse_delta_position() * Vec2::new(WIDTH_F / 2., HEIGHT_F / 2.)
-                + delta_window_position;
-            last_window_position -= delta_window_position;
-            set_window_position(last_window_position.x as u32, last_window_position.y as u32);
+        if !is_mouse_button_down(MouseButton::Left) {
+            current_window_position = Vec2::from_u32_tuple(miniquad::window::get_window_position());
+        }
+        delta_window_position = last_window_position - current_window_position;
+        last_window_position = current_window_position;
+
+        let mut current_mouse_position = Vec2::from_f32_tuple(mouse_position());
+        if last_raw_mouse_position == current_mouse_position {
+            additions += delta_window_position;
+            current_mouse_position += additions;
         } else {
-            let current_window_position =
-                Vec2::from_u32_tuple(miniquad::window::get_window_position());
-            delta_window_position = last_window_position - current_window_position;
-            last_window_position = current_window_position;
+            last_raw_mouse_position = current_mouse_position;
+            additions = Vec2::ZERO;
         }
 
-        smoothed_delta = smoothed_delta.lerp(delta_window_position, 0.5);
+        screen_space_mouse_pos = current_mouse_position + current_window_position;
+
+        let delta_pos = if is_mouse_button_down(MouseButton::Left) {
+            println!("{screen_space_mouse_pos}");
+            if is_mouse_button_pressed(MouseButton::Left) {
+                mouse_offset = current_window_position - screen_space_mouse_pos;
+            }
+            let new_pos = screen_space_mouse_pos + mouse_offset;
+            set_window_position(new_pos.x as u32, new_pos.y as u32);
+            let difference = current_window_position - new_pos;
+            current_window_position = new_pos;
+            difference
+        } else {
+            delta_window_position
+        };
+
+        smoothed_delta = smoothed_delta.lerp(delta_pos, 0.5);
         smoothed_magnitude = smoothed_magnitude
             .lerp(smoothed_delta.length(), 0.15)
             .min(smoothed_delta.length());
@@ -71,7 +104,7 @@ async fn main() {
             smoothed_delta
         };
 
-        let maxed_delta = smoothed_delta.max(delta_window_position) / get_frame_time() * 2.;
+        let maxed_delta = smoothed_delta.max(delta_pos) / get_frame_time() * 2.;
 
         clear_background(LIGHTGRAY);
 
@@ -80,7 +113,7 @@ async fn main() {
         ball_velocity *= 1. - (air_friction * get_frame_time().clamp(0., 1.));
 
         let total_velocity = if time::get_time() > 1. {
-            ball_velocity + (delta_window_position / get_frame_time()) * 2.
+            ball_velocity + (delta_pos / get_frame_time()) * 2.
         } else {
             ball_velocity
         };

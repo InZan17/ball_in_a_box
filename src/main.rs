@@ -60,7 +60,7 @@ async fn main() {
             last_window_position = current_window_position;
         }
 
-        smoothed_delta = smoothed_delta.lerp(delta_window_position, 0.25);
+        smoothed_delta = smoothed_delta.lerp(delta_window_position, 0.5);
         smoothed_magnitude = smoothed_magnitude
             .lerp(smoothed_delta.length(), 0.15)
             .min(smoothed_delta.length());

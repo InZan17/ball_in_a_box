@@ -2,11 +2,17 @@ use macroquad::{prelude::*, time};
 use miniquad::*;
 use window::set_window_position;
 
+const WIDTH: i32 = 640;
+const HEIGHT: i32 = 480;
+
+const WIDTH_F: f32 = WIDTH as f32;
+const HEIGHT_F: f32 = HEIGHT as f32;
+
 pub fn window_conf() -> miniquad::conf::Conf {
     miniquad::conf::Conf {
         window_title: "Ball in a Box".to_string(),
-        window_width: 800,
-        window_height: 600,
+        window_width: WIDTH,
+        window_height: HEIGHT,
         high_dpi: true,
         fullscreen: false,
         sample_count: 4,
@@ -43,7 +49,7 @@ async fn main() {
 
     loop {
         if is_mouse_button_down(MouseButton::Left) {
-            delta_window_position = mouse_delta_position() * Vec2::new(400., 300.) + delta_window_position;
+            delta_window_position = mouse_delta_position() * Vec2::new(WIDTH_F / 2., HEIGHT_F / 2.) + delta_window_position;
             last_window_position -= delta_window_position;
             set_window_position(last_window_position.x as u32, last_window_position.y as u32);
         } else {
@@ -69,23 +75,26 @@ async fn main() {
         ball_position += total_velocity * get_frame_time();
 
         set_camera(&Camera2D {
-            zoom: vec2(1. / 800., 1. / 600.),
+            zoom: vec2(1. / WIDTH_F, 1. / HEIGHT_F),
             ..Default::default()
         });
 
-        if ball_position.y > 600. - radius {
-            ball_position.y = 600. - radius;
+        if ball_position.y > HEIGHT_F - radius {
+            ball_position.y = HEIGHT_F - radius;
             ball_velocity.y = -total_velocity.y * bounciness;
-        } else if ball_position.y < -600. + radius {
-            ball_position.y = -600. + radius;
+            println!("{ball_velocity}");
+            println!("Floor");
+        } else if ball_position.y < -HEIGHT_F + radius {
+            ball_position.y = -HEIGHT_F + radius;
             ball_velocity.y = -total_velocity.y * bounciness;
+            println!("Ceil");
         }
 
-        if ball_position.x > 800. - radius {
-            ball_position.x = 800. - radius;
+        if ball_position.x > WIDTH_F - radius {
+            ball_position.x = WIDTH_F - radius;
             ball_velocity.x = -total_velocity.x * bounciness;
-        } else if ball_position.x < -800. + radius {
-            ball_position.x = -800. + radius;
+        } else if ball_position.x < -WIDTH_F + radius {
+            ball_position.x = -WIDTH_F + radius;
             ball_velocity.x = -total_velocity.x * bounciness;
         }
 

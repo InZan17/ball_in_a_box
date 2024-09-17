@@ -7,4 +7,4 @@ edition = "2021"
 macroquad = "0.4.13"
 
 [patch.crates-io]
-miniquad = {git = "https://github.com/not-fl3/miniquad"}
+miniquad = {git = "https://github.com/InZan17/miniquad/", branch = "screen-mouse-position"}

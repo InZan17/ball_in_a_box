@@ -174,7 +174,7 @@ dependencies = [
 [[package]]
 name = "miniquad"
 version = "0.4.6"
-source = "git+https://github.com/not-fl3/miniquad#76ef7ac6370d806de6cfcc6e154606e6f9661a35"
+source = "git+https://github.com/InZan17/miniquad/?branch=screen-mouse-position#a06864be751560d39c642a9bdbc17617b8dacb7c"
 dependencies = [
  "libc",
  "ndk-sys",

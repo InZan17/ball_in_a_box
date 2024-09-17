@@ -39,12 +39,9 @@ impl FromTuple for Vec2 {
 #[macroquad::main(window_conf)]
 async fn main() {
     let mut last_window_position = Vec2::from_u32_tuple(miniquad::window::get_window_position());
-    let mut current_window_position = last_window_position;
-    let mut delta_window_position = Vec2::ZERO;
     let mut last_mouse_position = Vec2::ZERO;
-    let mut last_raw_mouse_position = Vec2::ZERO;
 
-    let mut screen_space_mouse_pos = Vec2::ZERO;
+    let mut mouse_offset = Vec2::ZERO;
 
     let mut smoothed_delta = Vec2::ZERO;
     let mut smoothed_magnitude = 0.;
@@ -57,38 +54,22 @@ async fn main() {
     let mut ball_position = Vec2::ZERO;
     let mut ball_velocity = Vec2::ZERO;
 
-    let mut mouse_offset = Vec2::ZERO;
-
-    let mut additions = Vec2::ZERO;
-
     loop {
-        if !is_mouse_button_down(MouseButton::Left) {
-            current_window_position = Vec2::from_u32_tuple(miniquad::window::get_window_position());
-        }
-        delta_window_position = last_window_position - current_window_position;
+        let current_window_position = Vec2::from_u32_tuple(miniquad::window::get_window_position());
+        let delta_window_position = last_window_position - current_window_position;
         last_window_position = current_window_position;
 
-        let mut current_mouse_position = Vec2::from_f32_tuple(mouse_position());
-        if last_raw_mouse_position == current_mouse_position {
-            additions += delta_window_position;
-            current_mouse_position += additions;
-        } else {
-            last_raw_mouse_position = current_mouse_position;
-            additions = Vec2::ZERO;
-        }
-
-        screen_space_mouse_pos = current_mouse_position + current_window_position;
+        let current_mouse_position = Vec2::from_u32_tuple(other::screen_mouse_position());
+        let delta_mouse_position = current_mouse_position - last_mouse_position;
+        last_mouse_position = current_mouse_position;
 
         let delta_pos = if is_mouse_button_down(MouseButton::Left) {
-            println!("{screen_space_mouse_pos}");
             if is_mouse_button_pressed(MouseButton::Left) {
-                mouse_offset = current_window_position - screen_space_mouse_pos;
+                mouse_offset = current_window_position - current_mouse_position;
             }
-            let new_pos = screen_space_mouse_pos + mouse_offset;
+            let new_pos = current_mouse_position + mouse_offset;
             set_window_position(new_pos.x as u32, new_pos.y as u32);
-            let difference = current_window_position - new_pos;
-            current_window_position = new_pos;
-            difference
+            -delta_mouse_position
         } else {
             delta_window_position
         };

@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use macroquad::{prelude::*, time};
 use miniquad::*;
 use window::set_window_position;
@@ -23,6 +25,10 @@ pub fn window_conf() -> miniquad::conf::Conf {
 
 const FRAGMENT_SHADER: &'static str = include_str!("../assets/ball.frag");
 const VERTEX_SHADER: &'static str = include_str!("../assets/ball.vert");
+
+const BALL_TEXTURE_BYTES: &[u8] = include_bytes!("../assets/ball.png");
+const BACKGROUND_TEXTURE_BYTES: &[u8] = include_bytes!("../assets/background.png");
+const SIDE_TEXTURE_BYTES: &[u8] = include_bytes!("../assets/cardboardsidebottom.png");
 
 pub trait FromTuple {
     fn from_u32_tuple(tuple: (u32, u32)) -> Self;
@@ -80,20 +86,26 @@ async fn main() {
     let bounciness = 0.9;
     let terminal_velocity = 10000.;
     let radius = 90.;
+    let wall_thickness = 25.;
     let mut ball_position = Vec2::ZERO;
     let mut ball_velocity = Vec2::ZERO;
     let mut ball_rotation = 0.;
     let mut ball_rotation_velocity = 0.;
 
-    /*
-       let ball_material = load_material(
-           ShaderSource::Glsl {
-               vertex: VERTEX_SHADER,
-               fragment: FRAGMENT_SHADER,
-           },
-           MaterialParams::default(),
-       ).expect("Failed to load material.");
-    */
+    let wall_offset = radius + wall_thickness + 20.;
+
+    let ball_material = load_material(
+        ShaderSource::Glsl {
+            vertex: VERTEX_SHADER,
+            fragment: FRAGMENT_SHADER,
+        },
+        MaterialParams::default(),
+    )
+    .expect("Failed to load material.");
+
+    let ball_texture = Texture2D::from_file_with_format(BALL_TEXTURE_BYTES, None);
+    let background_texture = Texture2D::from_file_with_format(BACKGROUND_TEXTURE_BYTES, None);
+    let side_texture = Texture2D::from_file_with_format(SIDE_TEXTURE_BYTES, None);
 
     loop {
         let current_window_position = Vec2::from_u32_tuple(miniquad::window::get_window_position());
@@ -155,9 +167,9 @@ async fn main() {
             ..Default::default()
         });
 
-        if ball_position.y > HEIGHT_F - radius {
+        if ball_position.y > HEIGHT_F - wall_offset {
             // Floor
-            ball_position.y = HEIGHT_F - radius;
+            ball_position.y = HEIGHT_F - wall_offset;
             ball_velocity.y = -smoothed_total_velocity.y * bounciness;
 
             (ball_rotation_velocity, ball_velocity.x) = calculate_bounce_spin(
@@ -167,9 +179,9 @@ async fn main() {
                 radius,
                 false,
             );
-        } else if ball_position.y < -HEIGHT_F + radius {
+        } else if ball_position.y < -HEIGHT_F + wall_offset {
             // Ceiling
-            ball_position.y = -HEIGHT_F + radius;
+            ball_position.y = -HEIGHT_F + wall_offset;
             ball_velocity.y = -smoothed_total_velocity.y * bounciness;
 
             (ball_rotation_velocity, ball_velocity.x) = calculate_bounce_spin(
@@ -181,9 +193,9 @@ async fn main() {
             );
         }
 
-        if ball_position.x > WIDTH_F - radius {
+        if ball_position.x > WIDTH_F - wall_offset {
             // Right
-            ball_position.x = WIDTH_F - radius;
+            ball_position.x = WIDTH_F - wall_offset;
             ball_velocity.x = -smoothed_total_velocity.x * bounciness;
 
             (ball_rotation_velocity, ball_velocity.y) = calculate_bounce_spin(
@@ -193,9 +205,9 @@ async fn main() {
                 radius,
                 true,
             );
-        } else if ball_position.x < -WIDTH_F + radius {
+        } else if ball_position.x < -WIDTH_F + wall_offset {
             // Left
-            ball_position.x = -WIDTH_F + radius;
+            ball_position.x = -WIDTH_F + wall_offset;
             ball_velocity.x = -smoothed_total_velocity.x * bounciness;
 
             (ball_rotation_velocity, ball_velocity.y) = calculate_bounce_spin(
@@ -214,21 +226,83 @@ async fn main() {
 
         //draw_circle(ball_position.x, ball_position.y, radius, BLUE);
 
-        //gl_use_material(&ball_material);
-
-        draw_rectangle_ex(
-            ball_position.x,
-            ball_position.y,
-            radius * 2.,
-            radius * 2.,
-            DrawRectangleParams {
-                rotation: ball_rotation,
-                color: BLUE,
-                offset: Vec2::new(0.5, 0.5),
+        draw_texture_ex(
+            &background_texture,
+            -WIDTH_F + wall_thickness,
+            -HEIGHT_F + wall_thickness,
+            WHITE,
+            DrawTextureParams {
+                dest_size: Some(vec2(
+                    (WIDTH_F - wall_thickness) * 2.,
+                    (HEIGHT_F - wall_thickness) * 2.,
+                )),
+                ..Default::default()
             },
         );
 
-        //gl_use_default_material();
+        draw_texture_ex(
+            &side_texture,
+            -WIDTH_F * 2. + wall_thickness / 2.,
+            0.,
+            Color::from_hex(0xf1f1f1),
+            DrawTextureParams {
+                rotation: PI * 0.5,
+                dest_size: Some(vec2(WIDTH_F * 2., wall_thickness)),
+                ..Default::default()
+            },
+        );
+
+        draw_texture_ex(
+            &side_texture,
+            -wall_thickness / 2.,
+            0.,
+            Color::from_hex(0xf1f1f1),
+            DrawTextureParams {
+                rotation: PI * 1.5,
+                dest_size: Some(vec2(WIDTH_F * 2., wall_thickness)),
+                ..Default::default()
+            },
+        );
+
+        draw_texture_ex(
+            &side_texture,
+            -WIDTH_F,
+            -HEIGHT_F,
+            Color::from_hex(0xf1f1f1),
+            DrawTextureParams {
+                rotation: PI * 1.0,
+                dest_size: Some(vec2(WIDTH_F * 2., wall_thickness)),
+                ..Default::default()
+            },
+        );
+
+        draw_texture_ex(
+            &side_texture,
+            -WIDTH_F,
+            HEIGHT_F - wall_thickness,
+            Color::from_hex(0xf1f1f1),
+            DrawTextureParams {
+                rotation: PI * 2.0,
+                dest_size: Some(vec2(WIDTH_F * 2., wall_thickness)),
+                ..Default::default()
+            },
+        );
+
+        gl_use_material(&ball_material);
+
+        draw_texture_ex(
+            &ball_texture,
+            ball_position.x - radius,
+            ball_position.y - radius,
+            WHITE,
+            DrawTextureParams {
+                dest_size: Some(vec2(radius * 2., radius * 2.)),
+                rotation: ball_rotation,
+                ..Default::default()
+            },
+        );
+
+        gl_use_default_material();
 
         next_frame().await
     }

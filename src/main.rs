@@ -228,8 +228,6 @@ async fn main() {
             },
         );
 
-        draw_circle(x, y, r, color);
-
         //gl_use_default_material();
 
         next_frame().await

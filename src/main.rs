@@ -123,39 +123,47 @@ async fn main() {
             ball_position.y = HEIGHT_F - radius;
             ball_velocity.y = -smoothed_total_velocity.y * bounciness;
 
-            let current_rotation_direction_velocity = ball_rotation_velocity * radius;
-            let delta_rotation_velocity = current_rotation_direction_velocity - ball_rotation_velocity;
-            let new_rotation_velocity = smoothed_total_velocity.x / PI / (radius / PI);
-            ball_rotation_velocity = new_rotation_velocity;
+            let new_rotation_velocity = smoothed_total_velocity.x / radius;
+            let delta_rotation_velocity = new_rotation_velocity.lerp(ball_rotation_velocity, 0.5);
+            let current_rotation_direction_velocity = delta_rotation_velocity * radius;
+            ball_rotation_velocity = delta_rotation_velocity;
+
+            ball_velocity.x = current_rotation_direction_velocity - maxed_delta.x;
         } else if ball_position.y < -HEIGHT_F + radius {
             // Ceiling
             ball_position.y = -HEIGHT_F + radius;
             ball_velocity.y = -smoothed_total_velocity.y * bounciness;
 
-            let current_rotation_direction_velocity = ball_rotation_velocity * radius;
-            let delta_rotation_velocity = -current_rotation_direction_velocity - ball_rotation_velocity;
-            let new_rotation_velocity = -smoothed_total_velocity.x / PI / (radius / PI);
-            ball_rotation_velocity = new_rotation_velocity;
+            let new_rotation_velocity = -smoothed_total_velocity.x / radius;
+            let delta_rotation_velocity = new_rotation_velocity.lerp(ball_rotation_velocity, 0.5);
+            let current_rotation_direction_velocity = -delta_rotation_velocity * radius;
+            ball_rotation_velocity = delta_rotation_velocity;
+
+            ball_velocity.x = current_rotation_direction_velocity - maxed_delta.x;
         }
 
         if ball_position.x > WIDTH_F - radius {
             // Right
             ball_position.x = WIDTH_F - radius;
             ball_velocity.x = -smoothed_total_velocity.x * bounciness;
-            
-            let current_rotation_direction_velocity = ball_rotation_velocity * radius;
-            let delta_rotation_velocity = -current_rotation_direction_velocity - ball_rotation_velocity;
-            let new_rotation_velocity = -smoothed_total_velocity.y / PI / (radius / PI);
-            ball_rotation_velocity = new_rotation_velocity;
+
+            let new_rotation_velocity = -smoothed_total_velocity.y / radius;
+            let delta_rotation_velocity = new_rotation_velocity.lerp(ball_rotation_velocity, 0.5);
+            let current_rotation_direction_velocity = -delta_rotation_velocity * radius;
+            ball_rotation_velocity = delta_rotation_velocity;
+
+            ball_velocity.y = current_rotation_direction_velocity - maxed_delta.y;
         } else if ball_position.x < -WIDTH_F + radius {
             // Left
             ball_position.x = -WIDTH_F + radius;
             ball_velocity.x = -smoothed_total_velocity.x * bounciness;
-            
-            let current_rotation_direction_velocity = ball_rotation_velocity * radius;
-            let delta_rotation_velocity = current_rotation_direction_velocity - ball_rotation_velocity;
-            let new_rotation_velocity = smoothed_total_velocity.y / PI / (radius / PI);
-            ball_rotation_velocity = new_rotation_velocity;
+
+            let new_rotation_velocity = smoothed_total_velocity.y / radius;
+            let delta_rotation_velocity = new_rotation_velocity.lerp(ball_rotation_velocity, 0.5);
+            let current_rotation_direction_velocity = delta_rotation_velocity * radius;
+            ball_rotation_velocity = delta_rotation_velocity;
+
+            ball_velocity.y = current_rotation_direction_velocity - maxed_delta.y;
         }
 
         if ball_velocity.length() > terminal_velocity {

@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use macroquad::{prelude::*, time};
 use miniquad::*;
 use window::set_window_position;
@@ -50,9 +52,11 @@ async fn main() {
     let air_friction = 0.17;
     let bounciness = 0.9;
     let terminal_velocity = 10000.;
-    let radius = 60.;
+    let radius = 90.;
     let mut ball_position = Vec2::ZERO;
     let mut ball_velocity = Vec2::ZERO;
+    let mut ball_rotation = 0.;
+    let mut ball_rotation_velocity = 0.;
 
     loop {
         let current_window_position = Vec2::from_u32_tuple(miniquad::window::get_window_position());
@@ -115,19 +119,43 @@ async fn main() {
         });
 
         if ball_position.y > HEIGHT_F - radius {
+            // Floor
             ball_position.y = HEIGHT_F - radius;
             ball_velocity.y = -smoothed_total_velocity.y * bounciness;
+
+            let current_rotation_direction_velocity = ball_rotation_velocity * radius;
+            let delta_rotation_velocity = current_rotation_direction_velocity - ball_rotation_velocity;
+            let new_rotation_velocity = smoothed_total_velocity.x / PI / (radius / PI);
+            ball_rotation_velocity = new_rotation_velocity;
         } else if ball_position.y < -HEIGHT_F + radius {
+            // Ceiling
             ball_position.y = -HEIGHT_F + radius;
             ball_velocity.y = -smoothed_total_velocity.y * bounciness;
+
+            let current_rotation_direction_velocity = ball_rotation_velocity * radius;
+            let delta_rotation_velocity = -current_rotation_direction_velocity - ball_rotation_velocity;
+            let new_rotation_velocity = -smoothed_total_velocity.x / PI / (radius / PI);
+            ball_rotation_velocity = new_rotation_velocity;
         }
 
         if ball_position.x > WIDTH_F - radius {
+            // Right
             ball_position.x = WIDTH_F - radius;
             ball_velocity.x = -smoothed_total_velocity.x * bounciness;
+            
+            let current_rotation_direction_velocity = ball_rotation_velocity * radius;
+            let delta_rotation_velocity = -current_rotation_direction_velocity - ball_rotation_velocity;
+            let new_rotation_velocity = -smoothed_total_velocity.y / PI / (radius / PI);
+            ball_rotation_velocity = new_rotation_velocity;
         } else if ball_position.x < -WIDTH_F + radius {
+            // Left
             ball_position.x = -WIDTH_F + radius;
             ball_velocity.x = -smoothed_total_velocity.x * bounciness;
+            
+            let current_rotation_direction_velocity = ball_rotation_velocity * radius;
+            let delta_rotation_velocity = current_rotation_direction_velocity - ball_rotation_velocity;
+            let new_rotation_velocity = smoothed_total_velocity.y / PI / (radius / PI);
+            ball_rotation_velocity = new_rotation_velocity;
         }
 
         if ball_velocity.length() > terminal_velocity {

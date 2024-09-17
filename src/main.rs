@@ -99,7 +99,15 @@ async fn main() {
             ball_velocity
         };
 
+        let smoothed_total_velocity = if time::get_time() > 1. {
+            ball_velocity + maxed_delta
+        } else {
+            ball_velocity
+        };
+
         ball_position += total_velocity * get_frame_time();
+
+        ball_rotation += ball_rotation_velocity * get_frame_time();
 
         set_camera(&Camera2D {
             zoom: vec2(1. / WIDTH_F, 1. / HEIGHT_F),
@@ -108,18 +116,18 @@ async fn main() {
 
         if ball_position.y > HEIGHT_F - radius {
             ball_position.y = HEIGHT_F - radius;
-            ball_velocity.y = -(ball_velocity.y + maxed_delta.y) * bounciness;
+            ball_velocity.y = -smoothed_total_velocity.y * bounciness;
         } else if ball_position.y < -HEIGHT_F + radius {
             ball_position.y = -HEIGHT_F + radius;
-            ball_velocity.y = -(ball_velocity.y + maxed_delta.y) * bounciness;
+            ball_velocity.y = -smoothed_total_velocity.y * bounciness;
         }
 
         if ball_position.x > WIDTH_F - radius {
             ball_position.x = WIDTH_F - radius;
-            ball_velocity.x = -(ball_velocity.x + maxed_delta.x) * bounciness;
+            ball_velocity.x = -smoothed_total_velocity.x * bounciness;
         } else if ball_position.x < -WIDTH_F + radius {
             ball_position.x = -WIDTH_F + radius;
-            ball_velocity.x = -(ball_velocity.x + maxed_delta.x) * bounciness;
+            ball_velocity.x = -smoothed_total_velocity.x * bounciness;
         }
 
         if ball_velocity.length() > terminal_velocity {
@@ -127,7 +135,19 @@ async fn main() {
             ball_velocity = ball_velocity.normalize() * terminal_velocity;
         }
 
-        draw_circle(ball_position.x, ball_position.y, radius, BLUE);
+        //draw_circle(ball_position.x, ball_position.y, radius, BLUE);
+
+        draw_rectangle_ex(
+            ball_position.x,
+            ball_position.y,
+            radius*2.,
+            radius*2.,
+            DrawRectangleParams {
+                rotation: ball_rotation,
+                color: BLUE,
+                offset: Vec2::new(0.5,0.5)
+            },
+        );
 
         next_frame().await
     }

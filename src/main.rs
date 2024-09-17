@@ -17,7 +17,7 @@ pub fn window_conf() -> miniquad::conf::Conf {
         window_height: HEIGHT,
         high_dpi: true,
         fullscreen: false,
-        sample_count: 4,
+        sample_count: 8,
         window_resizable: false,
         ..Default::default()
     }

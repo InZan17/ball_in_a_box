@@ -1,5 +1,3 @@
-use std::f32::consts::PI;
-
 use macroquad::{prelude::*, time};
 use miniquad::*;
 use window::set_window_position;
@@ -22,6 +20,9 @@ pub fn window_conf() -> miniquad::conf::Conf {
         ..Default::default()
     }
 }
+
+const FRAGMENT_SHADER: &'static str = include_str!("../assets/ball.frag");
+const VERTEX_SHADER: &'static str = include_str!("../assets/ball.vert");
 
 pub trait FromTuple {
     fn from_u32_tuple(tuple: (u32, u32)) -> Self;
@@ -83,6 +84,16 @@ async fn main() {
     let mut ball_velocity = Vec2::ZERO;
     let mut ball_rotation = 0.;
     let mut ball_rotation_velocity = 0.;
+
+    /*
+       let ball_material = load_material(
+           ShaderSource::Glsl {
+               vertex: VERTEX_SHADER,
+               fragment: FRAGMENT_SHADER,
+           },
+           MaterialParams::default(),
+       ).expect("Failed to load material.");
+    */
 
     loop {
         let current_window_position = Vec2::from_u32_tuple(miniquad::window::get_window_position());
@@ -175,7 +186,7 @@ async fn main() {
             ball_position.x = WIDTH_F - radius;
             ball_velocity.x = -smoothed_total_velocity.x * bounciness;
 
-            (ball_rotation_velocity, ball_velocity.x) = calculate_bounce_spin(
+            (ball_rotation_velocity, ball_velocity.y) = calculate_bounce_spin(
                 ball_velocity.y,
                 maxed_delta.y,
                 ball_rotation_velocity,
@@ -187,7 +198,7 @@ async fn main() {
             ball_position.x = -WIDTH_F + radius;
             ball_velocity.x = -smoothed_total_velocity.x * bounciness;
 
-            (ball_rotation_velocity, ball_velocity.x) = calculate_bounce_spin(
+            (ball_rotation_velocity, ball_velocity.y) = calculate_bounce_spin(
                 ball_velocity.y,
                 maxed_delta.y,
                 ball_rotation_velocity,
@@ -203,6 +214,8 @@ async fn main() {
 
         //draw_circle(ball_position.x, ball_position.y, radius, BLUE);
 
+        //gl_use_material(&ball_material);
+
         draw_rectangle_ex(
             ball_position.x,
             ball_position.y,
@@ -214,6 +227,10 @@ async fn main() {
                 offset: Vec2::new(0.5, 0.5),
             },
         );
+
+        draw_circle(x, y, r, color);
+
+        //gl_use_default_material();
 
         next_frame().await
     }

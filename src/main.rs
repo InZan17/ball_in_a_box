@@ -38,6 +38,32 @@ impl FromTuple for Vec2 {
     }
 }
 
+pub fn calculate_bounce_spin(
+    ball_velocity: f32,
+    window_velocity: f32,
+    ball_rotation_velocity: f32,
+    ball_radius: f32,
+    inverted: bool,
+) -> (f32, f32) {
+    let total_velocity = if inverted {
+        -(ball_velocity + window_velocity)
+    } else {
+        ball_velocity + window_velocity
+    };
+    let rotation_velocity_from_velocity = total_velocity / ball_radius;
+    let delta_rotation_velocity = rotation_velocity_from_velocity.lerp(ball_rotation_velocity, 0.5);
+    let current_rotation_direction_velocity = if inverted {
+        -(delta_rotation_velocity * ball_radius)
+    } else {
+        delta_rotation_velocity * ball_radius
+    };
+    let new_rotation_velocity = delta_rotation_velocity.lerp(rotation_velocity_from_velocity, 0.5);
+    return (
+        new_rotation_velocity,
+        current_rotation_direction_velocity - window_velocity,
+    );
+}
+
 #[macroquad::main(window_conf)]
 async fn main() {
     let mut last_window_position = Vec2::from_u32_tuple(miniquad::window::get_window_position());
@@ -123,23 +149,25 @@ async fn main() {
             ball_position.y = HEIGHT_F - radius;
             ball_velocity.y = -smoothed_total_velocity.y * bounciness;
 
-            let new_rotation_velocity = smoothed_total_velocity.x / radius;
-            let delta_rotation_velocity = new_rotation_velocity.lerp(ball_rotation_velocity, 0.5);
-            let current_rotation_direction_velocity = delta_rotation_velocity * radius;
-            ball_rotation_velocity = delta_rotation_velocity.lerp(new_rotation_velocity, 0.5);
-
-            ball_velocity.x = current_rotation_direction_velocity - maxed_delta.x;
+            (ball_rotation_velocity, ball_velocity.x) = calculate_bounce_spin(
+                ball_velocity.x,
+                maxed_delta.x,
+                ball_rotation_velocity,
+                radius,
+                false,
+            );
         } else if ball_position.y < -HEIGHT_F + radius {
             // Ceiling
             ball_position.y = -HEIGHT_F + radius;
             ball_velocity.y = -smoothed_total_velocity.y * bounciness;
 
-            let new_rotation_velocity = -smoothed_total_velocity.x / radius;
-            let delta_rotation_velocity = new_rotation_velocity.lerp(ball_rotation_velocity, 0.5);
-            let current_rotation_direction_velocity = -delta_rotation_velocity * radius;
-            ball_rotation_velocity = delta_rotation_velocity.lerp(new_rotation_velocity, 0.5);
-
-            ball_velocity.x = current_rotation_direction_velocity - maxed_delta.x;
+            (ball_rotation_velocity, ball_velocity.x) = calculate_bounce_spin(
+                ball_velocity.x,
+                maxed_delta.x,
+                ball_rotation_velocity,
+                radius,
+                true,
+            );
         }
 
         if ball_position.x > WIDTH_F - radius {
@@ -147,23 +175,25 @@ async fn main() {
             ball_position.x = WIDTH_F - radius;
             ball_velocity.x = -smoothed_total_velocity.x * bounciness;
 
-            let new_rotation_velocity = -smoothed_total_velocity.y / radius;
-            let delta_rotation_velocity = new_rotation_velocity.lerp(ball_rotation_velocity, 0.5);
-            let current_rotation_direction_velocity = -delta_rotation_velocity * radius;
-            ball_rotation_velocity = delta_rotation_velocity.lerp(new_rotation_velocity, 0.5);
-
-            ball_velocity.y = current_rotation_direction_velocity - maxed_delta.y;
+            (ball_rotation_velocity, ball_velocity.x) = calculate_bounce_spin(
+                ball_velocity.y,
+                maxed_delta.y,
+                ball_rotation_velocity,
+                radius,
+                true,
+            );
         } else if ball_position.x < -WIDTH_F + radius {
             // Left
             ball_position.x = -WIDTH_F + radius;
             ball_velocity.x = -smoothed_total_velocity.x * bounciness;
 
-            let new_rotation_velocity = smoothed_total_velocity.y / radius;
-            let delta_rotation_velocity = new_rotation_velocity.lerp(ball_rotation_velocity, 0.5);
-            let current_rotation_direction_velocity = delta_rotation_velocity * radius;
-            ball_rotation_velocity = delta_rotation_velocity.lerp(new_rotation_velocity, 0.5);
-
-            ball_velocity.y = current_rotation_direction_velocity - maxed_delta.y;
+            (ball_rotation_velocity, ball_velocity.x) = calculate_bounce_spin(
+                ball_velocity.y,
+                maxed_delta.y,
+                ball_rotation_velocity,
+                radius,
+                false,
+            );
         }
 
         if ball_velocity.length() > terminal_velocity {
@@ -176,12 +206,12 @@ async fn main() {
         draw_rectangle_ex(
             ball_position.x,
             ball_position.y,
-            radius*2.,
-            radius*2.,
+            radius * 2.,
+            radius * 2.,
             DrawRectangleParams {
                 rotation: ball_rotation,
                 color: BLUE,
-                offset: Vec2::new(0.5,0.5)
+                offset: Vec2::new(0.5, 0.5),
             },
         );
 

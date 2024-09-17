@@ -126,7 +126,7 @@ async fn main() {
             let new_rotation_velocity = smoothed_total_velocity.x / radius;
             let delta_rotation_velocity = new_rotation_velocity.lerp(ball_rotation_velocity, 0.5);
             let current_rotation_direction_velocity = delta_rotation_velocity * radius;
-            ball_rotation_velocity = delta_rotation_velocity;
+            ball_rotation_velocity = delta_rotation_velocity.lerp(new_rotation_velocity, 0.5);
 
             ball_velocity.x = current_rotation_direction_velocity - maxed_delta.x;
         } else if ball_position.y < -HEIGHT_F + radius {
@@ -137,7 +137,7 @@ async fn main() {
             let new_rotation_velocity = -smoothed_total_velocity.x / radius;
             let delta_rotation_velocity = new_rotation_velocity.lerp(ball_rotation_velocity, 0.5);
             let current_rotation_direction_velocity = -delta_rotation_velocity * radius;
-            ball_rotation_velocity = delta_rotation_velocity;
+            ball_rotation_velocity = delta_rotation_velocity.lerp(new_rotation_velocity, 0.5);
 
             ball_velocity.x = current_rotation_direction_velocity - maxed_delta.x;
         }
@@ -150,7 +150,7 @@ async fn main() {
             let new_rotation_velocity = -smoothed_total_velocity.y / radius;
             let delta_rotation_velocity = new_rotation_velocity.lerp(ball_rotation_velocity, 0.5);
             let current_rotation_direction_velocity = -delta_rotation_velocity * radius;
-            ball_rotation_velocity = delta_rotation_velocity;
+            ball_rotation_velocity = delta_rotation_velocity.lerp(new_rotation_velocity, 0.5);
 
             ball_velocity.y = current_rotation_direction_velocity - maxed_delta.y;
         } else if ball_position.x < -WIDTH_F + radius {
@@ -161,7 +161,7 @@ async fn main() {
             let new_rotation_velocity = smoothed_total_velocity.y / radius;
             let delta_rotation_velocity = new_rotation_velocity.lerp(ball_rotation_velocity, 0.5);
             let current_rotation_direction_velocity = delta_rotation_velocity * radius;
-            ball_rotation_velocity = delta_rotation_velocity;
+            ball_rotation_velocity = delta_rotation_velocity.lerp(new_rotation_velocity, 0.5);
 
             ball_velocity.y = current_rotation_direction_velocity - maxed_delta.y;
         }

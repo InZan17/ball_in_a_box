@@ -23,7 +23,8 @@ pub fn window_conf() -> miniquad::conf::Conf {
     }
 }
 
-const FRAGMENT_SHADER: &'static str = include_str!("../assets/ball.frag");
+const BALL_FRAGMENT_SHADER: &'static str = include_str!("../assets/ball.frag");
+const SHADOW_FRAGMENT_SHADER: &'static str = include_str!("../assets/shadow.frag");
 const VERTEX_SHADER: &'static str = include_str!("../assets/ball.vert");
 
 const BALL_TEXTURE_BYTES: &[u8] = include_bytes!("../assets/ball.png");
@@ -87,24 +88,48 @@ async fn main() {
     let terminal_velocity = 10000.;
     let radius = 90.;
     let wall_thickness = 20.;
+    let wall_depth = 20.;
+
+    let wall_offset = radius + wall_thickness + wall_depth;
+    let shadow_size = 1.2;
+    let shadow_distance_strength = 50.;
+
     let mut ball_position = Vec2::ZERO;
     let mut ball_velocity = Vec2::ZERO;
     let mut ball_rotation = 0.;
     let mut ball_rotation_velocity = 0.;
 
-    let wall_offset = radius + wall_thickness + 20.;
-
     let ball_material = load_material(
         ShaderSource::Glsl {
             vertex: VERTEX_SHADER,
-            fragment: FRAGMENT_SHADER,
+            fragment: BALL_FRAGMENT_SHADER,
         },
         MaterialParams {
             uniforms: vec![UniformDesc::new("rotation", UniformType::Float1)],
             ..Default::default()
         },
     )
-    .expect("Failed to load material.");
+    .expect("Failed to load ball material.");
+
+    let shadow_material = load_material(
+        ShaderSource::Glsl {
+            vertex: VERTEX_SHADER,
+            fragment: SHADOW_FRAGMENT_SHADER,
+        },
+        MaterialParams {
+            uniforms: vec![UniformDesc::new("in_shadow", UniformType::Float1)],
+            pipeline_params: PipelineParams {
+                color_blend: Some(BlendState::new(
+                    Equation::Add,
+                    BlendFactor::Value(BlendValue::SourceAlpha),
+                    BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
+                )),
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+    )
+    .expect("Failed to load shadow material.");
 
     let ball_texture = Texture2D::from_file_with_format(BALL_TEXTURE_BYTES, None);
     let background_texture = Texture2D::from_file_with_format(BACKGROUND_TEXTURE_BYTES, None);
@@ -170,8 +195,11 @@ async fn main() {
             ..Default::default()
         });
 
-        if ball_position.y > HEIGHT_F - wall_offset {
+
+        let mut distance_to_floor = HEIGHT_F - wall_offset - ball_position.y;
+        if distance_to_floor <= 0. {
             // Floor
+            distance_to_floor = 0.;
             ball_position.y = HEIGHT_F - wall_offset;
             ball_velocity.y = -smoothed_total_velocity.y * bounciness;
 
@@ -182,8 +210,12 @@ async fn main() {
                 radius,
                 false,
             );
-        } else if ball_position.y < -HEIGHT_F + wall_offset {
+        }
+        
+        let mut distance_to_ceiling =  ball_position.y + HEIGHT_F - wall_offset;
+        if distance_to_ceiling <= 0. {
             // Ceiling
+            distance_to_ceiling = 0.;
             ball_position.y = -HEIGHT_F + wall_offset;
             ball_velocity.y = -smoothed_total_velocity.y * bounciness;
 
@@ -195,9 +227,10 @@ async fn main() {
                 true,
             );
         }
-
-        if ball_position.x > WIDTH_F - wall_offset {
+        let mut distance_to_right_wall =  WIDTH_F - wall_offset - ball_position.x;
+        if distance_to_right_wall <= 0. {
             // Right
+            distance_to_right_wall = 0.;
             ball_position.x = WIDTH_F - wall_offset;
             ball_velocity.x = -smoothed_total_velocity.x * bounciness;
 
@@ -208,8 +241,12 @@ async fn main() {
                 radius,
                 true,
             );
-        } else if ball_position.x < -WIDTH_F + wall_offset {
+        } 
+        
+        let mut distance_to_left_wall =  ball_position.x + WIDTH_F - wall_offset;
+        if distance_to_left_wall <= 0.{
             // Left
+            distance_to_left_wall = 0.;
             ball_position.x = -WIDTH_F + wall_offset;
             ball_velocity.x = -smoothed_total_velocity.x * bounciness;
 
@@ -289,6 +326,45 @@ async fn main() {
                 dest_size: Some(vec2(WIDTH_F * 2., wall_thickness)),
                 ..Default::default()
             },
+        );
+
+        gl_use_material(&shadow_material);
+
+        
+        shadow_material.set_uniform("in_shadow", distance_to_floor / shadow_distance_strength);
+        draw_rectangle(
+            ball_position.x - radius * shadow_size,
+            HEIGHT_F - wall_offset + radius - wall_depth,
+            radius * shadow_size * 2.,
+            wall_depth*2.,
+            WHITE
+        );
+
+        shadow_material.set_uniform("in_shadow", distance_to_ceiling / shadow_distance_strength);
+        draw_rectangle(
+            ball_position.x - radius * shadow_size,
+            -HEIGHT_F + wall_thickness,
+            radius * shadow_size * 2.,
+            wall_depth*2.,
+            WHITE
+        );
+
+        shadow_material.set_uniform("in_shadow", distance_to_right_wall / shadow_distance_strength);
+        draw_rectangle(
+            WIDTH_F - wall_offset + radius - wall_depth,
+            ball_position.y - radius * shadow_size,
+            wall_depth*2.,
+            radius * shadow_size * 2.,
+            WHITE
+        );
+
+        shadow_material.set_uniform("in_shadow", distance_to_left_wall / shadow_distance_strength);
+        draw_rectangle(
+            -WIDTH_F + wall_thickness,
+            ball_position.y - radius * shadow_size,
+            wall_depth*2.,
+            radius * shadow_size * 2.,
+            WHITE
         );
 
         ball_material.set_uniform("rotation", ball_rotation);

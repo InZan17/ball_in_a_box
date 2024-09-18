@@ -30,4 +30,5 @@ void main() {
     float in_highlight = clamp((length(minus_one_to_one_uv + rotate(vec2(0.0, -1.5), -rotation + rotation_offset))-highlight_cutoff)/2., 0.0, 0.5);
 
     gl_FragColor = texture2D(Texture, uv) * (color * (1.0 - in_shadow) * (1 + in_highlight));
+    //gl_FragColor = vec4(in_shadow, in_highlight, 0.0, 1.0);
 }

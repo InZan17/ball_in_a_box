@@ -27,7 +27,8 @@ const BALL_FRAGMENT_SHADER: &'static str = include_str!("../assets/ball.frag");
 const SHADOW_FRAGMENT_SHADER: &'static str = include_str!("../assets/shadow.frag");
 const VERTEX_SHADER: &'static str = include_str!("../assets/ball.vert");
 
-const BALL_TEXTURE_BYTES: &[u8] = include_bytes!("../assets/ball.png");
+const DISTRESS_BALL_TEXTURE_BYTES: &[u8] = include_bytes!("../assets/distress.png");
+const GRINNING_BALL_TEXTURE_BYTES: &[u8] = include_bytes!("../assets/grinning.png");
 const BACKGROUND_TEXTURE_BYTES: &[u8] = include_bytes!("../assets/background.png");
 const SIDE_TEXTURE_BYTES: &[u8] = include_bytes!("../assets/cardboardsidebottom.png");
 
@@ -137,11 +138,56 @@ async fn main() {
     )
     .expect("Failed to load shadow material.");
 
-    let ball_texture = Texture2D::from_file_with_format(BALL_TEXTURE_BYTES, None);
+    let ball_textures = [
+        (
+            "distress",
+            Texture2D::from_file_with_format(DISTRESS_BALL_TEXTURE_BYTES, None),
+        ),
+        (
+            "grinning",
+            Texture2D::from_file_with_format(GRINNING_BALL_TEXTURE_BYTES, None),
+        ),
+    ];
+
+    let max_len = {
+        let mut max_len = 0;
+
+        for (name, _) in ball_textures.iter() {
+            max_len = max_len.max(name.len());
+        }
+        max_len
+    };
+
+    let mut ball_texture = ball_textures[0].1.clone();
+
+    let mut text_input = String::new();
+
     let background_texture = Texture2D::from_file_with_format(BACKGROUND_TEXTURE_BYTES, None);
     let side_texture = Texture2D::from_file_with_format(SIDE_TEXTURE_BYTES, None);
 
     loop {
+        let mut pressed = false;
+
+        while let Some(character) = get_char_pressed() {
+            text_input.push(character.to_ascii_lowercase());
+            pressed = true;
+        }
+
+        if pressed {
+            for (name, texture) in ball_textures.iter() {
+                if text_input.contains(name) {
+                    ball_texture = texture.clone();
+                    text_input.clear();
+                    break;
+                }
+            }
+        }
+
+        if text_input.len() > max_len {
+            let remove = text_input.len() - max_len;
+            text_input = text_input[remove..].to_string();
+        }
+
         let current_window_position = Vec2::from_u32_tuple(miniquad::window::get_window_position());
         let delta_window_position = last_window_position - current_window_position;
         last_window_position = current_window_position;

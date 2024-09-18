@@ -35,11 +35,16 @@ const SIDE_TEXTURE_BYTES: &[u8] = include_bytes!("../assets/cardboardsidebottom.
 
 pub trait FromTuple {
     fn from_u32_tuple(tuple: (u32, u32)) -> Self;
+    fn from_i32_tuple(tuple: (i32, i32)) -> Self;
     fn from_f32_tuple(tuple: (f32, f32)) -> Self;
 }
 
 impl FromTuple for Vec2 {
     fn from_u32_tuple(tuple: (u32, u32)) -> Self {
+        Vec2::new(tuple.0 as f32, tuple.1 as f32)
+    }
+
+    fn from_i32_tuple(tuple: (i32, i32)) -> Self {
         Vec2::new(tuple.0 as f32, tuple.1 as f32)
     }
 
@@ -205,7 +210,7 @@ async fn main() {
         let delta_window_position = last_window_position - current_window_position;
         last_window_position = current_window_position;
 
-        let current_mouse_position = Vec2::from_u32_tuple(other::screen_mouse_position());
+        let current_mouse_position = Vec2::from_i32_tuple(window::get_screen_mouse_position());
         let delta_mouse_position = current_mouse_position - last_mouse_position;
         last_mouse_position = current_mouse_position;
 

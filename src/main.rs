@@ -244,7 +244,7 @@ async fn main() {
             &side_texture,
             -WIDTH_F * 2. + wall_thickness / 2.,
             0.,
-            Color::from_hex(0xf1f1f1),
+            Color::from_hex(0x999999),
             DrawTextureParams {
                 rotation: PI * 0.5,
                 dest_size: Some(vec2(WIDTH_F * 2., wall_thickness)),
@@ -256,7 +256,7 @@ async fn main() {
             &side_texture,
             -wall_thickness / 2.,
             0.,
-            Color::from_hex(0xf1f1f1),
+            Color::from_hex(0xb0b0b0),
             DrawTextureParams {
                 rotation: PI * 1.5,
                 dest_size: Some(vec2(WIDTH_F * 2., wall_thickness)),
@@ -268,7 +268,7 @@ async fn main() {
             &side_texture,
             -WIDTH_F,
             -HEIGHT_F,
-            Color::from_hex(0xf1f1f1),
+            Color::from_hex(0xbababa),
             DrawTextureParams {
                 rotation: PI * 1.0,
                 dest_size: Some(vec2(WIDTH_F * 2., wall_thickness)),
@@ -280,7 +280,7 @@ async fn main() {
             &side_texture,
             -WIDTH_F,
             HEIGHT_F - wall_thickness,
-            Color::from_hex(0xf1f1f1),
+            Color::from_hex(0xe0e0e0),
             DrawTextureParams {
                 rotation: PI * 2.0,
                 dest_size: Some(vec2(WIDTH_F * 2., wall_thickness)),

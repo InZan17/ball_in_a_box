@@ -105,7 +105,13 @@ async fn main() {
             fragment: BALL_FRAGMENT_SHADER,
         },
         MaterialParams {
-            uniforms: vec![UniformDesc::new("rotation", UniformType::Float1)],
+            uniforms: vec![
+                UniformDesc::new("rotation", UniformType::Float1),
+                UniformDesc::new("ceil_distance", UniformType::Float1),
+                UniformDesc::new("floor_distance", UniformType::Float1),
+                UniformDesc::new("left_distance", UniformType::Float1),
+                UniformDesc::new("right_distance", UniformType::Float1),
+            ],
             ..Default::default()
         },
     )
@@ -195,7 +201,6 @@ async fn main() {
             ..Default::default()
         });
 
-
         let mut distance_to_floor = HEIGHT_F - wall_offset - ball_position.y;
         if distance_to_floor <= 0. {
             // Floor
@@ -211,8 +216,8 @@ async fn main() {
                 false,
             );
         }
-        
-        let mut distance_to_ceiling =  ball_position.y + HEIGHT_F - wall_offset;
+
+        let mut distance_to_ceiling = ball_position.y + HEIGHT_F - wall_offset;
         if distance_to_ceiling <= 0. {
             // Ceiling
             distance_to_ceiling = 0.;
@@ -227,7 +232,7 @@ async fn main() {
                 true,
             );
         }
-        let mut distance_to_right_wall =  WIDTH_F - wall_offset - ball_position.x;
+        let mut distance_to_right_wall = WIDTH_F - wall_offset - ball_position.x;
         if distance_to_right_wall <= 0. {
             // Right
             distance_to_right_wall = 0.;
@@ -241,10 +246,10 @@ async fn main() {
                 radius,
                 true,
             );
-        } 
-        
-        let mut distance_to_left_wall =  ball_position.x + WIDTH_F - wall_offset;
-        if distance_to_left_wall <= 0.{
+        }
+
+        let mut distance_to_left_wall = ball_position.x + WIDTH_F - wall_offset;
+        if distance_to_left_wall <= 0. {
             // Left
             distance_to_left_wall = 0.;
             ball_position.x = -WIDTH_F + wall_offset;
@@ -330,14 +335,13 @@ async fn main() {
 
         gl_use_material(&shadow_material);
 
-        
         shadow_material.set_uniform("in_shadow", distance_to_floor / shadow_distance_strength);
         draw_rectangle(
             ball_position.x - radius * shadow_size,
             HEIGHT_F - wall_offset + radius - wall_depth,
             radius * shadow_size * 2.,
-            wall_depth*2.,
-            WHITE
+            wall_depth * 2.,
+            WHITE,
         );
 
         shadow_material.set_uniform("in_shadow", distance_to_ceiling / shadow_distance_strength);
@@ -345,29 +349,51 @@ async fn main() {
             ball_position.x - radius * shadow_size,
             -HEIGHT_F + wall_thickness,
             radius * shadow_size * 2.,
-            wall_depth*2.,
-            WHITE
+            wall_depth * 2.,
+            WHITE,
         );
 
-        shadow_material.set_uniform("in_shadow", distance_to_right_wall / shadow_distance_strength);
+        shadow_material.set_uniform(
+            "in_shadow",
+            distance_to_right_wall / shadow_distance_strength,
+        );
         draw_rectangle(
             WIDTH_F - wall_offset + radius - wall_depth,
             ball_position.y - radius * shadow_size,
-            wall_depth*2.,
+            wall_depth * 2.,
             radius * shadow_size * 2.,
-            WHITE
+            WHITE,
         );
 
-        shadow_material.set_uniform("in_shadow", distance_to_left_wall / shadow_distance_strength);
+        shadow_material.set_uniform(
+            "in_shadow",
+            distance_to_left_wall / shadow_distance_strength,
+        );
         draw_rectangle(
             -WIDTH_F + wall_thickness,
             ball_position.y - radius * shadow_size,
-            wall_depth*2.,
+            wall_depth * 2.,
             radius * shadow_size * 2.,
-            WHITE
+            WHITE,
         );
 
         ball_material.set_uniform("rotation", ball_rotation);
+        ball_material.set_uniform(
+            "floor_distance",
+            distance_to_floor / shadow_distance_strength,
+        );
+        ball_material.set_uniform(
+            "ceil_distance",
+            distance_to_ceiling / shadow_distance_strength,
+        );
+        ball_material.set_uniform(
+            "left_distance",
+            distance_to_left_wall / shadow_distance_strength,
+        );
+        ball_material.set_uniform(
+            "right_distance",
+            distance_to_right_wall / shadow_distance_strength,
+        );
 
         gl_use_material(&ball_material);
 

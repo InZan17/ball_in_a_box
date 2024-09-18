@@ -34,8 +34,8 @@ void main() {
     float in_highlight = clamp((length(minus_one_to_one_uv + rotate(vec2(0.0, -1.7), -rotation + rotation_offset))-highlight_cutoff)/2., 0.0, 0.5);
 
 
-    float shadow_cutoff2 = 2.2;
-    float shadow2_roundness = 2.0;
+    float shadow_cutoff2 = 2.05;
+    float shadow2_roundness = 1.8;
     
     float left_shadow = clamp((length(minus_one_to_one_uv + rotate(vec2(-shadow2_roundness, 0.0), -rotation))-shadow_cutoff2 - left_distance)/2., 0.0, 0.5);
     float right_shadow = clamp((length(minus_one_to_one_uv + rotate(vec2(shadow2_roundness, 0.0), -rotation))-shadow_cutoff2 - right_distance)/2., 0.0, 0.5);
@@ -44,11 +44,11 @@ void main() {
 
     float total_shadow = clamp(left_shadow + right_shadow + up_shadow + down_shadow, 0.0, 0.5);
 
-    vec4 cardboard_shadow_color = vec4(48, 32, 6, 255) / 255.;
+    vec4 cardboard_shadow_color = vec4(82, 43, 12, 255) / 255.;
 
     vec4 texture_color = texture2D(Texture, uv);
 
-    vec4 final_color = texture_color * color * (1.0 - in_shadow) * (1.0 - total_shadow) + cardboard_shadow_color * total_shadow + vec4(1, 1, 1, 1) * in_highlight;
+    vec4 final_color = texture_color * color * (1.0 - in_shadow) * (1.0 - total_shadow) + texture_color * cardboard_shadow_color * total_shadow + vec4(1, 1, 1, 1) * in_highlight;
 
     final_color.a = texture_color.a * color.a * 1.0 + in_highlight;
 

@@ -27,6 +27,7 @@ const BALL_FRAGMENT_SHADER: &'static str = include_str!("../assets/ball.frag");
 const SHADOW_FRAGMENT_SHADER: &'static str = include_str!("../assets/shadow.frag");
 const VERTEX_SHADER: &'static str = include_str!("../assets/ball.vert");
 
+const WHITE_BALL_TEXTURE_BYTES: &[u8] = include_bytes!("../assets/white.png");
 const DISTRESS_BALL_TEXTURE_BYTES: &[u8] = include_bytes!("../assets/distress.png");
 const GRINNING_BALL_TEXTURE_BYTES: &[u8] = include_bytes!("../assets/grinning.png");
 const BACKGROUND_TEXTURE_BYTES: &[u8] = include_bytes!("../assets/background.png");
@@ -154,6 +155,10 @@ async fn main() {
         (
             "grinning",
             Texture2D::from_file_with_format(GRINNING_BALL_TEXTURE_BYTES, None),
+        ),
+        (
+            "white",
+            Texture2D::from_file_with_format(WHITE_BALL_TEXTURE_BYTES, None),
         ),
     ];
 

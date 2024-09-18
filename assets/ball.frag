@@ -28,10 +28,10 @@ void main() {
 
     float rotation_offset = -0.65;
     float shadow_cutoff = 1.0;
-    float highlight_cutoff = 1.8;
+    float highlight_cutoff = 2.2;
 
     float in_shadow = clamp((length(minus_one_to_one_uv + rotate(vec2(0.0, 1.0), -rotation + rotation_offset))-shadow_cutoff)/2., 0.0, 0.5);
-    float in_highlight = clamp((length(minus_one_to_one_uv + rotate(vec2(0.0, -1.5), -rotation + rotation_offset))-highlight_cutoff)/2., 0.0, 0.5);
+    float in_highlight = clamp((length(minus_one_to_one_uv + rotate(vec2(0.0, -1.7), -rotation + rotation_offset))-highlight_cutoff)/2., 0.0, 0.5);
 
 
     float shadow_cutoff2 = 2.2;
@@ -46,6 +46,12 @@ void main() {
 
     vec4 cardboard_shadow_color = vec4(48, 32, 6, 255) / 255.;
 
-    gl_FragColor = texture2D(Texture, uv) * (color * (1.0 - in_shadow) * (1.0 + in_highlight)) * (1.0 - total_shadow) + cardboard_shadow_color * total_shadow;
+    vec4 texture_color = texture2D(Texture, uv);
+
+    vec4 final_color = texture_color * color * (1.0 - in_shadow) * (1.0 - total_shadow) + cardboard_shadow_color * total_shadow + vec4(1, 1, 1, 1) * in_highlight;
+
+    final_color.a = texture_color.a * color.a * 1.0 + in_highlight;
+
+    gl_FragColor = clamp(final_color, 0.0, 1.0);
     //gl_FragColor = vec4(in_shadow, in_highlight, total_shadow, 1.0);
 }

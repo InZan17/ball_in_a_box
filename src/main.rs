@@ -10,8 +10,8 @@ const HEIGHT: i32 = 480;
 const WIDTH_F: f32 = WIDTH as f32;
 const HEIGHT_F: f32 = HEIGHT as f32;
 
-pub fn window_conf() -> miniquad::conf::Conf {
-    miniquad::conf::Conf {
+pub fn window_conf() -> Conf {
+    Conf {
         window_title: "Ball in a Box".to_string(),
         window_width: WIDTH,
         window_height: HEIGHT,
@@ -113,6 +113,14 @@ async fn main() {
                 UniformDesc::new("left_distance", UniformType::Float1),
                 UniformDesc::new("right_distance", UniformType::Float1),
             ],
+            pipeline_params: PipelineParams {
+                color_blend: Some(BlendState::new(
+                    Equation::Add,
+                    BlendFactor::Value(BlendValue::SourceAlpha),
+                    BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
+                )),
+                ..Default::default()
+            },
             ..Default::default()
         },
     )

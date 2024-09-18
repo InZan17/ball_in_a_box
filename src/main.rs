@@ -86,7 +86,7 @@ async fn main() {
     let bounciness = 0.9;
     let terminal_velocity = 10000.;
     let radius = 90.;
-    let wall_thickness = 25.;
+    let wall_thickness = 20.;
     let mut ball_position = Vec2::ZERO;
     let mut ball_velocity = Vec2::ZERO;
     let mut ball_rotation = 0.;
@@ -99,7 +99,10 @@ async fn main() {
             vertex: VERTEX_SHADER,
             fragment: FRAGMENT_SHADER,
         },
-        MaterialParams::default(),
+        MaterialParams {
+            uniforms: vec![UniformDesc::new("rotation", UniformType::Float1)],
+            ..Default::default()
+        },
     )
     .expect("Failed to load material.");
 
@@ -287,6 +290,8 @@ async fn main() {
                 ..Default::default()
             },
         );
+
+        ball_material.set_uniform("rotation", ball_rotation);
 
         gl_use_material(&ball_material);
 

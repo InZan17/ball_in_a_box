@@ -220,6 +220,7 @@ async fn main() {
         last_window_position = current_window_position;
 
         let current_mouse_position = Vec2::from_u32_tuple(other::screen_mouse_position());
+        let current_mouse_position = Vec2::from_i32_tuple(window::get_screen_mouse_position());
         let delta_mouse_position = current_mouse_position - last_mouse_position;
         last_mouse_position = current_mouse_position;
 

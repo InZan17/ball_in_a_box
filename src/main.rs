@@ -27,9 +27,11 @@ const BALL_FRAGMENT_SHADER: &'static str = include_str!("../assets/ball.frag");
 const SHADOW_FRAGMENT_SHADER: &'static str = include_str!("../assets/shadow.frag");
 const VERTEX_SHADER: &'static str = include_str!("../assets/ball.vert");
 
+const EARTH_BALL_TEXTURE_BYTES: &[u8] = include_bytes!("../assets/earth.png");
 const WHITE_BALL_TEXTURE_BYTES: &[u8] = include_bytes!("../assets/white.png");
 const DISTRESS_BALL_TEXTURE_BYTES: &[u8] = include_bytes!("../assets/distress.png");
 const GRINNING_BALL_TEXTURE_BYTES: &[u8] = include_bytes!("../assets/grinning.png");
+
 const BACKGROUND_TEXTURE_BYTES: &[u8] = include_bytes!("../assets/background.png");
 const SIDE_TEXTURE_BYTES: &[u8] = include_bytes!("../assets/cardboardsidebottom.png");
 
@@ -81,6 +83,9 @@ pub fn calculate_bounce_spin(
 
 #[macroquad::main(window_conf)]
 async fn main() {
+    set_window_position((1920-WIDTH as u32)/2, (1080-HEIGHT  as u32)/2);
+    next_frame().await;
+    
     let mut last_window_position = Vec2::from_u32_tuple(miniquad::window::get_window_position());
     let mut last_mouse_position = Vec2::ZERO;
 
@@ -154,6 +159,10 @@ async fn main() {
 
     let ball_textures = [
         (
+            "earth",
+            Texture2D::from_file_with_format(EARTH_BALL_TEXTURE_BYTES, None),
+        ),
+        (
             "distress",
             Texture2D::from_file_with_format(DISTRESS_BALL_TEXTURE_BYTES, None),
         ),
@@ -210,7 +219,7 @@ async fn main() {
         let delta_window_position = last_window_position - current_window_position;
         last_window_position = current_window_position;
 
-        let current_mouse_position = Vec2::from_i32_tuple(window::get_screen_mouse_position());
+        let current_mouse_position = Vec2::from_u32_tuple(other::screen_mouse_position());
         let delta_mouse_position = current_mouse_position - last_mouse_position;
         last_mouse_position = current_mouse_position;
 

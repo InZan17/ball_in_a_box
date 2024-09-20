@@ -83,9 +83,9 @@ pub fn calculate_bounce_spin(
 
 #[macroquad::main(window_conf)]
 async fn main() {
-    set_window_position((1920-WIDTH as u32)/2, (1080-HEIGHT  as u32)/2);
+    set_window_position((1920 - WIDTH as u32) / 2, (1080 - HEIGHT as u32) / 2);
     next_frame().await;
-    
+
     let mut last_window_position = Vec2::from_u32_tuple(miniquad::window::get_window_position());
     let mut last_mouse_position = Vec2::ZERO;
 
@@ -97,7 +97,7 @@ async fn main() {
     let gravity_strength = 3000.;
     let air_friction = 0.17;
     let bounciness = 0.9;
-    let terminal_velocity = 10000.;
+    let terminal_velocity = 100000.;
     let radius = 90.;
     let wall_thickness = 20.;
     let wall_depth = 20.;

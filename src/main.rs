@@ -1,6 +1,10 @@
 use std::f32::consts::PI;
 
-use macroquad::{prelude::*, time};
+use macroquad::{
+    prelude::*,
+    time,
+    ui::{hash, root_ui, widgets, Skin},
+};
 use miniquad::*;
 use window::set_window_position;
 
@@ -105,6 +109,8 @@ async fn main() {
     let shadow_size = 1.2;
     let shadow_distance_strength = 50.;
 
+    let mut is_menu_open = false;
+
     let mut ball_position = Vec2::ZERO;
     let mut ball_velocity = Vec2::ZERO;
     let mut ball_rotation = 0.;
@@ -191,7 +197,73 @@ async fn main() {
     let background_texture = Texture2D::from_file_with_format(BACKGROUND_TEXTURE_BYTES, None);
     let side_texture = Texture2D::from_file_with_format(SIDE_TEXTURE_BYTES, None);
 
+    let window_style = root_ui()
+        .style_builder()
+        .background(
+            Image::from_file_with_format(include_bytes!("../assets/main_background.png"), None)
+                .unwrap(),
+        )
+        //.background_margin(RectOffset::new(20.0, 20.0, 10.0, 10.0))
+        //.margin(RectOffset::new(-20.0, -30.0, 0.0, 0.0))
+        .build();
+
+    let button_style = root_ui()
+        .style_builder()
+        .background(
+            Image::from_file_with_format(include_bytes!("../assets/cardboard_button.png"), None)
+                .unwrap(),
+        )
+        .font(include_bytes!("../assets/FrederickatheGreat-Regular.ttf"))
+        .unwrap()
+        .font_size(28)
+        .build();
+
+    let skin = Skin {
+        window_style,
+        button_style,
+        ..root_ui().default_skin()
+    };
+
+    root_ui().push_skin(&skin);
+
     loop {
+        if is_key_pressed(KeyCode::Escape) {
+            is_menu_open = !is_menu_open;
+        }
+
+        if is_menu_open {
+            const MENU_SIZE: Vec2 = vec2(310., 400.);
+            const BUTTON_SIZE: Vec2 = vec2(160., 75.);
+            const MENU_PADDING: f32 = 45.;
+            const BUTTONS_MARGIN: f32 = 20.;
+
+            root_ui().window(
+                hash!(),
+                vec2(WIDTH_F - MENU_SIZE.x, HEIGHT_F - MENU_SIZE.y) / 2.,
+                MENU_SIZE,
+                |ui| {
+                    let mut button_position = vec2(
+                        (MENU_SIZE.x - BUTTON_SIZE.x) / 2.,
+                        MENU_PADDING + BUTTONS_MARGIN,
+                    );
+                    widgets::Button::new("Continue")
+                        .position(button_position)
+                        .size(BUTTON_SIZE)
+                        .ui(ui);
+                    button_position.y += BUTTON_SIZE.y + BUTTONS_MARGIN;
+                    widgets::Button::new("Options")
+                        .position(button_position)
+                        .size(BUTTON_SIZE)
+                        .ui(ui);
+                    button_position.y += BUTTON_SIZE.y + BUTTONS_MARGIN;
+                    widgets::Button::new("Quit")
+                        .position(button_position)
+                        .size(BUTTON_SIZE)
+                        .ui(ui);
+                },
+            );
+        }
+
         let mut pressed = false;
 
         while let Some(character) = get_char_pressed() {
@@ -480,6 +552,16 @@ async fn main() {
         );
 
         gl_use_default_material();
+
+        if is_menu_open {
+            draw_rectangle(
+                -WIDTH_F,
+                -HEIGHT_F,
+                WIDTH_F * 2.,
+                HEIGHT_F * 2.,
+                Color::from_rgba(0, 0, 0, 100),
+            );
+        }
 
         next_frame().await
     }

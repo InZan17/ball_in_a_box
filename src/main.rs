@@ -86,7 +86,6 @@ async fn main() {
     set_window_position((1920 - WIDTH as u32) / 2, (1080 - HEIGHT as u32) / 2);
     next_frame().await;
 
-    let mut last_window_position = Vec2::from_u32_tuple(miniquad::window::get_window_position());
     let mut last_mouse_position = Vec2::ZERO;
 
     let mut mouse_offset = Vec2::ZERO;
@@ -215,23 +214,21 @@ async fn main() {
             text_input = text_input[remove..].to_string();
         }
 
-        let current_window_position = Vec2::from_u32_tuple(miniquad::window::get_window_position());
-        let delta_window_position = last_window_position - current_window_position;
-        last_window_position = current_window_position;
-
         let current_mouse_position = Vec2::from_i32_tuple(window::get_screen_mouse_position());
         let delta_mouse_position = current_mouse_position - last_mouse_position;
         last_mouse_position = current_mouse_position;
 
         let delta_pos = if is_mouse_button_down(MouseButton::Left) {
             if is_mouse_button_pressed(MouseButton::Left) {
+                let current_window_position =
+                    Vec2::from_u32_tuple(miniquad::window::get_window_position());
                 mouse_offset = current_window_position - current_mouse_position;
             }
             let new_pos = current_mouse_position + mouse_offset;
             set_window_position(new_pos.x as u32, new_pos.y as u32);
             -delta_mouse_position
         } else {
-            delta_window_position
+            Vec2::ZERO
         };
 
         smoothed_delta = smoothed_delta.lerp(delta_pos, 0.5);

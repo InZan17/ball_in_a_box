@@ -1,4 +1,5 @@
-use std::f32::consts::PI;
+use core::str;
+use std::{f32::consts::PI, fs};
 
 use macroquad::{
     prelude::*,
@@ -6,7 +7,8 @@ use macroquad::{
     ui::{hash, root_ui, widgets, Skin},
 };
 use miniquad::*;
-use window::set_window_position;
+use nanoserde::{DeJson, SerJson};
+use window::{order_quit, set_window_position};
 
 const WIDTH: i32 = 640;
 const HEIGHT: i32 = 480;
@@ -59,6 +61,31 @@ impl FromTuple for Vec2 {
     }
 }
 
+#[derive(Debug, SerJson, DeJson, Clone)]
+struct Settings {
+    gravity_strength: f32,
+    air_friction: f32,
+    bounciness: f32,
+    terminal_velocity: f32,
+    ball_radius: f32,
+    shadow_size: f32,
+    shadow_distance_strength: f32,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            gravity_strength: 3000.,
+            air_friction: 0.17,
+            bounciness: 0.9,
+            terminal_velocity: 100000.,
+            ball_radius: 90.,
+            shadow_size: 1.2,
+            shadow_distance_strength: 50.,
+        }
+    }
+}
+
 pub fn calculate_bounce_spin(
     ball_velocity: f32,
     window_velocity: f32,
@@ -85,6 +112,22 @@ pub fn calculate_bounce_spin(
     );
 }
 
+pub fn read_settings_file() -> Option<Settings> {
+    let result = fs::read("./settings_in_a.json");
+    let Ok(bytes) = result else {
+        return None;
+    };
+
+    let Ok(string) = str::from_utf8(&bytes) else {
+        return None;
+    };
+    return Settings::deserialize_json(string).ok();
+}
+
+pub fn write_settings_file(settings: &Settings) {
+    let _ = fs::write("./settings_in_a.json", settings.serialize_json());
+}
+
 #[macroquad::main(window_conf)]
 async fn main() {
     set_window_position((1920 - WIDTH as u32) / 2, (1080 - HEIGHT as u32) / 2);
@@ -97,21 +140,21 @@ async fn main() {
     let mut smoothed_delta = Vec2::ZERO;
     let mut smoothed_magnitude = 0.;
 
-    let gravity_strength = 3000.;
-    let air_friction = 0.17;
-    let bounciness = 0.9;
-    let terminal_velocity = 100000.;
-    let radius = 90.;
+    let mut settings = read_settings_file().unwrap_or_else(|| {
+        let settings = Settings::default();
+        write_settings_file(&settings);
+        settings
+    });
+
+    let mut editing_settings = settings.clone();
+
     let wall_thickness = 20.;
     let wall_depth = 20.;
-
-    let wall_offset = radius + wall_thickness + wall_depth;
-    let shadow_size = 1.2;
-    let shadow_distance_strength = 50.;
 
     let mut is_menu_open = false;
     let mut is_in_settings = false;
     let mut close_menu = false;
+    let mut interacting_with_ui = false;
 
     let mut ball_position = Vec2::ZERO;
     let mut ball_velocity = Vec2::ZERO;
@@ -222,9 +265,56 @@ async fn main() {
         .color_hovered(Color::new(0.90, 0.90, 0.90, 1.0))
         .build();
 
+    let label_style = root_ui()
+        .style_builder()
+        .font(include_bytes!("../assets/FrederickatheGreat-Regular.ttf"))
+        .unwrap()
+        .font_size(18)
+        .text_color(Color::new(0.05, 0., 0.1, 1.))
+        .color_hovered(Color::new(0.90, 0.90, 0.90, 1.0))
+        .margin(RectOffset::new(10., 10., 10., 10.))
+        .build();
+
+    let editbox_style = root_ui()
+        .style_builder()
+        .font(include_bytes!("../assets/FrederickatheGreat-Regular.ttf"))
+        .unwrap()
+        .font_size(18)
+        .text_color(Color::new(0.05, 0., 0.1, 1.))
+        .color(Color::new(0.0, 0.90, 0.90, 1.0))
+        .margin(RectOffset::new(10., 10., 10., 10.))
+        .background_margin(RectOffset::new(37.0, 37.0, 5.0, 5.0))
+        .margin(RectOffset::new(10.0, 10.0, 0.0, 0.0))
+        .build();
+
+    let checkbox_style = root_ui()
+        .style_builder()
+        .font(include_bytes!("../assets/FrederickatheGreat-Regular.ttf"))
+        .unwrap()
+        .font_size(18)
+        .text_color(Color::new(0.05, 0., 0.1, 1.))
+        .color(Color::new(0.0, 0.90, 0.90, 1.0))
+        .background_margin(RectOffset::new(37.0, 37.0, 5.0, 5.0))
+        .margin(RectOffset::new(10.0, 10.0, 0.0, 0.0))
+        .build();
+
+    let group_style = root_ui()
+        .style_builder()
+        .color(Color::new(0., 0., 0., 0.))
+        .build();
+
     let skin = Skin {
         window_style,
         button_style,
+        //label_style,
+        //tabbar_style,
+        //scrollbar_handle_style,
+        //scrollbar_style,
+        //combobox_style,
+        editbox_style,
+        //window_titlebar_style,
+        checkbox_style,
+        group_style,
         ..root_ui().default_skin()
     };
 
@@ -240,11 +330,10 @@ async fn main() {
             }
         }
 
+        const MENU_SIZE: Vec2 = vec2(310., 400.);
+        const BUTTON_SIZE: Vec2 = vec2(160., 75.);
+        const BUTTONS_MARGIN: f32 = 20.;
         if is_menu_open {
-            const MENU_SIZE: Vec2 = vec2(310., 400.);
-            const BUTTON_SIZE: Vec2 = vec2(160., 75.);
-            const BUTTONS_MARGIN: f32 = 20.;
-
             if is_in_settings {
                 const MENU_PADDING: f32 = 10.;
                 const SMALL_BUTTON_DIV: f32 = 1.5;
@@ -257,6 +346,23 @@ async fn main() {
                             (MENU_SIZE.x - BUTTON_SIZE.x) / 2.,
                             MENU_PADDING + BUTTONS_MARGIN,
                         );
+
+                        const GROUP_OFFSET: Vec2 = vec2(50., 30.);
+
+                        let group =
+                            widgets::Group::new(hash!(), MENU_SIZE - GROUP_OFFSET + vec2(40., 0.))
+                                .position(GROUP_OFFSET)
+                                .begin(ui);
+
+                        widgets::Slider::new(hash!(), 0.0..1.0)
+                            .ui(ui, &mut editing_settings.bounciness);
+
+                        group.end(ui);
+
+                        top_position.y = MENU_SIZE.y
+                            - BUTTON_SIZE.y / SMALL_BUTTON_DIV
+                            - MENU_PADDING
+                            - BUTTONS_MARGIN;
                         if widgets::Button::new("Back")
                             .position(vec2(
                                 top_position.x + BUTTON_SIZE.x / 2.
@@ -278,7 +384,8 @@ async fn main() {
                             .size(BUTTON_SIZE / SMALL_BUTTON_DIV)
                             .ui(ui)
                         {
-                            is_in_settings = false;
+                            settings = editing_settings.clone();
+                            write_settings_file(&settings);
                         }
                     },
                 );
@@ -306,6 +413,7 @@ async fn main() {
                             .size(BUTTON_SIZE)
                             .ui(ui)
                         {
+                            editing_settings = settings.clone();
                             is_in_settings = true;
                         }
                         button_position.y += BUTTON_SIZE.y + BUTTONS_MARGIN;
@@ -320,6 +428,8 @@ async fn main() {
                 );
             }
         }
+
+        let wall_offset = settings.ball_radius + wall_thickness + wall_depth;
 
         let mut pressed = false;
 
@@ -347,7 +457,22 @@ async fn main() {
         let delta_mouse_position = current_mouse_position - last_mouse_position;
         last_mouse_position = current_mouse_position;
 
-        let delta_pos = if is_mouse_button_down(MouseButton::Left) {
+        if is_mouse_button_pressed(MouseButton::Left) && is_menu_open {
+            let abs_mouse_pos_from_center =
+                (Vec2::from_f32_tuple(mouse_position()) - vec2(WIDTH_F, HEIGHT_F) / 2.).abs();
+            if abs_mouse_pos_from_center.x < MENU_SIZE.x / 2.
+                && abs_mouse_pos_from_center.y < MENU_SIZE.y / 2.
+            {
+                interacting_with_ui = true
+            }
+        }
+        if is_mouse_button_released(MouseButton::Left) {
+            interacting_with_ui = false
+        }
+
+        let delta_pos = if interacting_with_ui {
+            Vec2::ZERO
+        } else if is_mouse_button_down(MouseButton::Left) {
             if is_mouse_button_pressed(MouseButton::Left) {
                 let current_window_position =
                     Vec2::from_u32_tuple(miniquad::window::get_window_position());
@@ -375,9 +500,9 @@ async fn main() {
 
         clear_background(LIGHTGRAY);
 
-        ball_velocity += Vec2::new(0., gravity_strength * get_frame_time());
+        ball_velocity += Vec2::new(0., settings.gravity_strength * get_frame_time());
 
-        ball_velocity *= 1. - (air_friction * get_frame_time().clamp(0., 1.));
+        ball_velocity *= 1. - (settings.air_friction * get_frame_time().clamp(0., 1.));
 
         let total_velocity = if time::get_time() > 1. {
             ball_velocity + (delta_pos / get_frame_time()) * 2.
@@ -405,13 +530,13 @@ async fn main() {
             // Floor
             distance_to_floor = 0.;
             ball_position.y = HEIGHT_F - wall_offset;
-            ball_velocity.y = -smoothed_total_velocity.y * bounciness;
+            ball_velocity.y = -smoothed_total_velocity.y * settings.bounciness;
 
             (ball_rotation_velocity, ball_velocity.x) = calculate_bounce_spin(
                 ball_velocity.x,
                 maxed_delta.x,
                 ball_rotation_velocity,
-                radius,
+                settings.ball_radius,
                 false,
             );
         }
@@ -421,13 +546,13 @@ async fn main() {
             // Ceiling
             distance_to_ceiling = 0.;
             ball_position.y = -HEIGHT_F + wall_offset;
-            ball_velocity.y = -smoothed_total_velocity.y * bounciness;
+            ball_velocity.y = -smoothed_total_velocity.y * settings.bounciness;
 
             (ball_rotation_velocity, ball_velocity.x) = calculate_bounce_spin(
                 ball_velocity.x,
                 maxed_delta.x,
                 ball_rotation_velocity,
-                radius,
+                settings.ball_radius,
                 true,
             );
         }
@@ -436,13 +561,13 @@ async fn main() {
             // Right
             distance_to_right_wall = 0.;
             ball_position.x = WIDTH_F - wall_offset;
-            ball_velocity.x = -smoothed_total_velocity.x * bounciness;
+            ball_velocity.x = -smoothed_total_velocity.x * settings.bounciness;
 
             (ball_rotation_velocity, ball_velocity.y) = calculate_bounce_spin(
                 ball_velocity.y,
                 maxed_delta.y,
                 ball_rotation_velocity,
-                radius,
+                settings.ball_radius,
                 true,
             );
         }
@@ -452,20 +577,20 @@ async fn main() {
             // Left
             distance_to_left_wall = 0.;
             ball_position.x = -WIDTH_F + wall_offset;
-            ball_velocity.x = -smoothed_total_velocity.x * bounciness;
+            ball_velocity.x = -smoothed_total_velocity.x * settings.bounciness;
 
             (ball_rotation_velocity, ball_velocity.y) = calculate_bounce_spin(
                 ball_velocity.y,
                 maxed_delta.y,
                 ball_rotation_velocity,
-                radius,
+                settings.ball_radius,
                 false,
             );
         }
 
-        if ball_velocity.length() > terminal_velocity {
+        if ball_velocity.length() > settings.terminal_velocity {
             println!("Reached terminal velocity!");
-            ball_velocity = ball_velocity.normalize() * terminal_velocity;
+            ball_velocity = ball_velocity.normalize() * settings.terminal_velocity;
         }
 
         //draw_circle(ball_position.x, ball_position.y, radius, BLUE);
@@ -534,75 +659,81 @@ async fn main() {
 
         gl_use_material(&shadow_material);
 
-        shadow_material.set_uniform("in_shadow", distance_to_floor / shadow_distance_strength);
+        shadow_material.set_uniform(
+            "in_shadow",
+            distance_to_floor / settings.shadow_distance_strength,
+        );
         draw_rectangle(
-            ball_position.x - radius * shadow_size,
-            HEIGHT_F - wall_offset + radius - wall_depth,
-            radius * shadow_size * 2.,
+            ball_position.x - settings.ball_radius * settings.shadow_size,
+            HEIGHT_F - wall_offset + settings.ball_radius - wall_depth,
+            settings.ball_radius * settings.shadow_size * 2.,
             wall_depth * 2.,
             WHITE,
         );
 
-        shadow_material.set_uniform("in_shadow", distance_to_ceiling / shadow_distance_strength);
+        shadow_material.set_uniform(
+            "in_shadow",
+            distance_to_ceiling / settings.shadow_distance_strength,
+        );
         draw_rectangle(
-            ball_position.x - radius * shadow_size,
+            ball_position.x - settings.ball_radius * settings.shadow_size,
             -HEIGHT_F + wall_thickness,
-            radius * shadow_size * 2.,
+            settings.ball_radius * settings.shadow_size * 2.,
             wall_depth * 2.,
             WHITE,
         );
 
         shadow_material.set_uniform(
             "in_shadow",
-            distance_to_right_wall / shadow_distance_strength,
+            distance_to_right_wall / settings.shadow_distance_strength,
         );
         draw_rectangle(
-            WIDTH_F - wall_offset + radius - wall_depth,
-            ball_position.y - radius * shadow_size,
+            WIDTH_F - wall_offset + settings.ball_radius - wall_depth,
+            ball_position.y - settings.ball_radius * settings.shadow_size,
             wall_depth * 2.,
-            radius * shadow_size * 2.,
+            settings.ball_radius * settings.shadow_size * 2.,
             WHITE,
         );
 
         shadow_material.set_uniform(
             "in_shadow",
-            distance_to_left_wall / shadow_distance_strength,
+            distance_to_left_wall / settings.shadow_distance_strength,
         );
         draw_rectangle(
             -WIDTH_F + wall_thickness,
-            ball_position.y - radius * shadow_size,
+            ball_position.y - settings.ball_radius * settings.shadow_size,
             wall_depth * 2.,
-            radius * shadow_size * 2.,
+            settings.ball_radius * settings.shadow_size * 2.,
             WHITE,
         );
 
         ball_material.set_uniform("rotation", ball_rotation);
         ball_material.set_uniform(
             "floor_distance",
-            distance_to_floor / shadow_distance_strength,
+            distance_to_floor / settings.shadow_distance_strength,
         );
         ball_material.set_uniform(
             "ceil_distance",
-            distance_to_ceiling / shadow_distance_strength,
+            distance_to_ceiling / settings.shadow_distance_strength,
         );
         ball_material.set_uniform(
             "left_distance",
-            distance_to_left_wall / shadow_distance_strength,
+            distance_to_left_wall / settings.shadow_distance_strength,
         );
         ball_material.set_uniform(
             "right_distance",
-            distance_to_right_wall / shadow_distance_strength,
+            distance_to_right_wall / settings.shadow_distance_strength,
         );
 
         gl_use_material(&ball_material);
 
         draw_texture_ex(
             &ball_texture,
-            ball_position.x - radius,
-            ball_position.y - radius,
+            ball_position.x - settings.ball_radius,
+            ball_position.y - settings.ball_radius,
             WHITE,
             DrawTextureParams {
-                dest_size: Some(vec2(radius * 2., radius * 2.)),
+                dest_size: Some(vec2(settings.ball_radius * 2., settings.ball_radius * 2.)),
                 rotation: ball_rotation,
                 ..Default::default()
             },

@@ -110,6 +110,8 @@ async fn main() {
     let shadow_distance_strength = 50.;
 
     let mut is_menu_open = false;
+    let mut is_in_settings = false;
+    let mut close_menu = false;
 
     let mut ball_position = Vec2::ZERO;
     let mut ball_velocity = Vec2::ZERO;
@@ -216,6 +218,8 @@ async fn main() {
         .font(include_bytes!("../assets/FrederickatheGreat-Regular.ttf"))
         .unwrap()
         .font_size(28)
+        .text_color(Color::new(0.05, 0., 0.1, 1.))
+        .color_hovered(Color::new(0.90, 0.90, 0.90, 1.0))
         .build();
 
     let skin = Skin {
@@ -228,40 +232,93 @@ async fn main() {
 
     loop {
         if is_key_pressed(KeyCode::Escape) {
-            is_menu_open = !is_menu_open;
+            if is_menu_open {
+                is_menu_open = false;
+                is_in_settings = false;
+            } else {
+                is_menu_open = true;
+            }
         }
 
         if is_menu_open {
             const MENU_SIZE: Vec2 = vec2(310., 400.);
             const BUTTON_SIZE: Vec2 = vec2(160., 75.);
-            const MENU_PADDING: f32 = 45.;
             const BUTTONS_MARGIN: f32 = 20.;
 
-            root_ui().window(
-                hash!(),
-                vec2(WIDTH_F - MENU_SIZE.x, HEIGHT_F - MENU_SIZE.y) / 2.,
-                MENU_SIZE,
-                |ui| {
-                    let mut button_position = vec2(
-                        (MENU_SIZE.x - BUTTON_SIZE.x) / 2.,
-                        MENU_PADDING + BUTTONS_MARGIN,
-                    );
-                    widgets::Button::new("Continue")
-                        .position(button_position)
-                        .size(BUTTON_SIZE)
-                        .ui(ui);
-                    button_position.y += BUTTON_SIZE.y + BUTTONS_MARGIN;
-                    widgets::Button::new("Options")
-                        .position(button_position)
-                        .size(BUTTON_SIZE)
-                        .ui(ui);
-                    button_position.y += BUTTON_SIZE.y + BUTTONS_MARGIN;
-                    widgets::Button::new("Quit")
-                        .position(button_position)
-                        .size(BUTTON_SIZE)
-                        .ui(ui);
-                },
-            );
+            if is_in_settings {
+                const MENU_PADDING: f32 = 10.;
+                const SMALL_BUTTON_DIV: f32 = 1.5;
+                root_ui().window(
+                    hash!(),
+                    vec2(WIDTH_F - MENU_SIZE.x, HEIGHT_F - MENU_SIZE.y) / 2.,
+                    MENU_SIZE,
+                    |ui| {
+                        let mut top_position = vec2(
+                            (MENU_SIZE.x - BUTTON_SIZE.x) / 2.,
+                            MENU_PADDING + BUTTONS_MARGIN,
+                        );
+                        if widgets::Button::new("Back")
+                            .position(vec2(
+                                top_position.x + BUTTON_SIZE.x / 2.
+                                    - BUTTON_SIZE.x / SMALL_BUTTON_DIV
+                                    - BUTTONS_MARGIN / 2.,
+                                top_position.y,
+                            ))
+                            .size(BUTTON_SIZE / SMALL_BUTTON_DIV)
+                            .ui(ui)
+                        {
+                            is_in_settings = false;
+                        }
+
+                        if widgets::Button::new("Apply")
+                            .position(vec2(
+                                top_position.x + BUTTON_SIZE.x / 2. + BUTTONS_MARGIN / 2.,
+                                top_position.y,
+                            ))
+                            .size(BUTTON_SIZE / SMALL_BUTTON_DIV)
+                            .ui(ui)
+                        {
+                            is_in_settings = false;
+                        }
+                    },
+                );
+            } else {
+                const MENU_PADDING: f32 = 45.;
+                root_ui().window(
+                    hash!(),
+                    vec2(WIDTH_F - MENU_SIZE.x, HEIGHT_F - MENU_SIZE.y) / 2.,
+                    MENU_SIZE,
+                    |ui| {
+                        let mut button_position = vec2(
+                            (MENU_SIZE.x - BUTTON_SIZE.x) / 2.,
+                            MENU_PADDING + BUTTONS_MARGIN,
+                        );
+                        if widgets::Button::new("Continue")
+                            .position(button_position)
+                            .size(BUTTON_SIZE)
+                            .ui(ui)
+                        {
+                            close_menu = true;
+                        }
+                        button_position.y += BUTTON_SIZE.y + BUTTONS_MARGIN;
+                        if widgets::Button::new("Options")
+                            .position(button_position)
+                            .size(BUTTON_SIZE)
+                            .ui(ui)
+                        {
+                            is_in_settings = true;
+                        }
+                        button_position.y += BUTTON_SIZE.y + BUTTONS_MARGIN;
+                        if widgets::Button::new("Quit")
+                            .position(button_position)
+                            .size(BUTTON_SIZE)
+                            .ui(ui)
+                        {
+                            order_quit();
+                        }
+                    },
+                );
+            }
         }
 
         let mut pressed = false;
@@ -561,6 +618,11 @@ async fn main() {
                 HEIGHT_F * 2.,
                 Color::from_rgba(0, 0, 0, 100),
             );
+        }
+
+        if close_menu {
+            close_menu = false;
+            is_menu_open = false;
         }
 
         next_frame().await

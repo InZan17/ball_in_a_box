@@ -233,7 +233,7 @@ checksum = "60302e4db3a61da70c0cb7991976248362f30319e88850c487b9b95bbf059e00"
 [[package]]
 name = "miniquad"
 version = "0.4.6"
-source = "git+https://github.com/InZan17/miniquad/?branch=screen-mouse-position#4cd4c041c0da88d5529a664f0aece2f68d9fb345"
+source = "git+https://github.com/InZan17/miniquad?branch=ball-in-a-box#ff613ab60b1b59d81b79f815dfc83dc74d9f07ff"
 dependencies = [
  "libc",
  "ndk-sys",

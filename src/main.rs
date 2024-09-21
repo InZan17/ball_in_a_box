@@ -26,9 +26,10 @@ pub fn window_conf() -> Conf {
         window_width: WIDTH,
         window_height: HEIGHT,
         high_dpi: true,
+        borderless: true,
         fullscreen: false,
-        sample_count: 8,
         window_resizable: false,
+        sample_count: 8,
         ..Default::default()
     }
 }

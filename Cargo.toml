@@ -10,3 +10,9 @@ quad-rand = "0.2.2"
 
 [patch.crates-io]
 miniquad = {git = "https://github.com/InZan17/miniquad/", branch = "screen-mouse-position"}
+
+[profile.release]
+strip = true
+opt-level = "z"
+lto = true
+codegen-units = 1

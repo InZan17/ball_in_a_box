@@ -37,11 +37,6 @@ const BALL_FRAGMENT_SHADER: &'static str = include_str!("../assets/ball.frag");
 const SHADOW_FRAGMENT_SHADER: &'static str = include_str!("../assets/shadow.frag");
 const VERTEX_SHADER: &'static str = include_str!("../assets/ball.vert");
 
-const EARTH_BALL_TEXTURE_BYTES: &[u8] = include_bytes!("../assets/earth.png");
-const WHITE_BALL_TEXTURE_BYTES: &[u8] = include_bytes!("../assets/white.png");
-const DISTRESS_BALL_TEXTURE_BYTES: &[u8] = include_bytes!("../assets/distress.png");
-const GRINNING_BALL_TEXTURE_BYTES: &[u8] = include_bytes!("../assets/grinning.png");
-
 const BACKGROUND_TEXTURE_BYTES: &[u8] = include_bytes!("../assets/background.png");
 const SIDE_TEXTURE_BYTES: &[u8] = include_bytes!("../assets/cardboardsidebottom.png");
 
@@ -85,7 +80,7 @@ impl Default for Settings {
             bounciness: 0.9,
             terminal_velocity: 100.,
             ball_radius: 90.,
-            audio_volume: 0.75,
+            audio_volume: 0.6,
             shadow_size: 1.2,
             shadow_distance_strength: 50.,
         }
@@ -150,16 +145,6 @@ async fn main() {
 
     let mut editing_settings = settings.clone();
 
-    let wall_thickness = 20.;
-    let wall_depth = 20.;
-
-    let mut is_menu_open = false;
-    let mut is_in_settings = false;
-    let last_page = 1;
-    let mut settings_page = 0_u8;
-    let mut close_menu = false;
-    let mut interacting_with_ui = false;
-
     let ball_material = load_material(
         ShaderSource::Glsl {
             vertex: VERTEX_SHADER,
@@ -209,36 +194,36 @@ async fn main() {
     let ball_textures = [
         (
             "earth",
-            Texture2D::from_file_with_format(EARTH_BALL_TEXTURE_BYTES, None),
+            Texture2D::from_file_with_format(include_bytes!("../assets/earth.png"), None),
         ),
         (
             "distress",
-            Texture2D::from_file_with_format(DISTRESS_BALL_TEXTURE_BYTES, None),
+            Texture2D::from_file_with_format(include_bytes!("../assets/distress.png"), None),
         ),
         (
             "grinning",
-            Texture2D::from_file_with_format(GRINNING_BALL_TEXTURE_BYTES, None),
+            Texture2D::from_file_with_format(include_bytes!("../assets/grinning.png"), None),
         ),
         (
             "white",
-            Texture2D::from_file_with_format(WHITE_BALL_TEXTURE_BYTES, None),
+            Texture2D::from_file_with_format(include_bytes!("../assets/white.png"), None),
         ),
     ];
 
     let bonk_sounds = [
-        load_sound_from_bytes(include_bytes!("../assets/bonk2.wav"))
+        load_sound_from_bytes(include_bytes!("../assets/bonk2.ogg"))
             .await
             .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/bonk3.wav"))
+        load_sound_from_bytes(include_bytes!("../assets/bonk3.ogg"))
             .await
             .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/bonk4.wav"))
+        load_sound_from_bytes(include_bytes!("../assets/bonk4.ogg"))
             .await
             .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/bonk5.wav"))
+        load_sound_from_bytes(include_bytes!("../assets/bonk5.ogg"))
             .await
             .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/bonk6.wav"))
+        load_sound_from_bytes(include_bytes!("../assets/bonk6.ogg"))
             .await
             .unwrap(),
     ];
@@ -259,14 +244,15 @@ async fn main() {
     let background_texture = Texture2D::from_file_with_format(BACKGROUND_TEXTURE_BYTES, None);
     let side_texture = Texture2D::from_file_with_format(SIDE_TEXTURE_BYTES, None);
 
+    let font = load_ttf_font_from_bytes(include_bytes!("../assets/FrederickatheGreat-Regular.ttf"))
+        .unwrap();
+
     let window_style = root_ui()
         .style_builder()
         .background(
             Image::from_file_with_format(include_bytes!("../assets/main_background.png"), None)
                 .unwrap(),
         )
-        //.background_margin(RectOffset::new(20.0, 20.0, 10.0, 10.0))
-        //.margin(RectOffset::new(-20.0, -30.0, 0.0, 0.0))
         .build();
 
     let button_style = root_ui()
@@ -275,7 +261,7 @@ async fn main() {
             Image::from_file_with_format(include_bytes!("../assets/cardboard_button.png"), None)
                 .unwrap(),
         )
-        .font(include_bytes!("../assets/FrederickatheGreat-Regular.ttf"))
+        .with_font(&font)
         .unwrap()
         .font_size(28)
         .text_color(Color::new(0.05, 0., 0.1, 1.))
@@ -284,7 +270,7 @@ async fn main() {
 
     let label_style = root_ui()
         .style_builder()
-        .font(include_bytes!("../assets/FrederickatheGreat-Regular.ttf"))
+        .with_font(&font)
         .unwrap()
         .font_size(24)
         .text_color(Color::new(0.05, 0., 0.1, 1.))
@@ -293,7 +279,7 @@ async fn main() {
 
     let editbox_style = root_ui()
         .style_builder()
-        .font(include_bytes!("../assets/FrederickatheGreat-Regular.ttf"))
+        .with_font(&font)
         .unwrap()
         .font_size(16)
         .text_color(Color::new(0., 0., 0., 1.))
@@ -319,18 +305,23 @@ async fn main() {
         window_style,
         button_style,
         label_style,
-        //tabbar_style,
-        //scrollbar_handle_style,
-        //scrollbar_style,
-        //combobox_style,
         editbox_style,
-        //window_titlebar_style,
         checkbox_style,
         group_style,
         ..root_ui().default_skin()
     };
 
     root_ui().push_skin(&skin);
+
+    let wall_thickness = 20.;
+    let wall_depth = 20.;
+
+    let mut is_menu_open = false;
+    let mut is_in_settings = false;
+    let last_page = 1;
+    let mut settings_page = 0_u8;
+    let mut close_menu = false;
+    let mut interacting_with_ui = false;
 
     let mut last_mouse_position = Vec2::from_i32_tuple(window::get_screen_mouse_position());
 

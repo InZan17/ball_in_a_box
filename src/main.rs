@@ -1,7 +1,11 @@
 use core::str;
-use std::{f32::consts::PI, fs};
+use std::{
+    f32::consts::{E, PI},
+    fs,
+};
 
 use macroquad::{
+    audio::{load_sound_from_bytes, play_sound, PlaySoundParams},
     prelude::*,
     time,
     ui::{hash, root_ui, widgets, Skin},
@@ -68,6 +72,7 @@ struct Settings {
     bounciness: f32,
     terminal_velocity: f32,
     ball_radius: f32,
+    audio_volume: f32,
     shadow_size: f32,
     shadow_distance_strength: f32,
 }
@@ -80,6 +85,7 @@ impl Default for Settings {
             bounciness: 0.9,
             terminal_velocity: 100.,
             ball_radius: 90.,
+            audio_volume: 0.75,
             shadow_size: 1.2,
             shadow_distance_strength: 50.,
         }
@@ -219,6 +225,24 @@ async fn main() {
         ),
     ];
 
+    let bonk_sounds = [
+        load_sound_from_bytes(include_bytes!("../assets/bonk2.wav"))
+            .await
+            .unwrap(),
+        load_sound_from_bytes(include_bytes!("../assets/bonk3.wav"))
+            .await
+            .unwrap(),
+        load_sound_from_bytes(include_bytes!("../assets/bonk4.wav"))
+            .await
+            .unwrap(),
+        load_sound_from_bytes(include_bytes!("../assets/bonk5.wav"))
+            .await
+            .unwrap(),
+        load_sound_from_bytes(include_bytes!("../assets/bonk6.wav"))
+            .await
+            .unwrap(),
+    ];
+
     let max_len = {
         let mut max_len = 0;
 
@@ -320,7 +344,11 @@ async fn main() {
     let mut ball_rotation = 0.;
     let mut ball_rotation_velocity = 0.;
 
+    let mut hit_wall_speed: f32;
+    let mut previous_hit_wall_speed = 0.;
+
     loop {
+        hit_wall_speed = 0.;
         if is_key_pressed(KeyCode::Escape) {
             if is_menu_open {
                 is_menu_open = false;
@@ -390,6 +418,11 @@ async fn main() {
 
                         match last_settings_page {
                             0 => {
+                                widgets::Label::new("Audio volume").ui(ui);
+
+                                widgets::Slider::new(hash!(), 0.0..1.0)
+                                    .ui(ui, &mut editing_settings.audio_volume);
+
                                 widgets::Label::new("Bounciness").ui(ui);
 
                                 widgets::Slider::new(hash!(), 0.0..1.0)
@@ -407,13 +440,13 @@ async fn main() {
 
                                 widgets::Slider::new(hash!(), -30.0..30.0)
                                     .ui(ui, &mut editing_settings.gravity_strength);
-
+                            }
+                            1 => {
                                 widgets::Label::new("Air friction").ui(ui);
 
                                 widgets::Slider::new(hash!(), 0.0..1.00)
                                     .ui(ui, &mut editing_settings.air_friction);
-                            }
-                            1 => {
+
                                 widgets::Label::new("Terminal Velocity").ui(ui);
 
                                 widgets::Slider::new(hash!(), 0.0..500.00)
@@ -596,6 +629,7 @@ async fn main() {
         if distance_to_floor <= 0. {
             // Floor
             distance_to_floor = 0.;
+            hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.y.abs());
             ball_position.y = HEIGHT_F - wall_offset;
             ball_velocity.y = -smoothed_total_velocity.y * settings.bounciness;
 
@@ -612,6 +646,7 @@ async fn main() {
         if distance_to_ceiling <= 0. {
             // Ceiling
             distance_to_ceiling = 0.;
+            hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.y.abs());
             ball_position.y = -HEIGHT_F + wall_offset;
             ball_velocity.y = -smoothed_total_velocity.y * settings.bounciness;
 
@@ -627,6 +662,7 @@ async fn main() {
         if distance_to_right_wall <= 0. {
             // Right
             distance_to_right_wall = 0.;
+            hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.x.abs());
             ball_position.x = WIDTH_F - wall_offset;
             ball_velocity.x = -smoothed_total_velocity.x * settings.bounciness;
 
@@ -643,6 +679,7 @@ async fn main() {
         if distance_to_left_wall <= 0. {
             // Left
             distance_to_left_wall = 0.;
+            hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.x.abs());
             ball_position.x = -WIDTH_F + wall_offset;
             ball_velocity.x = -smoothed_total_velocity.x * settings.bounciness;
 
@@ -659,8 +696,6 @@ async fn main() {
             println!("Reached terminal velocity!");
             ball_velocity = ball_velocity.normalize() * settings.terminal_velocity * 1000.;
         }
-
-        //draw_circle(ball_position.x, ball_position.y, radius, BLUE);
 
         draw_texture_ex(
             &background_texture,
@@ -822,6 +857,28 @@ async fn main() {
             close_menu = false;
             is_menu_open = false;
         }
+
+        const DENSITY: f32 = 0.32;
+
+        if hit_wall_speed > 30. && previous_hit_wall_speed == 0. {
+            let inverted_distances_from_corners =
+                ball_position.abs() + vec2(0., WIDTH_F - HEIGHT_F);
+
+            let distance_from_corner = WIDTH_F - inverted_distances_from_corners.min_element();
+            // The closer to the center it is, the louder the sound.
+            hit_wall_speed /= 450.;
+            hit_wall_speed *= 1. + distance_from_corner / 200.;
+            let volume = 1. - 1. / E.powf(hit_wall_speed * hit_wall_speed * DENSITY * DENSITY);
+            play_sound(
+                &bonk_sounds[quad_rand::gen_range(0, bonk_sounds.len())],
+                PlaySoundParams {
+                    looped: false,
+                    volume: volume * settings.audio_volume,
+                },
+            );
+        }
+
+        previous_hit_wall_speed = hit_wall_speed;
 
         next_frame().await
     }

@@ -4,8 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-macroquad = "0.4.13"
+macroquad = {version = "0.4.13", features = ["audio"]}
 nanoserde = "0.1.37"
+quad-rand = "0.2.2"
 
 [patch.crates-io]
 miniquad = {git = "https://github.com/InZan17/miniquad/", branch = "screen-mouse-position"}

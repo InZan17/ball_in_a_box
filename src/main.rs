@@ -75,10 +75,10 @@ struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            gravity_strength: 3000.,
+            gravity_strength: 3.,
             air_friction: 0.17,
             bounciness: 0.9,
-            terminal_velocity: 100000.,
+            terminal_velocity: 100.,
             ball_radius: 90.,
             shadow_size: 1.2,
             shadow_distance_strength: 50.,
@@ -90,29 +90,32 @@ pub fn calculate_bounce_spin(
     ball_velocity: f32,
     window_velocity: f32,
     ball_rotation_velocity: f32,
-    ball_radius: f32,
+    mut ball_radius: f32,
     inverted: bool,
 ) -> (f32, f32) {
+    ball_radius = ball_radius.max(0.001);
+
     let total_velocity = if inverted {
         -(ball_velocity + window_velocity)
     } else {
         ball_velocity + window_velocity
     };
     let rotation_velocity_from_velocity = total_velocity / ball_radius;
-    let delta_rotation_velocity = rotation_velocity_from_velocity.lerp(ball_rotation_velocity, 0.5);
+    let middle_rotation_velocity =
+        rotation_velocity_from_velocity.lerp(ball_rotation_velocity, 0.5);
     let current_rotation_direction_velocity = if inverted {
-        -(delta_rotation_velocity * ball_radius)
+        -middle_rotation_velocity * ball_radius
     } else {
-        delta_rotation_velocity * ball_radius
+        middle_rotation_velocity * ball_radius
     };
-    let new_rotation_velocity = delta_rotation_velocity.lerp(rotation_velocity_from_velocity, 0.5);
+    let new_rotation_velocity = ball_rotation_velocity.lerp(rotation_velocity_from_velocity, 0.75);
     return (
         new_rotation_velocity,
         current_rotation_direction_velocity - window_velocity,
     );
 }
 
-pub fn read_settings_file() -> Option<Settings> {
+fn read_settings_file() -> Option<Settings> {
     let result = fs::read("./settings_in_a.json");
     let Ok(bytes) = result else {
         return None;
@@ -124,7 +127,7 @@ pub fn read_settings_file() -> Option<Settings> {
     return Settings::deserialize_json(string).ok();
 }
 
-pub fn write_settings_file(settings: &Settings) {
+fn write_settings_file(settings: &Settings) {
     let _ = fs::write("./settings_in_a.json", settings.serialize_json());
 }
 
@@ -132,13 +135,6 @@ pub fn write_settings_file(settings: &Settings) {
 async fn main() {
     set_window_position((1920 - WIDTH as u32) / 2, (1080 - HEIGHT as u32) / 2);
     next_frame().await;
-
-    let mut last_mouse_position = Vec2::ZERO;
-
-    let mut mouse_offset = Vec2::ZERO;
-
-    let mut smoothed_delta = Vec2::ZERO;
-    let mut smoothed_magnitude = 0.;
 
     let mut settings = read_settings_file().unwrap_or_else(|| {
         let settings = Settings::default();
@@ -153,13 +149,10 @@ async fn main() {
 
     let mut is_menu_open = false;
     let mut is_in_settings = false;
+    let last_page = 1;
+    let mut settings_page = 0_u8;
     let mut close_menu = false;
     let mut interacting_with_ui = false;
-
-    let mut ball_position = Vec2::ZERO;
-    let mut ball_velocity = Vec2::ZERO;
-    let mut ball_rotation = 0.;
-    let mut ball_rotation_velocity = 0.;
 
     let ball_material = load_material(
         ShaderSource::Glsl {
@@ -269,33 +262,28 @@ async fn main() {
         .style_builder()
         .font(include_bytes!("../assets/FrederickatheGreat-Regular.ttf"))
         .unwrap()
-        .font_size(18)
+        .font_size(24)
         .text_color(Color::new(0.05, 0., 0.1, 1.))
-        .color_hovered(Color::new(0.90, 0.90, 0.90, 1.0))
-        .margin(RectOffset::new(10., 10., 10., 10.))
+        .margin(RectOffset::new(0., 0., 10., 0.))
         .build();
 
     let editbox_style = root_ui()
         .style_builder()
         .font(include_bytes!("../assets/FrederickatheGreat-Regular.ttf"))
         .unwrap()
-        .font_size(18)
-        .text_color(Color::new(0.05, 0., 0.1, 1.))
-        .color(Color::new(0.0, 0.90, 0.90, 1.0))
-        .margin(RectOffset::new(10., 10., 10., 10.))
-        .background_margin(RectOffset::new(37.0, 37.0, 5.0, 5.0))
-        .margin(RectOffset::new(10.0, 10.0, 0.0, 0.0))
+        .font_size(16)
+        .text_color(Color::new(0., 0., 0., 1.))
+        .color(Color::new(0.0, 0.90, 0.90, 0.0))
+        .color_selected(Color::new(0.0, 0.90, 0.90, 0.0))
+        .color_clicked(Color::new(0.0, 0.90, 0.90, 0.0))
         .build();
 
     let checkbox_style = root_ui()
         .style_builder()
-        .font(include_bytes!("../assets/FrederickatheGreat-Regular.ttf"))
-        .unwrap()
         .font_size(18)
-        .text_color(Color::new(0.05, 0., 0.1, 1.))
-        .color(Color::new(0.0, 0.90, 0.90, 1.0))
-        .background_margin(RectOffset::new(37.0, 37.0, 5.0, 5.0))
-        .margin(RectOffset::new(10.0, 10.0, 0.0, 0.0))
+        .color(Color::from_rgba(222, 185, 140, 255))
+        .color_hovered(Color::from_rgba(138, 101, 56, 255))
+        .color_clicked(Color::from_rgba(112, 77, 35, 255))
         .build();
 
     let group_style = root_ui()
@@ -306,7 +294,7 @@ async fn main() {
     let skin = Skin {
         window_style,
         button_style,
-        //label_style,
+        label_style,
         //tabbar_style,
         //scrollbar_handle_style,
         //scrollbar_style,
@@ -319,6 +307,18 @@ async fn main() {
     };
 
     root_ui().push_skin(&skin);
+
+    let mut last_mouse_position = Vec2::from_i32_tuple(window::get_screen_mouse_position());
+
+    let mut mouse_offset = Vec2::ZERO;
+
+    let mut smoothed_delta = Vec2::ZERO;
+    let mut smoothed_magnitude = 0.;
+
+    let mut ball_position = Vec2::ZERO;
+    let mut ball_velocity = Vec2::ZERO;
+    let mut ball_rotation = 0.;
+    let mut ball_rotation_velocity = 0.;
 
     loop {
         if is_key_pressed(KeyCode::Escape) {
@@ -337,6 +337,7 @@ async fn main() {
             if is_in_settings {
                 const MENU_PADDING: f32 = 10.;
                 const SMALL_BUTTON_DIV: f32 = 1.5;
+                const SMALLER_BUTTON_DIV: f32 = 1.75;
                 root_ui().window(
                     hash!(),
                     vec2(WIDTH_F - MENU_SIZE.x, HEIGHT_F - MENU_SIZE.y) / 2.,
@@ -347,16 +348,81 @@ async fn main() {
                             MENU_PADDING + BUTTONS_MARGIN,
                         );
 
+                        let last_settings_page = settings_page;
+
+                        if last_settings_page > 0 {
+                            if widgets::Button::new("Prev")
+                                .position(vec2(
+                                    top_position.x + BUTTON_SIZE.x / 2.
+                                        - BUTTON_SIZE.x / SMALLER_BUTTON_DIV
+                                        - BUTTONS_MARGIN / 2.,
+                                    top_position.y,
+                                ))
+                                .size(BUTTON_SIZE / SMALLER_BUTTON_DIV)
+                                .ui(ui)
+                            {
+                                settings_page -= 1;
+                            }
+                        }
+
+                        if last_settings_page < last_page {
+                            if widgets::Button::new("Next")
+                                .position(vec2(
+                                    top_position.x + BUTTON_SIZE.x / 2. + BUTTONS_MARGIN / 2.,
+                                    top_position.y,
+                                ))
+                                .size(BUTTON_SIZE / SMALLER_BUTTON_DIV)
+                                .ui(ui)
+                            {
+                                settings_page += 1;
+                            }
+                        }
+
                         const GROUP_OFFSET: Vec2 = vec2(50., 30.);
 
-                        let group =
-                            widgets::Group::new(hash!(), MENU_SIZE - GROUP_OFFSET + vec2(40., 0.))
-                                .position(GROUP_OFFSET)
-                                .begin(ui);
+                        let group = widgets::Group::new(
+                            hash!(),
+                            MENU_SIZE - GROUP_OFFSET
+                                + vec2(40., -BUTTON_SIZE.y / SMALLER_BUTTON_DIV),
+                        )
+                        .position(GROUP_OFFSET + vec2(0., BUTTON_SIZE.y / SMALLER_BUTTON_DIV))
+                        .begin(ui);
 
-                        widgets::Slider::new(hash!(), 0.0..1.0)
-                            .ui(ui, &mut editing_settings.bounciness);
+                        match last_settings_page {
+                            0 => {
+                                widgets::Label::new("Bounciness").ui(ui);
 
+                                widgets::Slider::new(hash!(), 0.0..1.0)
+                                    .ui(ui, &mut editing_settings.bounciness);
+
+                                widgets::Label::new("Ball radius").ui(ui);
+
+                                widgets::Slider::new(
+                                    hash!(),
+                                    0.0..(WIDTH_F.min(HEIGHT_F) - wall_thickness - wall_depth),
+                                )
+                                .ui(ui, &mut editing_settings.ball_radius);
+
+                                widgets::Label::new("Gravity strength").ui(ui);
+
+                                widgets::Slider::new(hash!(), -30.0..30.0)
+                                    .ui(ui, &mut editing_settings.gravity_strength);
+
+                                widgets::Label::new("Air friction").ui(ui);
+
+                                widgets::Slider::new(hash!(), 0.0..1.00)
+                                    .ui(ui, &mut editing_settings.air_friction);
+                            }
+                            1 => {
+                                widgets::Label::new("Terminal Velocity").ui(ui);
+
+                                widgets::Slider::new(hash!(), 0.0..500.00)
+                                    .ui(ui, &mut editing_settings.terminal_velocity);
+                            }
+                            _ => {
+                                unimplemented!()
+                            }
+                        }
                         group.end(ui);
 
                         top_position.y = MENU_SIZE.y
@@ -415,6 +481,7 @@ async fn main() {
                         {
                             editing_settings = settings.clone();
                             is_in_settings = true;
+                            settings_page = 0;
                         }
                         button_position.y += BUTTON_SIZE.y + BUTTONS_MARGIN;
                         if widgets::Button::new("Quit")
@@ -500,7 +567,7 @@ async fn main() {
 
         clear_background(LIGHTGRAY);
 
-        ball_velocity += Vec2::new(0., settings.gravity_strength * get_frame_time());
+        ball_velocity += Vec2::new(0., settings.gravity_strength * 1000. * get_frame_time());
 
         ball_velocity *= 1. - (settings.air_friction * get_frame_time().clamp(0., 1.));
 
@@ -588,9 +655,9 @@ async fn main() {
             );
         }
 
-        if ball_velocity.length() > settings.terminal_velocity {
+        if ball_velocity.length() > settings.terminal_velocity * 1000. {
             println!("Reached terminal velocity!");
-            ball_velocity = ball_velocity.normalize() * settings.terminal_velocity;
+            ball_velocity = ball_velocity.normalize() * settings.terminal_velocity * 1000.;
         }
 
         //draw_circle(ball_position.x, ball_position.y, radius, BLUE);

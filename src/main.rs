@@ -5,7 +5,7 @@ use std::{
 };
 
 use macroquad::{
-    audio::{play_sound, PlaySoundParams},
+    audio::{play_sound, set_sound_volume, PlaySoundParams},
     prelude::*,
     ui::{hash, root_ui, widgets, Skin},
 };
@@ -451,6 +451,9 @@ async fn main() {
                         {
                             settings = editing_settings.clone();
                             write_settings_file(&settings);
+                            for sound in active_ball_sounds.iter() {
+                                set_sound_volume(sound, settings.audio_volume);
+                            }
                         }
                     },
                 );

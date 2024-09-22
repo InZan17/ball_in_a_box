@@ -5,14 +5,16 @@ use std::{
 };
 
 use macroquad::{
-    audio::{load_sound_from_bytes, play_sound, PlaySoundParams},
+    audio::{play_sound, PlaySoundParams},
     prelude::*,
-    time,
     ui::{hash, root_ui, widgets, Skin},
 };
 use miniquad::*;
 use nanoserde::{DeJson, SerJson};
 use window::{order_quit, set_window_position};
+
+mod sounds;
+mod textures;
 
 const WIDTH: i32 = 640;
 const HEIGHT: i32 = 480;
@@ -71,6 +73,8 @@ struct Settings {
     audio_volume: f32,
     shadow_size: f32,
     shadow_distance_strength: f32,
+    last_ball: String,
+    last_sounds: String,
 }
 
 impl Default for Settings {
@@ -84,6 +88,8 @@ impl Default for Settings {
             audio_volume: 0.6,
             shadow_size: 1.2,
             shadow_distance_strength: 50.,
+            last_ball: "".to_string(),
+            last_sounds: "".to_string(),
         }
     }
 }
@@ -192,53 +198,21 @@ async fn main() {
     )
     .expect("Failed to load shadow material.");
 
-    let ball_textures = [
-        (
-            "earth",
-            Texture2D::from_file_with_format(include_bytes!("../assets/earth.png"), None),
-        ),
-        (
-            "distress",
-            Texture2D::from_file_with_format(include_bytes!("../assets/distress.png"), None),
-        ),
-        (
-            "grinning",
-            Texture2D::from_file_with_format(include_bytes!("../assets/grinning.png"), None),
-        ),
-        (
-            "white",
-            Texture2D::from_file_with_format(include_bytes!("../assets/white.png"), None),
-        ),
-    ];
+    let ball_textures = textures::BallTextures::new();
 
-    let bonk_sounds = [
-        load_sound_from_bytes(include_bytes!("../assets/bonk2.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/bonk3.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/bonk4.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/bonk5.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/bonk6.ogg"))
-            .await
-            .unwrap(),
-    ];
+    let ball_sounds = sounds::BallSounds::new().await;
 
-    let max_len = {
-        let mut max_len = 0;
+    let max_string_len = 100;
 
-        for (name, _) in ball_textures.iter() {
-            max_len = max_len.max(name.len());
-        }
-        max_len
-    };
+    let mut active_ball_texture = ball_textures
+        .find(&settings.last_ball)
+        .unwrap_or_else(|| ball_textures.get_first())
+        .1;
 
-    let mut ball_texture = ball_textures[0].1.clone();
+    let mut active_ball_sounds = ball_sounds
+        .find(&settings.last_sounds)
+        .unwrap_or_else(|| ball_sounds.get_first())
+        .1;
 
     let mut text_input = String::new();
 
@@ -331,7 +305,7 @@ async fn main() {
     let mut smoothed_delta = Vec2::ZERO;
     let mut smoothed_magnitude = 0.;
 
-    let mut ball_position = Vec2::ZERO;
+    let mut ball_position = Vec2::new(0., -HEIGHT_F);
     let mut ball_velocity = Vec2::ZERO;
     let mut ball_rotation = 0.;
     let mut ball_rotation_velocity = 0.;
@@ -523,25 +497,26 @@ async fn main() {
 
         let wall_offset = settings.ball_radius + wall_thickness + wall_depth;
 
-        let mut pressed = false;
-
         while let Some(character) = get_char_pressed() {
             text_input.push(character.to_ascii_lowercase());
-            pressed = true;
-        }
 
-        if pressed {
-            for (name, texture) in ball_textures.iter() {
-                if text_input.contains(name) {
-                    ball_texture = texture.clone();
-                    text_input.clear();
-                    break;
-                }
+            if let Some((ball_name, texture)) = ball_textures.find(&text_input) {
+                active_ball_texture = texture.clone();
+                settings.last_ball = ball_name.clone();
+                editing_settings.last_ball = ball_name;
+                write_settings_file(&settings);
+            }
+
+            if let Some((sounds_name, sounds)) = ball_sounds.find(&text_input) {
+                active_ball_sounds = sounds.clone();
+                settings.last_sounds = sounds_name.clone();
+                editing_settings.last_sounds = sounds_name;
+                write_settings_file(&settings);
             }
         }
 
-        if text_input.len() > max_len {
-            let remove = text_input.len() - max_len;
+        if text_input.len() > max_string_len {
+            let remove = text_input.len() - max_string_len;
             text_input = text_input[remove..].to_string();
         }
 
@@ -596,17 +571,9 @@ async fn main() {
 
         ball_velocity *= 1. - (settings.air_friction * get_frame_time().clamp(0., 1.));
 
-        let total_velocity = if time::get_time() > 1. {
-            ball_velocity + (delta_pos / get_frame_time()) * 2.
-        } else {
-            ball_velocity
-        };
+        let total_velocity = ball_velocity + (delta_pos / get_frame_time()) * 2.;
 
-        let smoothed_total_velocity = if time::get_time() > 1. {
-            ball_velocity + maxed_delta
-        } else {
-            ball_velocity
-        };
+        let smoothed_total_velocity = ball_velocity + maxed_delta;
 
         ball_position += total_velocity * get_frame_time();
 
@@ -822,7 +789,7 @@ async fn main() {
         gl_use_material(&ball_material);
 
         draw_texture_ex(
-            &ball_texture,
+            &active_ball_texture,
             ball_position.x - settings.ball_radius,
             ball_position.y - settings.ball_radius,
             WHITE,
@@ -864,7 +831,7 @@ async fn main() {
             hit_wall_speed *= 1. + distance_from_corner / 200.;
             let volume = 1. - 1. / E.powf(hit_wall_speed * hit_wall_speed * DENSITY * DENSITY);
             play_sound(
-                &bonk_sounds[quad_rand::gen_range(0, bonk_sounds.len())],
+                &active_ball_sounds[quad_rand::gen_range(0, active_ball_sounds.len())],
                 PlaySoundParams {
                     looped: false,
                     volume: volume * settings.audio_volume,

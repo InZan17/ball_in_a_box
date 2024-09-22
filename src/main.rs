@@ -851,13 +851,15 @@ async fn main() {
         }
 
         const DENSITY: f32 = 0.32;
+        const SPEED_LIMIT: f32 = 120.;
 
-        if hit_wall_speed > 30. && previous_hit_wall_speed == 0. {
+        if hit_wall_speed > SPEED_LIMIT && previous_hit_wall_speed == 0. {
             let inverted_distances_from_corners =
                 ball_position.abs() + vec2(0., WIDTH_F - HEIGHT_F);
 
             let distance_from_corner = WIDTH_F - inverted_distances_from_corners.min_element();
             // The closer to the center it is, the louder the sound.
+            hit_wall_speed -= SPEED_LIMIT;
             hit_wall_speed /= 450.;
             hit_wall_speed *= 1. + distance_from_corner / 200.;
             let volume = 1. - 1. / E.powf(hit_wall_speed * hit_wall_speed * DENSITY * DENSITY);

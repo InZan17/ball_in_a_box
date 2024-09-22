@@ -623,7 +623,7 @@ async fn main() {
             distance_to_floor = 0.;
             hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.y.abs());
             ball_position.y = HEIGHT_F - wall_offset;
-            ball_velocity.y = -smoothed_total_velocity.y * settings.bounciness;
+            ball_velocity.y = -ball_velocity.y * settings.bounciness - maxed_delta.y;
 
             (ball_rotation_velocity, ball_velocity.x) = calculate_bounce_spin(
                 ball_velocity.x,
@@ -640,7 +640,7 @@ async fn main() {
             distance_to_ceiling = 0.;
             hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.y.abs());
             ball_position.y = -HEIGHT_F + wall_offset;
-            ball_velocity.y = -smoothed_total_velocity.y * settings.bounciness;
+            ball_velocity.y = -ball_velocity.y * settings.bounciness - maxed_delta.y;
 
             (ball_rotation_velocity, ball_velocity.x) = calculate_bounce_spin(
                 ball_velocity.x,
@@ -656,7 +656,7 @@ async fn main() {
             distance_to_right_wall = 0.;
             hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.x.abs());
             ball_position.x = WIDTH_F - wall_offset;
-            ball_velocity.x = -smoothed_total_velocity.x * settings.bounciness;
+            ball_velocity.x = -ball_velocity.x * settings.bounciness - maxed_delta.x;
 
             (ball_rotation_velocity, ball_velocity.y) = calculate_bounce_spin(
                 ball_velocity.y,
@@ -673,7 +673,7 @@ async fn main() {
             distance_to_left_wall = 0.;
             hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.x.abs());
             ball_position.x = -WIDTH_F + wall_offset;
-            ball_velocity.x = -smoothed_total_velocity.x * settings.bounciness;
+            ball_velocity.x = -ball_velocity.x * settings.bounciness - maxed_delta.x;
 
             (ball_rotation_velocity, ball_velocity.y) = calculate_bounce_spin(
                 ball_velocity.y,

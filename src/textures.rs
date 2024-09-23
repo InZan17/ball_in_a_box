@@ -3,7 +3,7 @@ use std::{fs, path::Path};
 use macroquad::texture::Texture2D;
 
 pub(crate) struct BallTextures {
-    textures: Vec<(&'static str, Texture2D)>,
+    textures: Vec<(&'static str, &'static [u8])>,
 }
 
 impl BallTextures {
@@ -16,33 +16,14 @@ impl BallTextures {
 
         Self {
             textures: vec![
-                (
-                    "distress",
-                    Texture2D::from_file_with_format(
-                        include_bytes!("../assets/distress.png"),
-                        None,
-                    ),
-                ),
-                (
-                    "earth",
-                    Texture2D::from_file_with_format(include_bytes!("../assets/earth.png"), None),
-                ),
-                (
-                    "grinning",
-                    Texture2D::from_file_with_format(
-                        include_bytes!("../assets/grinning.png"),
-                        None,
-                    ),
-                ),
-                (
-                    "white",
-                    Texture2D::from_file_with_format(include_bytes!("../assets/white.png"), None),
-                ),
+                ("distress", include_bytes!("../assets/distress.png")),
+                ("earth", include_bytes!("../assets/earth.png")),
+                ("grinning", include_bytes!("../assets/grinning.png")),
+                ("white", include_bytes!("../assets/white.png")),
             ],
         }
     }
-
-    pub fn find(&self, current_string: &str) -> Option<(String, Texture2D)> {
+    pub fn find_custom(&self, current_string: &str) -> Option<(String, Vec<u8>)> {
         if current_string.is_empty() {
             return None;
         }
@@ -70,24 +51,28 @@ impl BallTextures {
                     let Ok(bytes) = fs::read(&path) else {
                         break;
                     };
-                    return Some((
-                        filename_str.to_string(),
-                        Texture2D::from_file_with_format(&bytes, None),
-                    ));
+                    return Some((filename_str.to_string(), bytes));
                 }
-            }
-        }
-
-        for (name, ball) in self.textures.iter() {
-            if current_string.ends_with(name) {
-                return Some((name.to_string(), ball.clone()));
             }
         }
         None
     }
 
-    pub fn get_first(&self) -> (String, Texture2D) {
+    pub fn find(&self, current_string: &str) -> Option<(&'static str, &'static [u8])> {
+        if current_string.is_empty() {
+            return None;
+        }
+
+        for (name, ball) in self.textures.iter() {
+            if current_string.ends_with(name) {
+                return Some((name, ball));
+            }
+        }
+        None
+    }
+
+    pub fn get_first(&self) -> (&'static str, &'static [u8]) {
         let ball = &self.textures[0];
-        (ball.0.to_string(), ball.1.clone())
+        (ball.0, ball.1)
     }
 }

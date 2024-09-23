@@ -13,6 +13,6 @@ miniquad = {git = "https://github.com/InZan17/miniquad", branch = "ball-in-a-box
 
 [profile.release]
 strip = true
-opt-level = "z"
+opt-level = 3
 lto = true
 codegen-units = 1

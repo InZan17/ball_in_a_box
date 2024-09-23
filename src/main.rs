@@ -320,8 +320,6 @@ async fn main() {
     let mut previous_hit_wall_speed = 0.;
 
     loop {
-        
-
         if close_menu {
             close_menu = false;
             is_menu_open = false;

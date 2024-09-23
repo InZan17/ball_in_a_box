@@ -33,7 +33,7 @@ pub fn window_conf() -> Conf {
         borderless: true,
         fullscreen: false,
         window_resizable: false,
-        sample_count: 8,
+        sample_count: 0,
         ..Default::default()
     }
 }
@@ -41,9 +41,6 @@ pub fn window_conf() -> Conf {
 const BALL_FRAGMENT_SHADER: &'static str = include_str!("../assets/ball.frag");
 const SHADOW_FRAGMENT_SHADER: &'static str = include_str!("../assets/shadow.frag");
 const VERTEX_SHADER: &'static str = include_str!("../assets/ball.vert");
-
-const BACKGROUND_TEXTURE_BYTES: &[u8] = include_bytes!("../assets/background.png");
-const SIDE_TEXTURE_BYTES: &[u8] = include_bytes!("../assets/cardboardsidebottom.png");
 
 pub trait FromTuple {
     fn from_u32_tuple(tuple: (u32, u32)) -> Self;
@@ -224,8 +221,10 @@ async fn main() {
 
     let mut text_input = String::new();
 
-    let background_texture = Texture2D::from_file_with_format(BACKGROUND_TEXTURE_BYTES, None);
-    let side_texture = Texture2D::from_file_with_format(SIDE_TEXTURE_BYTES, None);
+    let background_texture =
+        Texture2D::from_file_with_format(include_bytes!("../assets/background.png"), None);
+    let side_texture =
+        Texture2D::from_file_with_format(include_bytes!("../assets/cardboardsidebottom.png"), None);
 
     let font = load_ttf_font_from_bytes(include_bytes!("../assets/FrederickatheGreat-Regular.ttf"))
         .unwrap();

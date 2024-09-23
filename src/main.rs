@@ -7,14 +7,16 @@ use std::{
 use macroquad::{
     audio::{play_sound, set_sound_volume, PlaySoundParams},
     prelude::*,
-    ui::{hash, root_ui, widgets, Skin},
+    ui::{root_ui, Skin},
 };
 use miniquad::*;
 use nanoserde::{DeJson, SerJson};
-use window::{dpi_scale, order_quit, set_window_position};
+use ui::{render_ui, SettingsState, MENU_SIZE};
+use window::set_window_position;
 
-mod sounds;
-mod textures;
+pub mod sounds;
+pub mod textures;
+pub mod ui;
 
 const WIDTH: i32 = 640;
 const HEIGHT: i32 = 480;
@@ -64,7 +66,7 @@ impl FromTuple for Vec2 {
 }
 
 #[derive(Debug, SerJson, DeJson, Clone)]
-struct Settings {
+pub struct Settings {
     gravity_strength: f32,
     air_friction: f32,
     bounciness: f32,
@@ -297,11 +299,8 @@ async fn main() {
     let wall_thickness = 20.;
     let wall_depth = 20.;
 
-    let mut is_menu_open = false;
     let mut is_in_settings = false;
-    let last_page = 1;
-    let mut settings_page = 0_u8;
-    let mut close_menu = false;
+    let mut settings_state = SettingsState::Closed;
     let mut interacting_with_ui = false;
 
     let mut last_mouse_position = Vec2::from_i32_tuple(window::get_screen_mouse_position());
@@ -320,188 +319,35 @@ async fn main() {
     let mut previous_hit_wall_speed = 0.;
 
     loop {
-        if close_menu {
-            close_menu = false;
-            is_menu_open = false;
-        }
-
         clear_background(DARKGRAY);
 
         hit_wall_speed = 0.;
         if is_key_pressed(KeyCode::Escape) {
-            if is_menu_open {
-                is_menu_open = false;
-                is_in_settings = false;
+            if settings_state != SettingsState::Closed {
+                settings_state = SettingsState::Closed
             } else {
-                is_menu_open = true;
+                settings_state = SettingsState::Open
             }
         }
 
-        const MENU_SIZE: Vec2 = vec2(310., 400.);
-        const BUTTON_SIZE: Vec2 = vec2(160., 75.);
-        const BUTTONS_MARGIN: f32 = 20.;
-        if is_menu_open {
-            let menu_position = (vec2(WIDTH_F, HEIGHT_F) / dpi_scale() - MENU_SIZE) / 2.;
-
-            if is_in_settings {
-                const MENU_PADDING: f32 = 10.;
-                const SMALL_BUTTON_DIV: f32 = 1.5;
-                const SMALLER_BUTTON_DIV: f32 = 1.75;
-                root_ui().window(hash!(), menu_position, MENU_SIZE, |ui| {
-                    let mut top_position = vec2(
-                        (MENU_SIZE.x - BUTTON_SIZE.x) / 2.,
-                        MENU_PADDING + BUTTONS_MARGIN,
-                    );
-
-                    let last_settings_page = settings_page;
-
-                    if last_settings_page > 0 {
-                        if widgets::Button::new("Prev")
-                            .position(vec2(
-                                top_position.x + BUTTON_SIZE.x / 2.
-                                    - BUTTON_SIZE.x / SMALLER_BUTTON_DIV
-                                    - BUTTONS_MARGIN / 2.,
-                                top_position.y,
-                            ))
-                            .size(BUTTON_SIZE / SMALLER_BUTTON_DIV)
-                            .ui(ui)
-                        {
-                            settings_page -= 1;
-                        }
-                    }
-
-                    if last_settings_page < last_page {
-                        if widgets::Button::new("Next")
-                            .position(vec2(
-                                top_position.x + BUTTON_SIZE.x / 2. + BUTTONS_MARGIN / 2.,
-                                top_position.y,
-                            ))
-                            .size(BUTTON_SIZE / SMALLER_BUTTON_DIV)
-                            .ui(ui)
-                        {
-                            settings_page += 1;
-                        }
-                    }
-
-                    const GROUP_OFFSET: Vec2 = vec2(50., 30.);
-
-                    let group = widgets::Group::new(
-                        hash!(),
-                        MENU_SIZE - GROUP_OFFSET + vec2(40., -BUTTON_SIZE.y / SMALLER_BUTTON_DIV),
-                    )
-                    .position(GROUP_OFFSET + vec2(0., BUTTON_SIZE.y / SMALLER_BUTTON_DIV))
-                    .begin(ui);
-
-                    match last_settings_page {
-                        0 => {
-                            widgets::Label::new("Audio volume").ui(ui);
-
-                            widgets::Slider::new(hash!(), 0.0..1.0)
-                                .ui(ui, &mut editing_settings.audio_volume);
-
-                            widgets::Label::new("Bounciness").ui(ui);
-
-                            widgets::Slider::new(hash!(), 0.0..1.0)
-                                .ui(ui, &mut editing_settings.bounciness);
-
-                            widgets::Label::new("Ball radius").ui(ui);
-
-                            widgets::Slider::new(
-                                hash!(),
-                                0.0..(WIDTH_F.min(HEIGHT_F) - wall_thickness - wall_depth),
-                            )
-                            .ui(ui, &mut editing_settings.ball_radius);
-
-                            widgets::Label::new("Gravity strength").ui(ui);
-
-                            widgets::Slider::new(hash!(), -30.0..30.0)
-                                .ui(ui, &mut editing_settings.gravity_strength);
-                        }
-                        1 => {
-                            widgets::Label::new("Air friction").ui(ui);
-
-                            widgets::Slider::new(hash!(), 0.0..1.00)
-                                .ui(ui, &mut editing_settings.air_friction);
-
-                            widgets::Label::new("Terminal Velocity").ui(ui);
-
-                            widgets::Slider::new(hash!(), 0.0..500.00)
-                                .ui(ui, &mut editing_settings.terminal_velocity);
-                        }
-                        _ => {
-                            unimplemented!()
-                        }
-                    }
-                    group.end(ui);
-
-                    top_position.y = MENU_SIZE.y
-                        - BUTTON_SIZE.y / SMALL_BUTTON_DIV
-                        - MENU_PADDING
-                        - BUTTONS_MARGIN;
-                    if widgets::Button::new("Back")
-                        .position(vec2(
-                            top_position.x + BUTTON_SIZE.x / 2.
-                                - BUTTON_SIZE.x / SMALL_BUTTON_DIV
-                                - BUTTONS_MARGIN / 2.,
-                            top_position.y,
-                        ))
-                        .size(BUTTON_SIZE / SMALL_BUTTON_DIV)
-                        .ui(ui)
-                    {
-                        is_in_settings = false;
-                    }
-
-                    if widgets::Button::new("Apply")
-                        .position(vec2(
-                            top_position.x + BUTTON_SIZE.x / 2. + BUTTONS_MARGIN / 2.,
-                            top_position.y,
-                        ))
-                        .size(BUTTON_SIZE / SMALL_BUTTON_DIV)
-                        .ui(ui)
-                    {
-                        settings = editing_settings.clone();
-                        write_settings_file(&settings);
-                        for sound in active_ball_sounds.iter() {
-                            set_sound_volume(sound, settings.audio_volume);
-                        }
-                    }
-                });
-            } else {
-                const MENU_PADDING: f32 = 45.;
-                root_ui().window(hash!(), menu_position, MENU_SIZE, |ui| {
-                    let mut button_position = vec2(
-                        (MENU_SIZE.x - BUTTON_SIZE.x) / 2.,
-                        MENU_PADDING + BUTTONS_MARGIN,
-                    );
-                    if widgets::Button::new("Continue")
-                        .position(button_position)
-                        .size(BUTTON_SIZE)
-                        .ui(ui)
-                    {
-                        close_menu = true;
-                    }
-                    button_position.y += BUTTON_SIZE.y + BUTTONS_MARGIN;
-                    if widgets::Button::new("Options")
-                        .position(button_position)
-                        .size(BUTTON_SIZE)
-                        .ui(ui)
-                    {
-                        editing_settings = settings.clone();
-                        is_in_settings = true;
-                        settings_page = 0;
-                    }
-                    button_position.y += BUTTON_SIZE.y + BUTTONS_MARGIN;
-                    if widgets::Button::new("Quit")
-                        .position(button_position)
-                        .size(BUTTON_SIZE)
-                        .ui(ui)
-                    {
-                        order_quit();
-                    }
-                });
+        if let SettingsState::Settings(_) = settings_state {
+            if !is_in_settings {
+                editing_settings = settings.clone();
+                is_in_settings = true
             }
-            next_frame().await;
-            continue;
+        } else {
+            is_in_settings = false
+        }
+
+        let is_menu_open = settings_state.is_open();
+
+        let save = render_ui(&mut editing_settings, &mut settings_state);
+        if save {
+            settings = editing_settings.clone();
+            write_settings_file(&settings);
+            for sound in active_ball_sounds.iter() {
+                set_sound_volume(sound, settings.audio_volume);
+            }
         }
 
         let wall_offset = settings.ball_radius + wall_thickness + wall_depth;

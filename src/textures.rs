@@ -1,7 +1,5 @@
 use std::{fs, path::Path};
 
-use macroquad::texture::Texture2D;
-
 pub(crate) struct BallTextures {
     textures: Vec<(&'static str, &'static [u8])>,
 }

@@ -15,4 +15,3 @@ miniquad = {git = "https://github.com/InZan17/miniquad", branch = "ball-in-a-box
 strip = true
 opt-level = 3
 lto = true
-codegen-units = 1

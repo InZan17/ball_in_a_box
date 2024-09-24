@@ -1,5 +1,7 @@
 use std::{fs, path::Path};
 
+use macroquad::texture::Texture2D;
+
 pub(crate) struct BallTextures {
     textures: Vec<(&'static str, &'static [u8])>,
 }
@@ -72,5 +74,16 @@ impl BallTextures {
     pub fn get_first(&self) -> (&'static str, &'static [u8]) {
         let ball = &self.textures[0];
         (ball.0, ball.1)
+    }
+
+    pub fn get_texture(&self, current_string: &str) -> Texture2D {
+        if let Some(ball) = self.find_custom(current_string) {
+            Texture2D::from_file_with_format(&ball.1, None)
+        } else if let Some(ball) = self.find(current_string) {
+            Texture2D::from_file_with_format(ball.1, None)
+        } else {
+            let ball = self.get_first();
+            Texture2D::from_file_with_format(ball.1, None)
+        }
     }
 }

@@ -1,11 +1,9 @@
 use core::str;
-use std::{
-    f32::consts::{E, PI},
-    fs,
-};
+use std::{f32::consts::PI, fs};
 
+use ball::Ball;
 use macroquad::{
-    audio::{play_sound, set_sound_volume, PlaySoundParams},
+    audio::set_sound_volume,
     prelude::*,
     ui::{root_ui, Skin},
 };
@@ -14,6 +12,7 @@ use nanoserde::{DeJson, SerJson};
 use ui::{render_ui, SettingsState, MENU_SIZE};
 use window::set_window_position;
 
+pub mod ball;
 pub mod sounds;
 pub mod textures;
 pub mod ui;
@@ -23,6 +22,10 @@ const HEIGHT: i32 = 480;
 
 const WIDTH_F: f32 = WIDTH as f32;
 const HEIGHT_F: f32 = HEIGHT as f32;
+
+pub const WALL_THICKNESS: f32 = 20.;
+pub const WALL_DEPTH: f32 = 20.;
+pub const WALL_OFFSET: f32 = WALL_THICKNESS + WALL_DEPTH;
 
 pub fn window_conf() -> Conf {
     Conf {
@@ -91,35 +94,6 @@ impl Default for Settings {
             last_sounds: "".to_string(),
         }
     }
-}
-
-pub fn calculate_bounce_spin(
-    ball_velocity: f32,
-    window_velocity: f32,
-    ball_rotation_velocity: f32,
-    mut ball_radius: f32,
-    inverted: bool,
-) -> (f32, f32) {
-    ball_radius = ball_radius.max(0.001);
-
-    let total_velocity = if inverted {
-        -(ball_velocity + window_velocity)
-    } else {
-        ball_velocity + window_velocity
-    };
-    let rotation_velocity_from_velocity = total_velocity / ball_radius;
-    let middle_rotation_velocity =
-        rotation_velocity_from_velocity.lerp(ball_rotation_velocity, 0.5);
-    let current_rotation_direction_velocity = if inverted {
-        -middle_rotation_velocity * ball_radius
-    } else {
-        middle_rotation_velocity * ball_radius
-    };
-    let new_rotation_velocity = ball_rotation_velocity.lerp(rotation_velocity_from_velocity, 0.75);
-    return (
-        new_rotation_velocity,
-        current_rotation_direction_velocity - window_velocity,
-    );
 }
 
 fn read_settings_file() -> Option<Settings> {
@@ -203,26 +177,11 @@ async fn main() {
 
     let max_string_len = 100;
 
-    let mut active_ball_texture = {
-        if let Some(ball) = ball_textures.find_custom(&settings.last_ball) {
-            Texture2D::from_file_with_format(&ball.1, None)
-        } else if let Some(ball) = ball_textures.find(&settings.last_ball) {
-            Texture2D::from_file_with_format(ball.1, None)
-        } else {
-            let ball = ball_textures.get_first();
-            Texture2D::from_file_with_format(ball.1, None)
-        }
-    };
-
-    let mut active_ball_sounds = ball_sounds
-        .find(&settings.last_sounds)
-        .unwrap_or_else(|| ball_sounds.get_first())
-        .1;
-
     let mut text_input = String::new();
 
     let background_texture =
         Texture2D::from_file_with_format(include_bytes!("../assets/background.png"), None);
+
     let side_texture =
         Texture2D::from_file_with_format(include_bytes!("../assets/cardboardsidebottom.png"), None);
 
@@ -295,9 +254,6 @@ async fn main() {
 
     root_ui().push_skin(&skin);
 
-    let wall_thickness = 20.;
-    let wall_depth = 20.;
-
     let mut is_in_settings = false;
     let mut settings_state = SettingsState::Closed;
     let mut interacting_with_ui = false;
@@ -309,18 +265,24 @@ async fn main() {
     let mut smoothed_delta = Vec2::ZERO;
     let mut smoothed_magnitude = 0.;
 
-    let mut ball_position = Vec2::new(0., -HEIGHT_F);
-    let mut ball_velocity = Vec2::ZERO;
-    let mut ball_rotation = 0.;
-    let mut ball_rotation_velocity = 0.;
+    let mut ball = Ball::new(
+        ball_textures.get_texture(&settings.last_ball),
+        ball_material,
+        shadow_material,
+        ball_sounds
+            .find(&settings.last_sounds)
+            .unwrap_or_else(|| ball_sounds.get_first())
+            .1,
+    );
 
-    let mut hit_wall_speed: f32;
-    let mut previous_hit_wall_speed = 0.;
+    set_camera(&Camera2D {
+        zoom: vec2(1. / WIDTH_F, 1. / HEIGHT_F),
+        ..Default::default()
+    });
 
     loop {
         clear_background(DARKGRAY);
 
-        hit_wall_speed = 0.;
         if is_key_pressed(KeyCode::Escape) {
             if settings_state != SettingsState::Closed {
                 settings_state = SettingsState::Closed
@@ -344,30 +306,28 @@ async fn main() {
         if save {
             settings = editing_settings.clone();
             write_settings_file(&settings);
-            for sound in active_ball_sounds.iter() {
+            for sound in ball.sounds.iter() {
                 set_sound_volume(sound, settings.audio_volume);
             }
         }
-
-        let wall_offset = settings.ball_radius + wall_thickness + wall_depth;
 
         while let Some(character) = get_char_pressed() {
             text_input.push(character.to_ascii_lowercase());
 
             if let Some((ball_name, texture)) = ball_textures.find_custom(&text_input) {
-                active_ball_texture = Texture2D::from_file_with_format(&texture, None);
+                ball.texture = Texture2D::from_file_with_format(&texture, None);
                 settings.last_ball = ball_name.clone();
                 editing_settings.last_ball = ball_name;
                 write_settings_file(&settings);
             } else if let Some((ball_name, texture)) = ball_textures.find(&text_input) {
-                active_ball_texture = Texture2D::from_file_with_format(texture, None);
+                ball.texture = Texture2D::from_file_with_format(texture, None);
                 settings.last_ball = ball_name.to_string();
                 editing_settings.last_ball = ball_name.to_string();
                 write_settings_file(&settings);
             }
 
             if let Some((sounds_name, sounds)) = ball_sounds.find(&text_input) {
-                active_ball_sounds = sounds.clone();
+                ball.sounds = sounds.clone();
                 settings.last_sounds = sounds_name.clone();
                 editing_settings.last_sounds = sounds_name;
                 write_settings_file(&settings);
@@ -424,104 +384,15 @@ async fn main() {
 
         let maxed_delta = smoothed_delta.max(delta_pos) / get_frame_time() * 2.;
 
-        ball_velocity += Vec2::new(0., settings.gravity_strength * 1000. * get_frame_time());
-
-        ball_velocity *= 1. - (settings.air_friction * get_frame_time().clamp(0., 1.));
-
-        let total_velocity = ball_velocity + (delta_pos / get_frame_time()) * 2.;
-
-        let smoothed_total_velocity = ball_velocity + maxed_delta;
-
-        ball_position += total_velocity * get_frame_time();
-
-        ball_rotation += ball_rotation_velocity * get_frame_time();
-
-        set_camera(&Camera2D {
-            zoom: vec2(1. / WIDTH_F, 1. / HEIGHT_F),
-            ..Default::default()
-        });
-
-        let mut distance_to_floor = HEIGHT_F - wall_offset - ball_position.y;
-        if distance_to_floor <= 0. {
-            // Floor
-            distance_to_floor = 0.;
-            hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.y.abs());
-            ball_position.y = HEIGHT_F - wall_offset;
-            ball_velocity.y = -ball_velocity.y * settings.bounciness - maxed_delta.y;
-
-            (ball_rotation_velocity, ball_velocity.x) = calculate_bounce_spin(
-                ball_velocity.x,
-                maxed_delta.x,
-                ball_rotation_velocity,
-                settings.ball_radius,
-                false,
-            );
-        }
-
-        let mut distance_to_ceiling = ball_position.y + HEIGHT_F - wall_offset;
-        if distance_to_ceiling <= 0. {
-            // Ceiling
-            distance_to_ceiling = 0.;
-            hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.y.abs());
-            ball_position.y = -HEIGHT_F + wall_offset;
-            ball_velocity.y = -ball_velocity.y * settings.bounciness - maxed_delta.y;
-
-            (ball_rotation_velocity, ball_velocity.x) = calculate_bounce_spin(
-                ball_velocity.x,
-                maxed_delta.x,
-                ball_rotation_velocity,
-                settings.ball_radius,
-                true,
-            );
-        }
-        let mut distance_to_right_wall = WIDTH_F - wall_offset - ball_position.x;
-        if distance_to_right_wall <= 0. {
-            // Right
-            distance_to_right_wall = 0.;
-            hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.x.abs());
-            ball_position.x = WIDTH_F - wall_offset;
-            ball_velocity.x = -ball_velocity.x * settings.bounciness - maxed_delta.x;
-
-            (ball_rotation_velocity, ball_velocity.y) = calculate_bounce_spin(
-                ball_velocity.y,
-                maxed_delta.y,
-                ball_rotation_velocity,
-                settings.ball_radius,
-                true,
-            );
-        }
-
-        let mut distance_to_left_wall = ball_position.x + WIDTH_F - wall_offset;
-        if distance_to_left_wall <= 0. {
-            // Left
-            distance_to_left_wall = 0.;
-            hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.x.abs());
-            ball_position.x = -WIDTH_F + wall_offset;
-            ball_velocity.x = -ball_velocity.x * settings.bounciness - maxed_delta.x;
-
-            (ball_rotation_velocity, ball_velocity.y) = calculate_bounce_spin(
-                ball_velocity.y,
-                maxed_delta.y,
-                ball_rotation_velocity,
-                settings.ball_radius,
-                false,
-            );
-        }
-
-        if ball_velocity.length() > settings.terminal_velocity * 1000. {
-            println!("Reached terminal velocity!");
-            ball_velocity = ball_velocity.normalize() * settings.terminal_velocity * 1000.;
-        }
-
         draw_texture_ex(
             &background_texture,
-            -WIDTH_F + wall_thickness,
-            -HEIGHT_F + wall_thickness,
+            -WIDTH_F + WALL_THICKNESS,
+            -HEIGHT_F + WALL_THICKNESS,
             WHITE,
             DrawTextureParams {
                 dest_size: Some(vec2(
-                    (WIDTH_F - wall_thickness) * 2.,
-                    (HEIGHT_F - wall_thickness) * 2.,
+                    (WIDTH_F - WALL_THICKNESS) * 2.,
+                    (HEIGHT_F - WALL_THICKNESS) * 2.,
                 )),
                 ..Default::default()
             },
@@ -529,24 +400,24 @@ async fn main() {
 
         draw_texture_ex(
             &side_texture,
-            -WIDTH_F * 2. + wall_thickness / 2.,
+            -WIDTH_F * 2. + WALL_THICKNESS / 2.,
             0.,
             Color::from_hex(0x999999),
             DrawTextureParams {
                 rotation: PI * 0.5,
-                dest_size: Some(vec2(WIDTH_F * 2., wall_thickness)),
+                dest_size: Some(vec2(WIDTH_F * 2., WALL_THICKNESS)),
                 ..Default::default()
             },
         );
 
         draw_texture_ex(
             &side_texture,
-            -wall_thickness / 2.,
+            -WALL_THICKNESS / 2.,
             0.,
             Color::from_hex(0xb0b0b0),
             DrawTextureParams {
                 rotation: PI * 1.5,
-                dest_size: Some(vec2(WIDTH_F * 2., wall_thickness)),
+                dest_size: Some(vec2(WIDTH_F * 2., WALL_THICKNESS)),
                 ..Default::default()
             },
         );
@@ -558,7 +429,7 @@ async fn main() {
             Color::from_hex(0xbababa),
             DrawTextureParams {
                 rotation: PI * 1.0,
-                dest_size: Some(vec2(WIDTH_F * 2., wall_thickness)),
+                dest_size: Some(vec2(WIDTH_F * 2., WALL_THICKNESS)),
                 ..Default::default()
             },
         );
@@ -566,98 +437,16 @@ async fn main() {
         draw_texture_ex(
             &side_texture,
             -WIDTH_F,
-            HEIGHT_F - wall_thickness,
+            HEIGHT_F - WALL_THICKNESS,
             Color::from_hex(0xe0e0e0),
             DrawTextureParams {
                 rotation: PI * 2.0,
-                dest_size: Some(vec2(WIDTH_F * 2., wall_thickness)),
+                dest_size: Some(vec2(WIDTH_F * 2., WALL_THICKNESS)),
                 ..Default::default()
             },
         );
 
-        gl_use_material(&shadow_material);
-
-        shadow_material.set_uniform(
-            "in_shadow",
-            distance_to_floor / settings.shadow_distance_strength,
-        );
-        draw_rectangle(
-            ball_position.x - settings.ball_radius * settings.shadow_size,
-            HEIGHT_F - wall_offset + settings.ball_radius - wall_depth,
-            settings.ball_radius * settings.shadow_size * 2.,
-            wall_depth * 2.,
-            WHITE,
-        );
-
-        shadow_material.set_uniform(
-            "in_shadow",
-            distance_to_ceiling / settings.shadow_distance_strength,
-        );
-        draw_rectangle(
-            ball_position.x - settings.ball_radius * settings.shadow_size,
-            -HEIGHT_F + wall_thickness,
-            settings.ball_radius * settings.shadow_size * 2.,
-            wall_depth * 2.,
-            WHITE,
-        );
-
-        shadow_material.set_uniform(
-            "in_shadow",
-            distance_to_right_wall / settings.shadow_distance_strength,
-        );
-        draw_rectangle(
-            WIDTH_F - wall_offset + settings.ball_radius - wall_depth,
-            ball_position.y - settings.ball_radius * settings.shadow_size,
-            wall_depth * 2.,
-            settings.ball_radius * settings.shadow_size * 2.,
-            WHITE,
-        );
-
-        shadow_material.set_uniform(
-            "in_shadow",
-            distance_to_left_wall / settings.shadow_distance_strength,
-        );
-        draw_rectangle(
-            -WIDTH_F + wall_thickness,
-            ball_position.y - settings.ball_radius * settings.shadow_size,
-            wall_depth * 2.,
-            settings.ball_radius * settings.shadow_size * 2.,
-            WHITE,
-        );
-
-        ball_material.set_uniform("rotation", ball_rotation);
-        ball_material.set_uniform(
-            "floor_distance",
-            distance_to_floor / settings.shadow_distance_strength,
-        );
-        ball_material.set_uniform(
-            "ceil_distance",
-            distance_to_ceiling / settings.shadow_distance_strength,
-        );
-        ball_material.set_uniform(
-            "left_distance",
-            distance_to_left_wall / settings.shadow_distance_strength,
-        );
-        ball_material.set_uniform(
-            "right_distance",
-            distance_to_right_wall / settings.shadow_distance_strength,
-        );
-
-        gl_use_material(&ball_material);
-
-        draw_texture_ex(
-            &active_ball_texture,
-            ball_position.x - settings.ball_radius,
-            ball_position.y - settings.ball_radius,
-            WHITE,
-            DrawTextureParams {
-                dest_size: Some(vec2(settings.ball_radius * 2., settings.ball_radius * 2.)),
-                rotation: ball_rotation,
-                ..Default::default()
-            },
-        );
-
-        gl_use_default_material();
+        ball.step_and_render(get_frame_time(), &settings, delta_pos, maxed_delta);
 
         if is_menu_open {
             draw_rectangle(
@@ -668,30 +457,6 @@ async fn main() {
                 Color::from_rgba(0, 0, 0, 100),
             );
         }
-
-        const DENSITY: f32 = 0.32;
-        const SPEED_LIMIT: f32 = 120.;
-
-        if hit_wall_speed > SPEED_LIMIT && previous_hit_wall_speed == 0. {
-            let inverted_distances_from_corners =
-                ball_position.abs() + vec2(0., WIDTH_F - HEIGHT_F);
-
-            let distance_from_corner = WIDTH_F - inverted_distances_from_corners.min_element();
-            // The closer to the center it is, the louder the sound.
-            hit_wall_speed -= SPEED_LIMIT;
-            hit_wall_speed /= 450.;
-            hit_wall_speed *= 1. + distance_from_corner / 200.;
-            let volume = 1. - 1. / E.powf(hit_wall_speed * hit_wall_speed * DENSITY * DENSITY);
-            play_sound(
-                &active_ball_sounds[quad_rand::gen_range(0, active_ball_sounds.len())],
-                PlaySoundParams {
-                    looped: false,
-                    volume: volume * settings.audio_volume,
-                },
-            );
-        }
-
-        previous_hit_wall_speed = hit_wall_speed;
 
         next_frame().await
     }

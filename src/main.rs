@@ -191,7 +191,7 @@ async fn main() {
 
     let mut last_mouse_position = Vec2::from_i32_tuple(window::get_screen_mouse_position());
 
-    let mut mouse_offset = Vec2::ZERO;
+    let mut mouse_offset: Option<Vec2> = None;
 
     let mut smoothed_delta = Vec2::ZERO;
     let mut smoothed_magnitude = 0.;
@@ -233,7 +233,12 @@ async fn main() {
 
         let is_menu_open = settings_state.is_open();
 
-        let save = render_ui(&mut editing_settings, &mut settings_state);
+        let mouse_pos = if let Some(mouse_pos) = mouse_offset {
+            -mouse_pos
+        } else {
+            Vec2::from_f32_tuple(mouse_position()) * screen_dpi_scale()
+        };
+        let save = render_ui(&mut editing_settings, &mut settings_state, mouse_pos);
         if save {
             settings = editing_settings.clone();
             write_settings_file(&settings);
@@ -276,7 +281,7 @@ async fn main() {
 
         if is_mouse_button_pressed(MouseButton::Left) && is_menu_open {
             let abs_mouse_pos_from_center =
-                (Vec2::from_f32_tuple(mouse_position()) - vec2(WIDTH_F, HEIGHT_F) / 2.).abs();
+                (mouse_pos - vec2(WIDTH_F, HEIGHT_F) / 2.).abs();
             if abs_mouse_pos_from_center.x < MENU_SIZE.x / 2.
                 && abs_mouse_pos_from_center.y < MENU_SIZE.y / 2.
             {
@@ -290,13 +295,18 @@ async fn main() {
         let delta_pos = if interacting_with_ui {
             Vec2::ZERO
         } else if is_mouse_button_down(MouseButton::Left) {
-            if is_mouse_button_pressed(MouseButton::Left) {
-                mouse_offset = -Vec2::from_f32_tuple(mouse_position()) * screen_dpi_scale();
-            }
+            let mouse_offset = match mouse_offset {
+                Some(mouse_offset) => mouse_offset,
+                None => {
+                    mouse_offset = Some(-mouse_pos);
+                    -mouse_pos
+                }
+            };
             let new_pos = current_mouse_position + mouse_offset;
             set_window_position(new_pos.x as u32, new_pos.y as u32);
             -delta_mouse_position
         } else {
+            mouse_offset = None;
             Vec2::ZERO
         };
 

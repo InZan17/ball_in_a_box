@@ -148,7 +148,7 @@ impl Ball {
         );
         draw_rectangle(
             self.position.x - settings.ball_radius * settings.shadow_size,
-            HEIGHT_F - wall_and_ball_offset + settings.ball_radius - WALL_DEPTH,
+            HEIGHT_F - WALL_OFFSET - WALL_DEPTH,
             settings.ball_radius * settings.shadow_size * 2.,
             WALL_DEPTH * 2.,
             WHITE,
@@ -171,7 +171,7 @@ impl Ball {
             distance_to_right_wall / settings.shadow_distance_strength,
         );
         draw_rectangle(
-            WIDTH_F - wall_and_ball_offset + settings.ball_radius - WALL_DEPTH,
+            WIDTH_F - WALL_OFFSET - WALL_DEPTH,
             self.position.y - settings.ball_radius * settings.shadow_size,
             WALL_DEPTH * 2.,
             settings.ball_radius * settings.shadow_size * 2.,

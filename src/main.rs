@@ -2,14 +2,10 @@ use core::str;
 use std::{f32::consts::PI, fs};
 
 use ball::Ball;
-use macroquad::{
-    audio::set_sound_volume,
-    prelude::*,
-    ui::{root_ui, Skin},
-};
+use macroquad::{audio::set_sound_volume, prelude::*, ui::root_ui};
 use miniquad::*;
 use nanoserde::{DeJson, SerJson};
-use ui::{render_ui, SettingsState, MENU_SIZE};
+use ui::{create_skin, render_ui, SettingsState, MENU_SIZE};
 use window::set_window_position;
 
 pub mod ball;
@@ -125,6 +121,12 @@ async fn main() {
 
     let mut editing_settings = settings.clone();
 
+    let background_texture =
+        Texture2D::from_file_with_format(include_bytes!("../assets/background.png"), None);
+
+    let side_texture =
+        Texture2D::from_file_with_format(include_bytes!("../assets/cardboardsidebottom.png"), None);
+
     let ball_material = load_material(
         ShaderSource::Glsl {
             vertex: VERTEX_SHADER,
@@ -179,78 +181,7 @@ async fn main() {
 
     let mut text_input = String::new();
 
-    let background_texture =
-        Texture2D::from_file_with_format(include_bytes!("../assets/background.png"), None);
-
-    let side_texture =
-        Texture2D::from_file_with_format(include_bytes!("../assets/cardboardsidebottom.png"), None);
-
-    let font = load_ttf_font_from_bytes(include_bytes!("../assets/FrederickatheGreat-Regular.ttf"))
-        .unwrap();
-
-    let window_style = root_ui()
-        .style_builder()
-        .background(
-            Image::from_file_with_format(include_bytes!("../assets/main_background.png"), None)
-                .unwrap(),
-        )
-        .build();
-
-    let button_style = root_ui()
-        .style_builder()
-        .background(
-            Image::from_file_with_format(include_bytes!("../assets/cardboard_button.png"), None)
-                .unwrap(),
-        )
-        .with_font(&font)
-        .unwrap()
-        .font_size(28)
-        .text_color(Color::new(0.05, 0., 0.1, 1.))
-        .color_hovered(Color::new(0.90, 0.90, 0.90, 1.0))
-        .build();
-
-    let label_style = root_ui()
-        .style_builder()
-        .with_font(&font)
-        .unwrap()
-        .font_size(24)
-        .text_color(Color::new(0.05, 0., 0.1, 1.))
-        .margin(RectOffset::new(0., 0., 10., 0.))
-        .build();
-
-    let editbox_style = root_ui()
-        .style_builder()
-        .with_font(&font)
-        .unwrap()
-        .font_size(16)
-        .text_color(Color::new(0., 0., 0., 1.))
-        .color(Color::new(0.0, 0.90, 0.90, 0.0))
-        .color_selected(Color::new(0.0, 0.90, 0.90, 0.0))
-        .color_clicked(Color::new(0.0, 0.90, 0.90, 0.0))
-        .build();
-
-    let checkbox_style = root_ui()
-        .style_builder()
-        .font_size(18)
-        .color(Color::from_rgba(222, 185, 140, 255))
-        .color_hovered(Color::from_rgba(138, 101, 56, 255))
-        .color_clicked(Color::from_rgba(112, 77, 35, 255))
-        .build();
-
-    let group_style = root_ui()
-        .style_builder()
-        .color(Color::new(0., 0., 0., 0.))
-        .build();
-
-    let skin = Skin {
-        window_style,
-        button_style,
-        label_style,
-        editbox_style,
-        checkbox_style,
-        group_style,
-        ..root_ui().default_skin()
-    };
+    let skin = create_skin();
 
     root_ui().push_skin(&skin);
 
@@ -360,9 +291,7 @@ async fn main() {
             Vec2::ZERO
         } else if is_mouse_button_down(MouseButton::Left) {
             if is_mouse_button_pressed(MouseButton::Left) {
-                let current_window_position =
-                    Vec2::from_u32_tuple(miniquad::window::get_window_position());
-                mouse_offset = current_window_position - current_mouse_position;
+                mouse_offset = -Vec2::from_f32_tuple(mouse_position()) * screen_dpi_scale();
             }
             let new_pos = current_mouse_position + mouse_offset;
             set_window_position(new_pos.x as u32, new_pos.y as u32);

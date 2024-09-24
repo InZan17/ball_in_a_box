@@ -1,6 +1,6 @@
 use macroquad::{
     prelude::*,
-    ui::{hash, root_ui, widgets},
+    ui::{hash, root_ui, widgets, Skin},
 };
 use miniquad::*;
 use window::{dpi_scale, order_quit};
@@ -30,6 +30,75 @@ impl SettingsState {
             SettingsState::Closed => false,
             _ => true,
         }
+    }
+}
+
+pub fn create_skin() -> Skin {
+    let font = load_ttf_font_from_bytes(include_bytes!("../assets/FrederickatheGreat-Regular.ttf"))
+        .unwrap();
+
+    let window_style = root_ui()
+        .style_builder()
+        .background(
+            Image::from_file_with_format(include_bytes!("../assets/main_background.png"), None)
+                .unwrap(),
+        )
+        .build();
+
+    let button_style = root_ui()
+        .style_builder()
+        .background(
+            Image::from_file_with_format(include_bytes!("../assets/cardboard_button.png"), None)
+                .unwrap(),
+        )
+        .with_font(&font)
+        .unwrap()
+        .font_size(28)
+        .text_color(Color::new(0.05, 0., 0.1, 1.))
+        .color_hovered(Color::new(0.90, 0.90, 0.90, 1.0))
+        .build();
+
+    let label_style = root_ui()
+        .style_builder()
+        .with_font(&font)
+        .unwrap()
+        .font_size(24)
+        .text_color(Color::new(0.05, 0., 0.1, 1.))
+        .margin(RectOffset::new(0., 0., 10., 0.))
+        .build();
+
+    let editbox_style = root_ui()
+        .style_builder()
+        .with_font(&font)
+        .unwrap()
+        .font_size(16)
+        .text_color(Color::new(0., 0., 0., 1.))
+        .color(Color::new(0.0, 0.90, 0.90, 0.0))
+        .color_selected(Color::new(0.0, 0.90, 0.90, 0.0))
+        .color_clicked(Color::new(0.0, 0.90, 0.90, 0.0))
+        .build();
+
+    let checkbox_style = root_ui()
+        .style_builder()
+        .font_size(18)
+        .color(Color::from_rgba(222, 185, 140, 255))
+        .color_hovered(Color::from_rgba(138, 101, 56, 255))
+        .color_clicked(Color::from_rgba(112, 77, 35, 255))
+        .build();
+
+    let group_style = root_ui()
+        .style_builder()
+        .color(Color::new(0., 0., 0., 0.))
+        .build();
+
+    Skin {
+        window_style,
+        button_style,
+        label_style,
+        editbox_style,
+        checkbox_style,
+        group_style,
+        ..root_ui().default_skin()
     }
 }
 

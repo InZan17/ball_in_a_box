@@ -63,11 +63,13 @@ impl FromTuple for Vec2 {
 
 #[derive(Debug, SerJson, DeJson, Clone)]
 pub struct Settings {
+    terminal_velocity: f32,
     gravity_strength: f32,
     air_friction: f32,
-    bounciness: f32,
-    terminal_velocity: f32,
+    ball_bounciness: f32,
     ball_radius: f32,
+    ball_weight: f32,
+    ball_friction: f32,
     audio_volume: f32,
     shadow_size: f32,
     shadow_distance_strength: f32,
@@ -80,9 +82,11 @@ impl Default for Settings {
         Self {
             gravity_strength: 3.,
             air_friction: 0.17,
-            bounciness: 0.9,
             terminal_velocity: 100.,
+            ball_bounciness: 0.9,
             ball_radius: 90.,
+            ball_weight: 0.65,
+            ball_friction: 0.75,
             audio_volume: 0.6,
             shadow_size: 1.2,
             shadow_distance_strength: 50.,
@@ -280,8 +284,7 @@ async fn main() {
         last_mouse_position = current_mouse_position;
 
         if is_mouse_button_pressed(MouseButton::Left) && is_menu_open {
-            let abs_mouse_pos_from_center =
-                (mouse_pos - vec2(WIDTH_F, HEIGHT_F) / 2.).abs();
+            let abs_mouse_pos_from_center = (mouse_pos - vec2(WIDTH_F, HEIGHT_F) / 2.).abs();
             if abs_mouse_pos_from_center.x < MENU_SIZE.x / 2.
                 && abs_mouse_pos_from_center.y < MENU_SIZE.y / 2.
             {

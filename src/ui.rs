@@ -166,22 +166,11 @@ pub fn render_ui(
                     widgets::Slider::new(hash!(), 0.0..1.0)
                         .ui(ui, &mut editing_settings.audio_volume);
 
-                    widgets::Label::new("Bounciness").ui(ui);
-
-                    widgets::Slider::new(hash!(), 0.0..1.0)
-                        .ui(ui, &mut editing_settings.bounciness);
-
-                    widgets::Label::new("Ball radius").ui(ui);
-
-                    widgets::Slider::new(hash!(), 0.0..(WIDTH_F.min(HEIGHT_F) - 50.))
-                        .ui(ui, &mut editing_settings.ball_radius);
-
                     widgets::Label::new("Gravity strength").ui(ui);
 
                     widgets::Slider::new(hash!(), -30.0..30.0)
                         .ui(ui, &mut editing_settings.gravity_strength);
-                }
-                1 => {
+
                     widgets::Label::new("Air friction").ui(ui);
 
                     widgets::Slider::new(hash!(), 0.0..1.00)
@@ -191,6 +180,27 @@ pub fn render_ui(
 
                     widgets::Slider::new(hash!(), 0.0..500.00)
                         .ui(ui, &mut editing_settings.terminal_velocity);
+                }
+                1 => {
+                    widgets::Label::new("Ball bounciness").ui(ui);
+
+                    widgets::Slider::new(hash!(), 0.0..1.0)
+                        .ui(ui, &mut editing_settings.ball_bounciness);
+
+                    widgets::Label::new("Ball radius").ui(ui);
+
+                    widgets::Slider::new(hash!(), 0.0..(WIDTH_F.min(HEIGHT_F) - 50.))
+                        .ui(ui, &mut editing_settings.ball_radius);
+
+                    widgets::Label::new("Ball weight").ui(ui);
+
+                    widgets::Slider::new(hash!(), 0.0..1.0)
+                        .ui(ui, &mut editing_settings.ball_weight);
+
+                    widgets::Label::new("Ball friction").ui(ui);
+
+                    widgets::Slider::new(hash!(), 0.0..1.0)
+                        .ui(ui, &mut editing_settings.ball_friction);
                 }
                 _ => {
                     unimplemented!()

@@ -74,13 +74,16 @@ impl Ball {
             distance_to_floor = 0.;
             hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.y.abs());
             self.position.y = HEIGHT_F - wall_and_ball_offset;
-            self.velocity.y = -self.velocity.y * settings.bounciness - smoothed_wall_velocity.y;
+            self.velocity.y =
+                -self.velocity.y * settings.ball_bounciness - smoothed_wall_velocity.y;
 
             (self.rotation_velocity, self.velocity.x) = calculate_bounce_spin(
                 self.velocity.x,
                 smoothed_wall_velocity.x,
                 self.rotation_velocity,
                 settings.ball_radius,
+                settings.ball_weight,
+                settings.ball_friction,
                 false,
             );
         }
@@ -91,13 +94,16 @@ impl Ball {
             distance_to_ceiling = 0.;
             hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.y.abs());
             self.position.y = -HEIGHT_F + wall_and_ball_offset;
-            self.velocity.y = -self.velocity.y * settings.bounciness - smoothed_wall_velocity.y;
+            self.velocity.y =
+                -self.velocity.y * settings.ball_bounciness - smoothed_wall_velocity.y;
 
             (self.rotation_velocity, self.velocity.x) = calculate_bounce_spin(
                 self.velocity.x,
                 smoothed_wall_velocity.x,
                 self.rotation_velocity,
                 settings.ball_radius,
+                settings.ball_weight,
+                settings.ball_friction,
                 true,
             );
         }
@@ -107,13 +113,16 @@ impl Ball {
             distance_to_right_wall = 0.;
             hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.x.abs());
             self.position.x = WIDTH_F - wall_and_ball_offset;
-            self.velocity.x = -self.velocity.x * settings.bounciness - smoothed_wall_velocity.x;
+            self.velocity.x =
+                -self.velocity.x * settings.ball_bounciness - smoothed_wall_velocity.x;
 
             (self.rotation_velocity, self.velocity.y) = calculate_bounce_spin(
                 self.velocity.y,
                 smoothed_wall_velocity.y,
                 self.rotation_velocity,
                 settings.ball_radius,
+                settings.ball_weight,
+                settings.ball_friction,
                 true,
             );
         }
@@ -124,13 +133,16 @@ impl Ball {
             distance_to_left_wall = 0.;
             hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.x.abs());
             self.position.x = -WIDTH_F + wall_and_ball_offset;
-            self.velocity.x = -self.velocity.x * settings.bounciness - smoothed_wall_velocity.x;
+            self.velocity.x =
+                -self.velocity.x * settings.ball_bounciness - smoothed_wall_velocity.x;
 
             (self.rotation_velocity, self.velocity.y) = calculate_bounce_spin(
                 self.velocity.y,
                 smoothed_wall_velocity.y,
                 self.rotation_velocity,
                 settings.ball_radius,
+                settings.ball_weight,
+                settings.ball_friction,
                 false,
             );
         }
@@ -255,6 +267,8 @@ pub fn calculate_bounce_spin(
     window_velocity: f32,
     ball_rotation_velocity: f32,
     mut ball_radius: f32,
+    weight: f32,
+    friction: f32,
     inverted: bool,
 ) -> (f32, f32) {
     ball_radius = ball_radius.max(0.001);
@@ -266,15 +280,16 @@ pub fn calculate_bounce_spin(
     };
     let rotation_velocity_from_velocity = total_velocity / ball_radius;
     let middle_rotation_velocity =
-        rotation_velocity_from_velocity.lerp(ball_rotation_velocity, 0.5);
+        rotation_velocity_from_velocity.lerp(ball_rotation_velocity, weight * friction);
     let current_rotation_direction_velocity = if inverted {
         -middle_rotation_velocity * ball_radius
     } else {
         middle_rotation_velocity * ball_radius
     };
-    let new_rotation_velocity = ball_rotation_velocity.lerp(rotation_velocity_from_velocity, 0.75);
+    let bounce_back_rotation_velocity =
+        ball_rotation_velocity.lerp(rotation_velocity_from_velocity, friction);
     return (
-        new_rotation_velocity,
+        bounce_back_rotation_velocity,
         current_rotation_direction_velocity - window_velocity,
     );
 }

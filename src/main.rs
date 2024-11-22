@@ -1,10 +1,15 @@
 use core::str;
-use std::{f32::consts::PI, fs};
+use std::{
+    f32::consts::PI,
+    fs,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use ball::Ball;
-use macroquad::{audio::set_sound_volume, prelude::*, ui::root_ui};
+use macroquad::{audio::set_sound_volume, prelude::*, rand, ui::root_ui};
 use miniquad::*;
 use nanoserde::{DeJson, SerJson};
+use textures::{find_texture, get_random_texture};
 use ui::{create_skin, render_ui, SettingsState, MENU_SIZE};
 use window::set_window_position;
 
@@ -114,6 +119,14 @@ fn write_settings_file(settings: &Settings) {
 
 #[macroquad::main(window_conf)]
 async fn main() {
+    {
+        let start = SystemTime::now();
+        let since_the_epoch = start
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards");
+
+        rand::srand(since_the_epoch.as_nanos() as u64);
+    }
     set_window_position((1920 - WIDTH as u32) / 2, (1080 - HEIGHT as u32) / 2);
     next_frame().await;
 
@@ -177,8 +190,6 @@ async fn main() {
     )
     .expect("Failed to load shadow material.");
 
-    let ball_textures = textures::BallTextures::new();
-
     let ball_sounds = sounds::BallSounds::new().await;
 
     let max_string_len = 100;
@@ -201,7 +212,9 @@ async fn main() {
     let mut smoothed_magnitude = 0.;
 
     let mut ball = Ball::new(
-        ball_textures.get_texture(&settings.last_ball),
+        find_texture(&settings.last_ball)
+            .unwrap_or_else(|| get_random_texture())
+            .1,
         ball_material,
         shadow_material,
         ball_sounds
@@ -254,15 +267,10 @@ async fn main() {
         while let Some(character) = get_char_pressed() {
             text_input.push(character.to_ascii_lowercase());
 
-            if let Some((ball_name, texture)) = ball_textures.find_custom(&text_input) {
-                ball.texture = Texture2D::from_file_with_format(&texture, None);
+            if let Some((ball_name, texture)) = find_texture(&text_input) {
+                ball.texture = texture;
                 settings.last_ball = ball_name.clone();
                 editing_settings.last_ball = ball_name;
-                write_settings_file(&settings);
-            } else if let Some((ball_name, texture)) = ball_textures.find(&text_input) {
-                ball.texture = Texture2D::from_file_with_format(texture, None);
-                settings.last_ball = ball_name.to_string();
-                editing_settings.last_ball = ball_name.to_string();
                 write_settings_file(&settings);
             }
 

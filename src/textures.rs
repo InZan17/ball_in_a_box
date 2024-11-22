@@ -1,89 +1,83 @@
-use std::{fs, path::Path};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
-use macroquad::texture::Texture2D;
+use macroquad::{rand, texture::Texture2D};
 
-pub(crate) struct BallTextures {
-    textures: Vec<(&'static str, &'static [u8])>,
+pub fn create_ball_folder() {
+    if !Path::new("./balls").exists() {
+        fs::create_dir("./balls").expect("Unable to create balls folder.")
+    }
+
+    if list_available_balls().len() == 0 {
+        fs::write(
+            "./balls/grinning.png",
+            include_bytes!("../balls/grinning.png"),
+        )
+        .expect("Unable to create ball texture.");
+    }
 }
 
-impl BallTextures {
-    pub fn new() -> Self {
-        if !Path::new("./balls").exists() {
-            if fs::create_dir("./balls").is_ok() {
-                let _ = fs::write("./balls/custom.png", include_bytes!("../assets/custom.png"));
+pub fn list_available_balls() -> Vec<(String, PathBuf)> {
+    let Ok(read_dir) = fs::read_dir("./balls") else {
+        return Vec::new();
+    };
+
+    read_dir
+        .map(|entry| {
+            let entry = entry.ok()?;
+
+            let path = entry.path();
+
+            let filename = path.file_name()?;
+
+            let filename_str = filename.to_str()?;
+
+            if !filename_str.ends_with(".png") {
+                return None;
             }
-        }
 
-        Self {
-            textures: vec![
-                ("distress", include_bytes!("../assets/distress.png")),
-                ("earth", include_bytes!("../assets/earth.png")),
-                ("grinning", include_bytes!("../assets/grinning.png")),
-                ("white", include_bytes!("../assets/white.png")),
-            ],
-        }
-    }
-    pub fn find_custom(&self, current_string: &str) -> Option<(String, Vec<u8>)> {
-        if current_string.is_empty() {
-            return None;
-        }
+            let filename_str = &filename_str[..filename_str.len() - 4];
 
-        if let Ok(read_dir) = fs::read_dir("./balls") {
-            for entry in read_dir {
-                let Ok(entry) = entry else {
-                    continue;
-                };
-                let path = entry.path();
-                let Some(filename) = path.file_name() else {
-                    continue;
-                };
-                let Some(filename_str) = filename.to_str() else {
-                    continue;
-                };
+            let filename_string = filename_str.to_string();
 
-                if !filename_str.ends_with(".png") {
-                    continue;
-                }
+            Some((filename_string, path))
+        })
+        .flatten()
+        .collect()
+}
 
-                let filename_str = &filename_str[..filename_str.len() - 4];
-
-                if current_string.ends_with(filename_str) {
-                    let Ok(bytes) = fs::read(&path) else {
-                        break;
-                    };
-                    return Some((filename_str.to_string(), bytes));
-                }
-            }
-        }
-        None
+pub fn find_texture(current_string: &str) -> Option<(String, Texture2D)> {
+    if current_string.is_empty() {
+        return None;
     }
 
-    pub fn find(&self, current_string: &str) -> Option<(&'static str, &'static [u8])> {
-        if current_string.is_empty() {
-            return None;
-        }
-
-        for (name, ball) in self.textures.iter() {
-            if current_string.ends_with(name) {
-                return Some((name, ball));
-            }
-        }
-        None
-    }
-
-    pub fn get_first(&self) -> (&'static str, &'static [u8]) {
-        let ball = &self.textures[0];
-        (ball.0, ball.1)
-    }
-
-    pub fn get_texture(&self, current_string: &str) -> Texture2D {
-        if let Some(ball) = self.find_custom(current_string) {
-            Texture2D::from_file_with_format(&ball.1, None)
-        } else if let Some(ball) = self.find(current_string) {
-            Texture2D::from_file_with_format(ball.1, None)
-        } else {
-            let ball = self.get_first();
-            Texture2D::from_file_with_format(ball.1, None)
+    for (ball_name, ball_path) in list_available_balls() {
+        if current_string.ends_with(&ball_name) {
+            let Ok(bytes) = fs::read(&ball_path) else {
+                panic!("Failed to read bytes from {}", ball_path.to_string_lossy())
+            };
+            return Some((ball_name, Texture2D::from_file_with_format(&bytes, None)));
         }
     }
+
+    None
+}
+
+pub fn get_random_texture() -> (String, Texture2D) {
+    let available_balls = list_available_balls();
+
+    if available_balls.is_empty() {
+        panic!("available_balls is empty!");
+    }
+
+    let rand_index = rand::gen_range(0, available_balls.len());
+    let (ball_name, ball_path) = available_balls.into_iter().nth(rand_index).unwrap();
+
+    let Ok(bytes) = fs::read(&ball_path) else {
+        panic!("Failed to read bytes from {}", ball_path.to_string_lossy())
+    };
+
+    return (ball_name, Texture2D::from_file_with_format(&bytes, None));
 }

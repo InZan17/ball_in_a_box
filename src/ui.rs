@@ -102,11 +102,7 @@ pub fn create_skin() -> Skin {
     }
 }
 
-pub fn render_ui(
-    editing_settings: &mut Settings,
-    settings_state: &mut SettingsState,
-    mouse_pos: Vec2,
-) -> bool {
+pub fn render_ui(editing_settings: &mut Settings, settings_state: &mut SettingsState) -> bool {
     if *settings_state == SettingsState::Closed {
         return false;
     }

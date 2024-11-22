@@ -242,7 +242,7 @@ async fn main() {
         } else {
             Vec2::from_f32_tuple(mouse_position()) * screen_dpi_scale()
         };
-        let save = render_ui(&mut editing_settings, &mut settings_state, mouse_pos);
+        let save = render_ui(&mut editing_settings, &mut settings_state);
         if save {
             settings = editing_settings.clone();
             write_settings_file(&settings);

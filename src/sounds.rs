@@ -5,13 +5,13 @@ use std::{fs, path::PathBuf};
 use macroquad::rand;
 
 pub fn list_available_sounds() -> Vec<(String, PathBuf)> {
-    let read_dir = fs::read_dir("./sounds").expect("Couldn't get the sounds directory.");
+    let read_dir = fs::read_dir("./sounds").expect("Couldn't get the sounds directory");
 
     read_dir
         .map(|entry| {
             let entry = entry
                 .ok()
-                .expect("Failed to get DirEntry looking for available sounds.");
+                .expect("Failed to get DirEntry looking for available sounds");
 
             let path = entry.path();
 
@@ -34,7 +34,7 @@ pub async fn load_sounds(path: PathBuf) -> Vec<Sound> {
 
     let sounds_bytes = read_dir
         .map(|entry| {
-            let entry = entry.expect("Failed to get DirEntry when loading sounds.");
+            let entry = entry.expect("Failed to get DirEntry when loading sounds");
 
             let path = entry.path();
 
@@ -60,7 +60,7 @@ pub async fn load_sounds(path: PathBuf) -> Vec<Sound> {
     for bytes in sounds_bytes {
         let sound = load_sound_from_bytes(&bytes)
             .await
-            .expect("Couldn't read bytes from a sound.");
+            .expect("Couldn't read bytes from a sound");
 
         sounds.push(sound);
     }

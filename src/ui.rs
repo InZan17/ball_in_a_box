@@ -37,21 +37,21 @@ pub async fn create_skin() -> Skin {
     // FrederickatheGreat-Regular
     let font_bytes = load_file("./assets/font.ttf")
         .await
-        .expect("Couldn't find assets/font.ttf file.");
+        .expect("Couldn't find assets/font.ttf file");
 
-    let font = load_ttf_font_from_bytes(&font_bytes).expect("Couldn't load assets/font.ttf.");
+    let font = load_ttf_font_from_bytes(&font_bytes).expect("Couldn't load assets/font.ttf");
 
     drop(font_bytes);
 
     let background_bytes = load_file("./assets/main_background.png")
         .await
-        .expect("Couldn't find assets/main_background.png file.");
+        .expect("Couldn't find assets/main_background.png file");
 
     let window_style = root_ui()
         .style_builder()
         .background(
             Image::from_file_with_format(&background_bytes, None)
-                .expect("Couldn't load assets/main_background.png."),
+                .expect("Couldn't load assets/main_background.png"),
         )
         .build();
 
@@ -59,13 +59,13 @@ pub async fn create_skin() -> Skin {
 
     let button_bytes = load_file("./assets/cardboard_button.png")
         .await
-        .expect("Couldn't find assets/cardboard_button.png file.");
+        .expect("Couldn't find assets/cardboard_button.png file");
 
     let button_style = root_ui()
         .style_builder()
         .background(
             Image::from_file_with_format(&button_bytes, None)
-                .expect("Couldn't load assets/cardboard_button.png."),
+                .expect("Couldn't load assets/cardboard_button.png"),
         )
         .with_font(&font)
         .unwrap()

@@ -3,13 +3,13 @@ use std::{fs, path::PathBuf};
 use macroquad::{rand, texture::Texture2D};
 
 pub fn list_available_balls() -> Vec<(String, PathBuf)> {
-    let read_dir = fs::read_dir("./balls").expect("Couldn't get the balls directory.");
+    let read_dir = fs::read_dir("./balls").expect("Couldn't get the balls directory");
 
     read_dir
         .map(|entry| {
             let entry = entry
                 .ok()
-                .expect("Failed to get DirEntry looking for available balls.");
+                .expect("Failed to get DirEntry looking for available balls");
 
             let path = entry.path();
 

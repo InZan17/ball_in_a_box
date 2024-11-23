@@ -1,7 +1,11 @@
+#![windows_subsystem = "windows"]
+
 use core::str;
 use std::{
     f32::consts::PI,
-    fs,
+    fs::{self, OpenOptions},
+    io::Write,
+    panic,
     time::{SystemTime, UNIX_EPOCH},
 };
 
@@ -110,6 +114,26 @@ fn write_settings_file(settings: &Settings) {
 
 #[macroquad::main(window_conf)]
 async fn main() {
+    panic::set_hook(Box::new(|info| {
+        let Ok(mut log_file) = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .open("crash_info.txt")
+        else {
+            return;
+        };
+
+        let panic_message = if let Some(s) = info.payload().downcast_ref::<&str>() {
+            (*s).to_string()
+        } else if let Some(s) = info.payload().downcast_ref::<String>() {
+            s.to_string()
+        } else {
+            "Unknown panic message".to_string()
+        };
+
+        let _ = log_file.write(format!("{panic_message}").as_bytes());
+    }));
+
     {
         let start = SystemTime::now();
         let since_the_epoch = start
@@ -132,27 +156,27 @@ async fn main() {
     let background_texture = Texture2D::from_file_with_format(
         &load_file("./assets/background.png")
             .await
-            .expect("Couldn't find the assets/background.png file."),
+            .expect("Couldn't find the assets/background.png file"),
         None,
     );
 
     let side_texture = Texture2D::from_file_with_format(
         &load_file("./assets/cardboardside.png")
             .await
-            .expect("Couldn't find the assets/cardboardside.png file."),
+            .expect("Couldn't find the assets/cardboardside.png file"),
         None,
     );
 
     let default_vert = load_string("assets/default.vert")
         .await
-        .expect("Couldn't find the assets/default.vert file.");
+        .expect("Couldn't find the assets/default.vert file");
 
     let ball_material = load_material(
         ShaderSource::Glsl {
             vertex: &default_vert,
             fragment: &load_string("assets/ball.frag")
                 .await
-                .expect("Couldn't find the assets/ball.frag file."),
+                .expect("Couldn't find the assets/ball.frag file"),
         },
         MaterialParams {
             uniforms: vec![
@@ -173,14 +197,14 @@ async fn main() {
             ..Default::default()
         },
     )
-    .expect("Failed to load ball material.");
+    .expect("Failed to load ball material");
 
     let shadow_material = load_material(
         ShaderSource::Glsl {
             vertex: &default_vert,
             fragment: &load_string("assets/shadow.frag")
                 .await
-                .expect("Couldn't find the assets/shadow.frag file."),
+                .expect("Couldn't find the assets/shadow.frag file"),
         },
         MaterialParams {
             uniforms: vec![UniformDesc::new("in_shadow", UniformType::Float1)],
@@ -195,7 +219,7 @@ async fn main() {
             ..Default::default()
         },
     )
-    .expect("Failed to load shadow material.");
+    .expect("Failed to load shadow material");
 
     drop(default_vert);
 

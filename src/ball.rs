@@ -148,7 +148,6 @@ impl Ball {
         }
 
         if self.velocity.length() > settings.terminal_velocity * 1000. {
-            println!("Reached terminal velocity!");
             self.velocity = self.velocity.normalize() * settings.terminal_velocity * 1000.;
         }
 

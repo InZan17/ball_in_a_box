@@ -92,8 +92,8 @@ impl Default for Settings {
             audio_volume: 0.6,
             shadow_size: 1.2,
             shadow_distance_strength: 50.,
-            last_ball: "".to_string(),
-            last_sounds: "".to_string(),
+            last_ball: "grinning".to_string(),
+            last_sounds: "thud".to_string(),
         }
     }
 }
@@ -219,7 +219,7 @@ async fn main() {
     let mut smoothed_magnitude = 0.;
 
     let mut ball = {
-        let option_sounds = find_sounds(&settings.last_ball).await;
+        let option_sounds = find_sounds(&settings.last_sounds).await;
 
         let sounds = if let Some(sounds) = option_sounds {
             sounds

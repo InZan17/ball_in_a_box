@@ -99,14 +99,8 @@ impl Default for Settings {
 }
 
 fn read_settings_file() -> Option<Settings> {
-    let result = fs::read("./settings_in_a.json");
-    let Ok(bytes) = result else {
-        return None;
-    };
-
-    let Ok(string) = str::from_utf8(&bytes) else {
-        return None;
-    };
+    let bytes = fs::read("./settings_in_a.json").ok()?;
+    let string = str::from_utf8(&bytes).ok()?;
     return Settings::deserialize_json(string).ok();
 }
 

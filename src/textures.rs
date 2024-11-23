@@ -1,38 +1,21 @@
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
+use std::{fs, path::PathBuf};
 
 use macroquad::{rand, texture::Texture2D};
 
-pub fn create_ball_folder() {
-    if !Path::new("./balls").exists() {
-        fs::create_dir("./balls").expect("Unable to create balls folder.")
-    }
-
-    if list_available_balls().len() == 0 {
-        fs::write(
-            "./balls/grinning.png",
-            include_bytes!("../balls/grinning.png"),
-        )
-        .expect("Unable to create ball texture.");
-    }
-}
-
 pub fn list_available_balls() -> Vec<(String, PathBuf)> {
-    let Ok(read_dir) = fs::read_dir("./balls") else {
-        return Vec::new();
-    };
+    let read_dir = fs::read_dir("./balls").expect("Couldn't get the balls directory.");
 
     read_dir
         .map(|entry| {
-            let entry = entry.ok()?;
+            let entry = entry
+                .ok()
+                .expect("Failed to get DirEntry looking for available balls.");
 
             let path = entry.path();
 
-            let filename = path.file_name()?;
+            let filename = entry.file_name();
 
-            let filename_str = filename.to_str()?;
+            let filename_str = filename.to_string_lossy();
 
             if !filename_str.ends_with(".png") {
                 return None;

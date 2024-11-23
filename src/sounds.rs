@@ -1,164 +1,105 @@
 use macroquad::audio::{load_sound_from_bytes, Sound};
 
-pub(crate) struct BallSounds {
-    sounds: Vec<(&'static str, Vec<Sound>)>,
-}
+use std::{fs, path::PathBuf};
 
-impl BallSounds {
-    pub async fn new() -> Self {
-        Self {
-            sounds: vec![
-                ("normal", get_normal().await),
-                ("boing", get_boing().await),
-                ("hatefilled", get_hatefilled().await),
-            ],
-        }
-    }
+use macroquad::rand;
 
-    pub fn find(&self, current_string: &str) -> Option<(String, Vec<Sound>)> {
-        if current_string.is_empty() {
-            return None;
-        }
+pub fn list_available_sounds() -> Vec<(String, PathBuf)> {
+    let read_dir = fs::read_dir("./sounds").expect("Couldn't get the sounds directory.");
 
-        for (name, sounds) in self.sounds.iter() {
-            if current_string.ends_with(name) {
-                return Some((name.to_string(), sounds.clone()));
+    read_dir
+        .map(|entry| {
+            let entry = entry
+                .ok()
+                .expect("Failed to get DirEntry looking for available sounds.");
+
+            let path = entry.path();
+
+            if !path.is_dir() {
+                return None;
             }
+
+            let filename = entry.file_name();
+
+            let filename_string = filename.to_string_lossy().to_string();
+
+            Some((filename_string, path))
+        })
+        .flatten()
+        .collect()
+}
+
+pub async fn load_sounds(path: PathBuf) -> Vec<Sound> {
+    let Ok(read_dir) = fs::read_dir(&path) else {
+        panic!("Failed to read directory {}", path.to_string_lossy())
+    };
+
+    let sounds_bytes = read_dir
+        .map(|entry| {
+            let entry = entry.expect("Failed to get DirEntry when loading sounds.");
+
+            let path = entry.path();
+
+            if !path.is_file() {
+                return None;
+            }
+
+            let is_ogg = entry.file_name().to_string_lossy().ends_with(".ogg");
+
+            if !is_ogg {
+                return None;
+            }
+
+            let Ok(bytes) = fs::read(path) else {
+                return None;
+            };
+
+            Some(bytes)
+        })
+        .flatten()
+        .collect::<Vec<Vec<u8>>>();
+
+    let mut sounds = Vec::with_capacity(sounds_bytes.len());
+
+    for bytes in sounds_bytes {
+        let sound = load_sound_from_bytes(&bytes)
+            .await
+            .expect("Couldn't read bytes from a sound.");
+
+        sounds.push(sound);
+    }
+
+    sounds
+}
+
+pub async fn find_sounds(current_string: &str) -> Option<(String, Vec<Sound>)> {
+    if current_string.is_empty() {
+        return None;
+    }
+
+    for (sounds_name, sounds_path) in list_available_sounds() {
+        if current_string.ends_with(&sounds_name) {
+            return Some((sounds_name, load_sounds(sounds_path).await));
         }
-        None
     }
 
-    pub fn get_first(&self) -> (String, Vec<Sound>) {
-        let ball = &self.sounds[0];
-        (ball.0.to_string(), ball.1.clone())
+    None
+}
+
+pub async fn get_random_sounds() -> (String, Vec<Sound>) {
+    let available_sounds = list_available_sounds();
+
+    if available_sounds.is_empty() {
+        panic!("There are no available sounds to use!");
     }
-}
 
-async fn get_normal() -> Vec<Sound> {
-    vec![
-        load_sound_from_bytes(include_bytes!("../assets/bonk2.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/bonk3.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/bonk4.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/bonk5.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/bonk6.ogg"))
-            .await
-            .unwrap(),
-    ]
-}
+    let rand_index = rand::gen_range(0, available_sounds.len());
+    let (sounds_name, sounds_path) = unsafe {
+        available_sounds
+            .into_iter()
+            .nth(rand_index)
+            .unwrap_unchecked()
+    };
 
-async fn get_boing() -> Vec<Sound> {
-    vec![
-        load_sound_from_bytes(include_bytes!("../assets/boing/boing1.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/boing/boing2.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/boing/boing3.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/boing/boing4.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/boing/boing5.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/boing/boing6.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/boing/boing7.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/boing/boing8.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/boing/boing9.ogg"))
-            .await
-            .unwrap(),
-    ]
-}
-
-async fn get_hatefilled() -> Vec<Sound> {
-    vec![
-        load_sound_from_bytes(include_bytes!("../assets/hatefilled/Anvil1.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/hatefilled/Anvil2.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/hatefilled/Burn.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/hatefilled/Disgusted.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/hatefilled/Dont_touch_me.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/hatefilled/Excuse_Me.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/hatefilled/Fullofhate.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!(
-            "../assets/hatefilled/I_Dont_Wanna_See_You.ogg"
-        ))
-        .await
-        .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/hatefilled/I_HATE_YOU.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/hatefilled/Idon'tlikeyou.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/hatefilled/Ill.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/hatefilled/ImHateFilled.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!(
-            "../assets/hatefilled/Jump_Off_Of_A_Microwave.ogg"
-        ))
-        .await
-        .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/hatefilled/Knuckle.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/hatefilled/Ovenon.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!(
-            "../assets/hatefilled/Whats_In_Your_Pocket_What_Did_You_Just_Put_In_Your_Pocket.ogg"
-        ))
-        .await
-        .unwrap(),
-        load_sound_from_bytes(include_bytes!(
-            "../assets/hatefilled/Who_Do_You_Think_You_Are.ogg"
-        ))
-        .await
-        .unwrap(),
-        load_sound_from_bytes(include_bytes!("../assets/hatefilled/YOU'RE_A_LOSER.ogg"))
-            .await
-            .unwrap(),
-        load_sound_from_bytes(include_bytes!(
-            "../assets/hatefilled/You_Would_Tell_Me_If_You_Stole_Something_Right.ogg"
-        ))
-        .await
-        .unwrap(),
-        load_sound_from_bytes(include_bytes!(
-            "../assets/hatefilled/Youre_mentally_ill.ogg"
-        ))
-        .await
-        .unwrap(),
-    ]
+    return (sounds_name, load_sounds(sounds_path).await);
 }

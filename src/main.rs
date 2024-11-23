@@ -9,6 +9,7 @@ use ball::Ball;
 use macroquad::{audio::set_sound_volume, prelude::*, rand, ui::root_ui};
 use miniquad::*;
 use nanoserde::{DeJson, SerJson};
+use sounds::{find_sounds, get_random_sounds};
 use textures::{find_texture, get_random_texture};
 use ui::{create_skin, render_ui, SettingsState, MENU_SIZE};
 use window::set_window_position;
@@ -204,8 +205,6 @@ async fn main() {
 
     drop(default_vert);
 
-    let ball_sounds = sounds::BallSounds::new().await;
-
     let max_string_len = 100;
 
     let mut text_input = String::new();
@@ -225,17 +224,24 @@ async fn main() {
     let mut smoothed_delta = Vec2::ZERO;
     let mut smoothed_magnitude = 0.;
 
-    let mut ball = Ball::new(
-        find_texture(&settings.last_ball)
-            .unwrap_or_else(|| get_random_texture())
-            .1,
-        ball_material,
-        shadow_material,
-        ball_sounds
-            .find(&settings.last_sounds)
-            .unwrap_or_else(|| ball_sounds.get_first())
-            .1,
-    );
+    let mut ball = {
+        let option_sounds = find_sounds(&settings.last_ball).await;
+
+        let sounds = if let Some(sounds) = option_sounds {
+            sounds
+        } else {
+            get_random_sounds().await
+        };
+
+        Ball::new(
+            find_texture(&settings.last_ball)
+                .unwrap_or_else(|| get_random_texture())
+                .1,
+            ball_material,
+            shadow_material,
+            sounds.1,
+        )
+    };
 
     set_camera(&Camera2D {
         zoom: vec2(1. / WIDTH_F, 1. / HEIGHT_F),
@@ -288,7 +294,7 @@ async fn main() {
                 write_settings_file(&settings);
             }
 
-            if let Some((sounds_name, sounds)) = ball_sounds.find(&text_input) {
+            if let Some((sounds_name, sounds)) = find_sounds(&text_input).await {
                 ball.sounds = sounds.clone();
                 settings.last_sounds = sounds_name.clone();
                 editing_settings.last_sounds = sounds_name;

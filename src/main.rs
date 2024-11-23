@@ -114,6 +114,9 @@ fn write_settings_file(settings: &Settings) {
 
 #[macroquad::main(window_conf)]
 async fn main() {
+    set_window_position((1920 - WIDTH as u32) / 2, (1080 - HEIGHT as u32) / 2);
+    next_frame().await;
+
     panic::set_hook(Box::new(|info| {
         let Ok(mut log_file) = OpenOptions::new()
             .create(true)
@@ -142,8 +145,6 @@ async fn main() {
 
         rand::srand(since_the_epoch.as_nanos() as u64);
     }
-    set_window_position((1920 - WIDTH as u32) / 2, (1080 - HEIGHT as u32) / 2);
-    next_frame().await;
 
     let mut settings = read_settings_file().unwrap_or_else(|| {
         let settings = Settings::default();

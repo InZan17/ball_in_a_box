@@ -73,7 +73,12 @@ pub fn get_random_texture() -> (String, Texture2D) {
     }
 
     let rand_index = rand::gen_range(0, available_balls.len());
-    let (ball_name, ball_path) = available_balls.into_iter().nth(rand_index).unwrap();
+    let (ball_name, ball_path) = unsafe {
+        available_balls
+            .into_iter()
+            .nth(rand_index)
+            .unwrap_unchecked()
+    };
 
     let Ok(bytes) = fs::read(&ball_path) else {
         panic!("Failed to read bytes from {}", ball_path.to_string_lossy())

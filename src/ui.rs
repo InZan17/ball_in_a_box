@@ -33,23 +33,39 @@ impl SettingsState {
     }
 }
 
-pub fn create_skin() -> Skin {
-    let font = load_ttf_font_from_bytes(include_bytes!("../assets/FrederickatheGreat-Regular.ttf"))
-        .unwrap();
+pub async fn create_skin() -> Skin {
+    // FrederickatheGreat-Regular
+    let font_bytes = load_file("./assets/font.ttf")
+        .await
+        .expect("Couldn't find assets/font.ttf file.");
+
+    let font = load_ttf_font_from_bytes(&font_bytes).expect("Couldn't load assets/font.ttf.");
+
+    drop(font_bytes);
+
+    let background_bytes = load_file("./assets/main_background.png")
+        .await
+        .expect("Couldn't find assets/main_background.png file.");
 
     let window_style = root_ui()
         .style_builder()
         .background(
-            Image::from_file_with_format(include_bytes!("../assets/main_background.png"), None)
-                .unwrap(),
+            Image::from_file_with_format(&background_bytes, None)
+                .expect("Couldn't load assets/main_background.png."),
         )
         .build();
+
+    drop(background_bytes);
+
+    let button_bytes = load_file("./assets/cardboard_button.png")
+        .await
+        .expect("Couldn't find assets/cardboard_button.png file.");
 
     let button_style = root_ui()
         .style_builder()
         .background(
-            Image::from_file_with_format(include_bytes!("../assets/cardboard_button.png"), None)
-                .unwrap(),
+            Image::from_file_with_format(&button_bytes, None)
+                .expect("Couldn't load assets/cardboard_button.png."),
         )
         .with_font(&font)
         .unwrap()
@@ -57,6 +73,8 @@ pub fn create_skin() -> Skin {
         .text_color(Color::new(0.05, 0., 0.1, 1.))
         .color_hovered(Color::new(0.90, 0.90, 0.90, 1.0))
         .build();
+
+    drop(button_bytes);
 
     let label_style = root_ui()
         .style_builder()

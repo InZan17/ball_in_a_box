@@ -42,10 +42,6 @@ pub fn window_conf() -> Conf {
     }
 }
 
-const BALL_FRAGMENT_SHADER: &'static str = include_str!("../assets/ball.frag");
-const SHADOW_FRAGMENT_SHADER: &'static str = include_str!("../assets/shadow.frag");
-const VERTEX_SHADER: &'static str = include_str!("../assets/ball.vert");
-
 pub trait FromTuple {
     fn from_u32_tuple(tuple: (u32, u32)) -> Self;
     fn from_i32_tuple(tuple: (i32, i32)) -> Self;
@@ -138,16 +134,30 @@ async fn main() {
 
     let mut editing_settings = settings.clone();
 
-    let background_texture =
-        Texture2D::from_file_with_format(include_bytes!("../assets/background.png"), None);
+    let background_texture = Texture2D::from_file_with_format(
+        &load_file("./assets/background.png")
+            .await
+            .expect("Couldn't find the assets/background.png file."),
+        None,
+    );
 
-    let side_texture =
-        Texture2D::from_file_with_format(include_bytes!("../assets/cardboardsidebottom.png"), None);
+    let side_texture = Texture2D::from_file_with_format(
+        &load_file("./assets/cardboardside.png")
+            .await
+            .expect("Couldn't find the assets/cardboardside.png file."),
+        None,
+    );
+
+    let default_vert = load_string("assets/default.vert")
+        .await
+        .expect("Couldn't find the assets/default.vert file.");
 
     let ball_material = load_material(
         ShaderSource::Glsl {
-            vertex: VERTEX_SHADER,
-            fragment: BALL_FRAGMENT_SHADER,
+            vertex: &default_vert,
+            fragment: &load_string("assets/ball.frag")
+                .await
+                .expect("Couldn't find the assets/ball.frag file."),
         },
         MaterialParams {
             uniforms: vec![
@@ -172,8 +182,10 @@ async fn main() {
 
     let shadow_material = load_material(
         ShaderSource::Glsl {
-            vertex: VERTEX_SHADER,
-            fragment: SHADOW_FRAGMENT_SHADER,
+            vertex: &default_vert,
+            fragment: &load_string("assets/shadow.frag")
+                .await
+                .expect("Couldn't find the assets/shadow.frag file."),
         },
         MaterialParams {
             uniforms: vec![UniformDesc::new("in_shadow", UniformType::Float1)],
@@ -190,13 +202,15 @@ async fn main() {
     )
     .expect("Failed to load shadow material.");
 
+    drop(default_vert);
+
     let ball_sounds = sounds::BallSounds::new().await;
 
     let max_string_len = 100;
 
     let mut text_input = String::new();
 
-    let skin = create_skin();
+    let skin = create_skin().await;
 
     root_ui().push_skin(&skin);
 

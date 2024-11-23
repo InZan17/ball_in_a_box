@@ -111,8 +111,8 @@ pub fn render_ui(editing_settings: &mut Settings, settings_state: &mut SettingsS
 
     let menu_position = (vec2(WIDTH_F, HEIGHT_F) / dpi_scale() - MENU_SIZE) / 2.;
 
-    if let SettingsState::Settings(settings_page) = settings_state.clone() {
-        root_ui().window(hash!(), menu_position, MENU_SIZE, |ui| {
+    root_ui().window(hash!(), menu_position, MENU_SIZE, |ui| {
+        if let SettingsState::Settings(settings_page) = settings_state.clone() {
             let mut top_position = vec2(
                 (MENU_SIZE.x - BUTTON_SIZE.x) / 2.,
                 MENU_PADDING + BUTTONS_MARGIN,
@@ -230,10 +230,9 @@ pub fn render_ui(editing_settings: &mut Settings, settings_state: &mut SettingsS
             {
                 save = true;
             }
-        });
-    } else {
-        const MENU_PADDING: f32 = 45.;
-        root_ui().window(hash!(), menu_position, MENU_SIZE, |ui| {
+        } else {
+            const MENU_PADDING: f32 = 45.;
+
             let mut button_position = vec2(
                 (MENU_SIZE.x - BUTTON_SIZE.x) / 2.,
                 MENU_PADDING + BUTTONS_MARGIN,
@@ -261,7 +260,7 @@ pub fn render_ui(editing_settings: &mut Settings, settings_state: &mut SettingsS
             {
                 order_quit();
             }
-        });
-    };
+        }
+    });
     return save;
 }

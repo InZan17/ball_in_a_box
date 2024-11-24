@@ -23,21 +23,17 @@ pub mod sounds;
 pub mod textures;
 pub mod ui;
 
-const WIDTH: i32 = 640;
-const HEIGHT: i32 = 480;
-
-const WIDTH_F: f32 = WIDTH as f32;
-const HEIGHT_F: f32 = HEIGHT as f32;
-
 pub const WALL_THICKNESS: f32 = 20.;
 pub const WALL_DEPTH: f32 = 20.;
 pub const WALL_OFFSET: f32 = WALL_THICKNESS + WALL_DEPTH;
 
 pub fn window_conf() -> Conf {
+    let settings = read_settings_file().unwrap_or_default();
+
     Conf {
         window_title: "Ball in a Box".to_string(),
-        window_width: WIDTH,
-        window_height: HEIGHT,
+        window_width: settings.box_width as i32,
+        window_height: settings.box_height as i32,
         high_dpi: true,
         borderless: true,
         fullscreen: false,
@@ -79,6 +75,8 @@ pub struct Settings {
     audio_volume: f32,
     shadow_size: f32,
     shadow_distance_strength: f32,
+    box_width: f32,
+    box_height: f32,
     last_ball: String,
     last_sounds: String,
 }
@@ -96,6 +94,8 @@ impl Default for Settings {
             audio_volume: 0.6,
             shadow_size: 1.2,
             shadow_distance_strength: 50.,
+            box_width: 640.,
+            box_height: 480.,
             last_ball: "grinning".to_string(),
             last_sounds: "thud".to_string(),
         }
@@ -105,7 +105,13 @@ impl Default for Settings {
 fn read_settings_file() -> Option<Settings> {
     let bytes = fs::read("./settings_in_a.json").ok()?;
     let string = str::from_utf8(&bytes).ok()?;
-    return Settings::deserialize_json(string).ok();
+    let mut settings = Settings::deserialize_json(string).ok()?;
+
+    // Fix values so it doesn't break when creating windows.
+    settings.box_width = settings.box_width.floor().max(1.0);
+    settings.box_height = settings.box_height.floor().max(1.0);
+
+    return Some(settings);
 }
 
 fn write_settings_file(settings: &Settings) {
@@ -114,7 +120,18 @@ fn write_settings_file(settings: &Settings) {
 
 #[macroquad::main(window_conf)]
 async fn main() {
-    set_window_position((1920 - WIDTH as u32) / 2, (1080 - HEIGHT as u32) / 2);
+    let mut settings = read_settings_file().unwrap_or_else(|| {
+        let settings = Settings::default();
+        write_settings_file(&settings);
+        settings
+    });
+
+    let mut editing_settings = settings.clone();
+
+    set_window_position(
+        (1920 - settings.box_width as u32) / 2,
+        (1080 - settings.box_height as u32) / 2,
+    );
     next_frame().await;
 
     panic::set_hook(Box::new(|info| {
@@ -145,14 +162,6 @@ async fn main() {
 
         rand::srand(since_the_epoch.as_nanos() as u64);
     }
-
-    let mut settings = read_settings_file().unwrap_or_else(|| {
-        let settings = Settings::default();
-        write_settings_file(&settings);
-        settings
-    });
-
-    let mut editing_settings = settings.clone();
 
     let background_texture = Texture2D::from_file_with_format(
         &load_file("./assets/background.png")
@@ -263,9 +272,11 @@ async fn main() {
     };
 
     set_camera(&Camera2D {
-        zoom: vec2(1. / WIDTH_F, 1. / HEIGHT_F),
+        zoom: vec2(1. / settings.box_width, 1. / settings.box_height),
         ..Default::default()
     });
+
+    let max_axis = settings.box_width.max(settings.box_height);
 
     loop {
         clear_background(DARKGRAY);
@@ -294,7 +305,11 @@ async fn main() {
         } else {
             Vec2::from_f32_tuple(mouse_position()) * screen_dpi_scale()
         };
-        let save = render_ui(&mut editing_settings, &mut settings_state);
+        let save = render_ui(
+            &mut editing_settings,
+            &mut settings_state,
+            (settings.box_width, settings.box_height),
+        );
         if save {
             settings = editing_settings.clone();
             write_settings_file(&settings);
@@ -331,7 +346,8 @@ async fn main() {
         last_mouse_position = current_mouse_position;
 
         if is_mouse_button_pressed(MouseButton::Left) && is_menu_open {
-            let abs_mouse_pos_from_center = (mouse_pos - vec2(WIDTH_F, HEIGHT_F) / 2.).abs();
+            let abs_mouse_pos_from_center =
+                (mouse_pos - vec2(settings.box_width, settings.box_height) / 2.).abs();
             if abs_mouse_pos_from_center.x < MENU_SIZE.x / 2.
                 && abs_mouse_pos_from_center.y < MENU_SIZE.y / 2.
             {
@@ -375,62 +391,66 @@ async fn main() {
 
         draw_texture_ex(
             &background_texture,
-            -WIDTH_F + WALL_THICKNESS,
-            -HEIGHT_F + WALL_THICKNESS,
+            -settings.box_width + WALL_THICKNESS,
+            -settings.box_height + WALL_THICKNESS,
             WHITE,
             DrawTextureParams {
                 dest_size: Some(vec2(
-                    (WIDTH_F - WALL_THICKNESS) * 2.,
-                    (HEIGHT_F - WALL_THICKNESS) * 2.,
+                    (settings.box_width - WALL_THICKNESS) * 2.,
+                    (settings.box_height - WALL_THICKNESS) * 2.,
                 )),
                 ..Default::default()
             },
         );
 
+        // Left
         draw_texture_ex(
             &side_texture,
-            -WIDTH_F * 2. + WALL_THICKNESS / 2.,
+            -settings.box_width - max_axis + WALL_THICKNESS / 2.,
             0.,
             Color::from_hex(0x999999),
             DrawTextureParams {
                 rotation: PI * 0.5,
-                dest_size: Some(vec2(WIDTH_F * 2., WALL_THICKNESS)),
+                dest_size: Some(vec2(max_axis * 2., WALL_THICKNESS)),
                 ..Default::default()
             },
         );
 
+        // Right
         draw_texture_ex(
             &side_texture,
-            -WALL_THICKNESS / 2.,
+            -WALL_THICKNESS / 2. - max_axis + settings.box_width,
             0.,
             Color::from_hex(0xb0b0b0),
             DrawTextureParams {
                 rotation: PI * 1.5,
-                dest_size: Some(vec2(WIDTH_F * 2., WALL_THICKNESS)),
+                dest_size: Some(vec2(max_axis * 2., WALL_THICKNESS)),
                 ..Default::default()
             },
         );
 
+        // Top
         draw_texture_ex(
             &side_texture,
-            -WIDTH_F,
-            -HEIGHT_F,
+            -settings.box_width,
+            -settings.box_height,
             Color::from_hex(0xbababa),
             DrawTextureParams {
                 rotation: PI * 1.0,
-                dest_size: Some(vec2(WIDTH_F * 2., WALL_THICKNESS)),
+                dest_size: Some(vec2(max_axis * 2., WALL_THICKNESS)),
                 ..Default::default()
             },
         );
 
+        // Bottom
         draw_texture_ex(
             &side_texture,
-            -WIDTH_F,
-            HEIGHT_F - WALL_THICKNESS,
+            -settings.box_width,
+            settings.box_height - WALL_THICKNESS,
             Color::from_hex(0xe0e0e0),
             DrawTextureParams {
                 rotation: PI * 2.0,
-                dest_size: Some(vec2(WIDTH_F * 2., WALL_THICKNESS)),
+                dest_size: Some(vec2(max_axis * 2., WALL_THICKNESS)),
                 ..Default::default()
             },
         );
@@ -439,10 +459,10 @@ async fn main() {
 
         if is_menu_open {
             draw_rectangle(
-                -WIDTH_F,
-                -HEIGHT_F,
-                WIDTH_F * 2.,
-                HEIGHT_F * 2.,
+                -settings.box_width,
+                -settings.box_height,
+                settings.box_width * 2.,
+                settings.box_height * 2.,
                 Color::from_rgba(0, 0, 0, 100),
             );
         }

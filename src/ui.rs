@@ -5,7 +5,7 @@ use macroquad::{
 use miniquad::*;
 use window::{dpi_scale, order_quit};
 
-use crate::{Settings, HEIGHT_F, WIDTH_F};
+use crate::Settings;
 
 pub const MENU_SIZE: Vec2 = vec2(310., 400.);
 const BUTTON_SIZE: Vec2 = vec2(160., 75.);
@@ -121,14 +121,18 @@ pub async fn create_skin() -> Skin {
     }
 }
 
-pub fn render_ui(editing_settings: &mut Settings, settings_state: &mut SettingsState) -> bool {
+pub fn render_ui(
+    editing_settings: &mut Settings,
+    settings_state: &mut SettingsState,
+    box_size: (f32, f32),
+) -> bool {
     if *settings_state == SettingsState::Closed {
         return false;
     }
 
     let mut save = false;
 
-    let menu_position = (vec2(WIDTH_F, HEIGHT_F) - MENU_SIZE) / 2.;
+    let menu_position = (vec2(box_size.0, box_size.1) - MENU_SIZE) / 2.;
 
     root_ui().window(
         hash!(),
@@ -215,7 +219,7 @@ pub fn render_ui(editing_settings: &mut Settings, settings_state: &mut SettingsS
 
                         widgets::Label::new("Ball radius").ui(ui);
 
-                        widgets::Slider::new(hash!(), 0.0..(WIDTH_F.min(HEIGHT_F) - 50.))
+                        widgets::Slider::new(hash!(), 0.0..(box_size.0.min(box_size.1) - 50.))
                             .ui(ui, &mut editing_settings.ball_radius);
 
                         widgets::Label::new("Ball weight").ui(ui);

@@ -9,7 +9,7 @@ use macroquad::{
     texture::{draw_texture_ex, DrawTextureParams, Texture2D},
 };
 
-use crate::{Settings, HEIGHT_F, WALL_DEPTH, WALL_OFFSET, WALL_THICKNESS, WIDTH_F};
+use crate::{Settings, WALL_DEPTH, WALL_OFFSET, WALL_THICKNESS};
 
 pub struct Ball {
     position: Vec2,
@@ -31,7 +31,7 @@ impl Ball {
         sounds: Vec<Sound>,
     ) -> Ball {
         Ball {
-            position: Vec2::new(0., -HEIGHT_F),
+            position: Vec2::new(0., 0.),
             velocity: Vec2::ZERO,
             rotation: 0.,
             rotation_velocity: 0.,
@@ -68,12 +68,12 @@ impl Ball {
 
         self.rotation %= PI * 2.;
 
-        let mut distance_to_floor = HEIGHT_F - wall_and_ball_offset - self.position.y;
+        let mut distance_to_floor = settings.box_height - wall_and_ball_offset - self.position.y;
         if distance_to_floor <= 0. {
             // Floor
             distance_to_floor = 0.;
             hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.y.abs());
-            self.position.y = HEIGHT_F - wall_and_ball_offset;
+            self.position.y = settings.box_height - wall_and_ball_offset;
             self.velocity.y =
                 -self.velocity.y * settings.ball_bounciness - smoothed_wall_velocity.y;
 
@@ -88,12 +88,12 @@ impl Ball {
             );
         }
 
-        let mut distance_to_ceiling = self.position.y + HEIGHT_F - wall_and_ball_offset;
+        let mut distance_to_ceiling = self.position.y + settings.box_height - wall_and_ball_offset;
         if distance_to_ceiling <= 0. {
             // Ceiling
             distance_to_ceiling = 0.;
             hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.y.abs());
-            self.position.y = -HEIGHT_F + wall_and_ball_offset;
+            self.position.y = -settings.box_height + wall_and_ball_offset;
             self.velocity.y =
                 -self.velocity.y * settings.ball_bounciness - smoothed_wall_velocity.y;
 
@@ -107,12 +107,13 @@ impl Ball {
                 true,
             );
         }
-        let mut distance_to_right_wall = WIDTH_F - wall_and_ball_offset - self.position.x;
+        let mut distance_to_right_wall =
+            settings.box_width - wall_and_ball_offset - self.position.x;
         if distance_to_right_wall <= 0. {
             // Right
             distance_to_right_wall = 0.;
             hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.x.abs());
-            self.position.x = WIDTH_F - wall_and_ball_offset;
+            self.position.x = settings.box_width - wall_and_ball_offset;
             self.velocity.x =
                 -self.velocity.x * settings.ball_bounciness - smoothed_wall_velocity.x;
 
@@ -127,12 +128,12 @@ impl Ball {
             );
         }
 
-        let mut distance_to_left_wall = self.position.x + WIDTH_F - wall_and_ball_offset;
+        let mut distance_to_left_wall = self.position.x + settings.box_width - wall_and_ball_offset;
         if distance_to_left_wall <= 0. {
             // Left
             distance_to_left_wall = 0.;
             hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.x.abs());
-            self.position.x = -WIDTH_F + wall_and_ball_offset;
+            self.position.x = -settings.box_width + wall_and_ball_offset;
             self.velocity.x =
                 -self.velocity.x * settings.ball_bounciness - smoothed_wall_velocity.x;
 
@@ -159,7 +160,7 @@ impl Ball {
         );
         draw_rectangle(
             self.position.x - settings.ball_radius * settings.shadow_size,
-            HEIGHT_F - WALL_OFFSET - WALL_DEPTH,
+            settings.box_height - WALL_OFFSET - WALL_DEPTH,
             settings.ball_radius * settings.shadow_size * 2.,
             WALL_DEPTH * 2.,
             WHITE,
@@ -171,7 +172,7 @@ impl Ball {
         );
         draw_rectangle(
             self.position.x - settings.ball_radius * settings.shadow_size,
-            -HEIGHT_F + WALL_THICKNESS,
+            -settings.box_height + WALL_THICKNESS,
             settings.ball_radius * settings.shadow_size * 2.,
             WALL_DEPTH * 2.,
             WHITE,
@@ -182,7 +183,7 @@ impl Ball {
             distance_to_right_wall / settings.shadow_distance_strength,
         );
         draw_rectangle(
-            WIDTH_F - WALL_OFFSET - WALL_DEPTH,
+            settings.box_width - WALL_OFFSET - WALL_DEPTH,
             self.position.y - settings.ball_radius * settings.shadow_size,
             WALL_DEPTH * 2.,
             settings.ball_radius * settings.shadow_size * 2.,
@@ -194,7 +195,7 @@ impl Ball {
             distance_to_left_wall / settings.shadow_distance_strength,
         );
         draw_rectangle(
-            -WIDTH_F + WALL_THICKNESS,
+            -settings.box_width + WALL_THICKNESS,
             self.position.y - settings.ball_radius * settings.shadow_size,
             WALL_DEPTH * 2.,
             settings.ball_radius * settings.shadow_size * 2.,
@@ -240,9 +241,10 @@ impl Ball {
 
         if hit_wall_speed > SPEED_LIMIT && self.prev_hit_wall_speed == 0. {
             let inverted_distances_from_corners =
-                self.position.abs() + vec2(0., WIDTH_F - HEIGHT_F);
+                self.position.abs() + vec2(0., settings.box_width - settings.box_height);
 
-            let distance_from_corner = WIDTH_F - inverted_distances_from_corners.min_element();
+            let distance_from_corner =
+                settings.box_width - inverted_distances_from_corners.min_element();
             // The closer to the center it is, the louder the sound.
             hit_wall_speed -= SPEED_LIMIT;
             hit_wall_speed /= 450.;

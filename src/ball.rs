@@ -156,7 +156,7 @@ impl Ball {
 
         self.shadow_material.set_uniform(
             "in_shadow",
-            distance_to_floor / settings.shadow_distance_strength,
+            distance_to_floor / settings.ball_radius / settings.shadow_distance_strength,
         );
         draw_rectangle(
             self.position.x - settings.ball_radius * settings.shadow_size,
@@ -168,7 +168,7 @@ impl Ball {
 
         self.shadow_material.set_uniform(
             "in_shadow",
-            distance_to_ceiling / settings.shadow_distance_strength,
+            distance_to_ceiling / settings.ball_radius / settings.shadow_distance_strength,
         );
         draw_rectangle(
             self.position.x - settings.ball_radius * settings.shadow_size,
@@ -180,7 +180,7 @@ impl Ball {
 
         self.shadow_material.set_uniform(
             "in_shadow",
-            distance_to_right_wall / settings.shadow_distance_strength,
+            distance_to_right_wall / settings.ball_radius / settings.shadow_distance_strength,
         );
         draw_rectangle(
             settings.box_width - WALL_OFFSET - WALL_DEPTH,
@@ -192,7 +192,7 @@ impl Ball {
 
         self.shadow_material.set_uniform(
             "in_shadow",
-            distance_to_left_wall / settings.shadow_distance_strength,
+            distance_to_left_wall / settings.ball_radius / settings.shadow_distance_strength,
         );
         draw_rectangle(
             -settings.box_width + WALL_THICKNESS,
@@ -207,19 +207,23 @@ impl Ball {
         self.ball_material.set_uniform("rotation", self.rotation);
         self.ball_material.set_uniform(
             "floor_distance",
-            distance_to_floor / settings.shadow_distance_strength,
+            distance_to_floor / settings.ball_radius / settings.shadow_distance_strength,
         );
         self.ball_material.set_uniform(
             "ceil_distance",
-            distance_to_ceiling / settings.shadow_distance_strength,
+            distance_to_ceiling / settings.ball_radius / settings.shadow_distance_strength,
         );
         self.ball_material.set_uniform(
             "left_distance",
-            distance_to_left_wall / settings.shadow_distance_strength,
+            distance_to_left_wall / settings.ball_radius / settings.shadow_distance_strength,
+        );
+        println!(
+            "{}",
+            distance_to_left_wall / settings.ball_radius / settings.shadow_distance_strength
         );
         self.ball_material.set_uniform(
             "right_distance",
-            distance_to_right_wall / settings.shadow_distance_strength,
+            distance_to_right_wall / settings.ball_radius / settings.shadow_distance_strength,
         );
 
         draw_texture_ex(

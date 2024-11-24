@@ -93,7 +93,7 @@ impl Default for Settings {
             ball_friction: 0.75,
             audio_volume: 0.6,
             shadow_size: 1.2,
-            shadow_distance_strength: 50.,
+            shadow_distance_strength: 0.55,
             box_width: 640.,
             box_height: 480.,
             last_ball: "grinning".to_string(),

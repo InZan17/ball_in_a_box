@@ -7,6 +7,7 @@ uniform float floor_distance;
 uniform float ceil_distance;
 uniform float left_distance;
 uniform float right_distance;
+uniform float ball_radius;
 
 uniform sampler2D Texture;
 
@@ -22,9 +23,14 @@ vec2 rotate(vec2 point, float r) {
 
 void main() {
     vec2 minus_one_to_one_uv = uv * 2.0 - 1.0;
-    if (length(minus_one_to_one_uv) > 1.0) {
+    float center_length = length(minus_one_to_one_uv);
+    if (center_length > 1.0) {
         discard;
     }
+
+    float delta_uv = 1.0 / ball_radius;
+
+    float antialiasing_alpha_mul = 1.0 - max((center_length + delta_uv * 2.0) - 1.0, 0) / (delta_uv * 2.0);
 
     float rotation_offset = -0.65;
     float shadow_cutoff = 1.0;
@@ -52,6 +58,10 @@ void main() {
 
     final_color.a = texture_color.a * color.a * 1.0 + in_highlight;
 
-    gl_FragColor = clamp(final_color, 0.0, 1.0);
+    final_color = clamp(final_color, 0.0, 1.0);
+
+    final_color.a *= antialiasing_alpha_mul;
+
+    gl_FragColor = final_color;
     //gl_FragColor = vec4(in_shadow, in_highlight, total_shadow, 1.0);
 }

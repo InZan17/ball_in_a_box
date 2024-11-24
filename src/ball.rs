@@ -217,14 +217,12 @@ impl Ball {
             "left_distance",
             distance_to_left_wall / settings.ball_radius / settings.shadow_distance_strength,
         );
-        println!(
-            "{}",
-            distance_to_left_wall / settings.ball_radius / settings.shadow_distance_strength
-        );
         self.ball_material.set_uniform(
             "right_distance",
             distance_to_right_wall / settings.ball_radius / settings.shadow_distance_strength,
         );
+        self.ball_material
+            .set_uniform("ball_radius", settings.ball_radius);
 
         draw_texture_ex(
             &self.texture,

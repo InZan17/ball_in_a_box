@@ -195,6 +195,7 @@ async fn main() {
                 UniformDesc::new("floor_distance", UniformType::Float1),
                 UniformDesc::new("left_distance", UniformType::Float1),
                 UniformDesc::new("right_distance", UniformType::Float1),
+                UniformDesc::new("ball_radius", UniformType::Float1),
             ],
             pipeline_params: PipelineParams {
                 color_blend: Some(BlendState::new(

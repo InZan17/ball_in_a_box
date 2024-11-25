@@ -456,7 +456,8 @@ async fn main() {
             },
         );
 
-        ball.step_and_render(get_frame_time(), &settings, delta_pos, maxed_delta);
+        ball.step(get_frame_time(), &settings, delta_pos, maxed_delta);
+        ball.render(&settings);
 
         if is_menu_open {
             draw_rectangle(

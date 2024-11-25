@@ -50,12 +50,14 @@ impl Ball {
         settings: &Settings,
         wall_velocity: Vec2,
         smoothed_wall_velocity: Vec2,
+        last_hit_wall: &mut u8,
     ) -> f32 {
+        let old_velocity = self.velocity;
+        let old_position = self.position;
+
         let mut hit_wall_speed: f32 = 0.;
 
         let wall_and_ball_offset = settings.ball_radius + WALL_OFFSET;
-
-        let _old_velocity = self.velocity;
 
         self.velocity += Vec2::new(0., settings.gravity_strength * 1000. * dt);
 
@@ -65,21 +67,90 @@ impl Ball {
             self.velocity = self.velocity.normalize() * settings.terminal_velocity * 1000.;
         }
 
-        let total_velocity = self.velocity + (wall_velocity / dt) * 2.;
+        let total_velocity = self.velocity + wall_velocity * 2.;
 
         let smoothed_total_velocity = self.velocity + smoothed_wall_velocity;
 
         self.position += total_velocity * dt;
 
-        self.rotation += self.rotation_velocity * dt;
+        let mut back_amount = 0.0_f32;
 
+        let distance_to_floor = settings.box_height - wall_and_ball_offset - self.position.y;
+        let distance_to_ceiling = self.position.y + settings.box_height - wall_and_ball_offset;
+        let distance_to_right_wall = settings.box_width - wall_and_ball_offset - self.position.x;
+        let distance_to_left_wall = self.position.x + settings.box_width - wall_and_ball_offset;
+
+        if distance_to_floor <= 0. {
+            // Floor
+            back_amount = back_amount.max(
+                1.0 - calculate_normalized_pos(
+                    old_position.y,
+                    self.position.y,
+                    self.position.y + distance_to_floor,
+                ),
+            );
+        }
+        if distance_to_ceiling <= 0. {
+            // Ceiling
+            back_amount = back_amount.max(
+                1.0 - calculate_normalized_pos(
+                    self.position.y,
+                    old_position.y,
+                    old_position.y + distance_to_ceiling,
+                ),
+            );
+        }
+        if distance_to_right_wall <= 0. {
+            // Right
+            back_amount = back_amount.max(
+                1.0 - calculate_normalized_pos(
+                    old_position.x,
+                    self.position.x,
+                    self.position.x + distance_to_right_wall,
+                ),
+            );
+        }
+
+        if distance_to_left_wall <= 0. {
+            // Left
+            back_amount = back_amount.max(
+                1.0 - calculate_normalized_pos(
+                    self.position.x,
+                    old_position.x,
+                    old_position.x + distance_to_left_wall,
+                ),
+            );
+        }
+
+        let new_dt = dt * (1.0 - back_amount);
+        println!("current pos is {}", self.position);
+        println!("old pos is {}", old_position);
+        println!("lerping {back_amount}");
+        self.position = self.position.lerp(old_position, back_amount);
+        self.velocity = self.velocity.lerp(old_velocity, back_amount);
+        println!("lerped pos is {}", self.position);
+
+        self.rotation += self.rotation_velocity * new_dt;
         self.rotation %= PI * 2.;
 
         let distance_to_floor = settings.box_height - wall_and_ball_offset - self.position.y;
-        if distance_to_floor <= 0. {
+        let distance_to_ceiling = self.position.y + settings.box_height - wall_and_ball_offset;
+        let distance_to_right_wall = settings.box_width - wall_and_ball_offset - self.position.x;
+        let distance_to_left_wall = self.position.x + settings.box_width - wall_and_ball_offset;
+
+        // The small number can be this high because positions are measured in pixels (ish. The coordinate system goes from positive to negative window resolution.).
+        const SMALL_NUMBER: f32 = 0.1;
+
+        if distance_to_floor <= SMALL_NUMBER {
             // Floor
+            println!("HIT FLOOR");
+
+            if *last_hit_wall == 1 {
+                return 0.0;
+            }
+            *last_hit_wall = 1;
+
             hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.y.abs());
-            self.position.y = settings.box_height - wall_and_ball_offset;
             self.velocity.y =
                 -self.velocity.y * settings.ball_bounciness - smoothed_wall_velocity.y;
 
@@ -93,12 +164,16 @@ impl Ball {
                 false,
             );
         }
-
-        let distance_to_ceiling = self.position.y + settings.box_height - wall_and_ball_offset;
-        if distance_to_ceiling <= 0. {
+        if distance_to_ceiling <= SMALL_NUMBER {
             // Ceiling
+            println!("HIT CEILING");
+
+            if *last_hit_wall == 2 {
+                return 0.0;
+            }
+            *last_hit_wall = 2;
+
             hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.y.abs());
-            self.position.y = -settings.box_height + wall_and_ball_offset;
             self.velocity.y =
                 -self.velocity.y * settings.ball_bounciness - smoothed_wall_velocity.y;
 
@@ -112,11 +187,16 @@ impl Ball {
                 true,
             );
         }
-        let distance_to_right_wall = settings.box_width - wall_and_ball_offset - self.position.x;
-        if distance_to_right_wall <= 0. {
+        if distance_to_right_wall <= SMALL_NUMBER {
             // Right
+            println!("HIT RIGHT");
+
+            if *last_hit_wall == 3 {
+                return 0.0;
+            }
+            *last_hit_wall = 3;
+
             hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.x.abs());
-            self.position.x = settings.box_width - wall_and_ball_offset;
             self.velocity.x =
                 -self.velocity.x * settings.ball_bounciness - smoothed_wall_velocity.x;
 
@@ -131,11 +211,16 @@ impl Ball {
             );
         }
 
-        let distance_to_left_wall = self.position.x + settings.box_width - wall_and_ball_offset;
-        if distance_to_left_wall <= 0. {
+        if distance_to_left_wall <= SMALL_NUMBER {
             // Left
+            println!("HIT LEFT");
+
+            if *last_hit_wall == 4 {
+                return 0.0;
+            }
+            *last_hit_wall = 4;
+
             hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.x.abs());
-            self.position.x = -settings.box_width + wall_and_ball_offset;
             self.velocity.x =
                 -self.velocity.x * settings.ball_bounciness - smoothed_wall_velocity.x;
 
@@ -175,7 +260,7 @@ impl Ball {
 
         self.prev_hit_wall_speed = hit_wall_speed;
 
-        return 0.0;
+        return dt - new_dt;
     }
 
     pub fn render(&mut self, settings: &Settings) {
@@ -272,6 +357,14 @@ impl Ball {
 
         gl_use_default_material();
     }
+}
+
+fn calculate_normalized_pos(min: f32, max: f32, value: f32) -> f32 {
+    if min == max {
+        return 0.0;
+    }
+
+    (value - min) / (max - min)
 }
 
 pub fn calculate_bounce_spin(

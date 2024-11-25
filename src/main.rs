@@ -1,5 +1,3 @@
-#![windows_subsystem = "windows"]
-
 use core::str;
 use std::{
     f32::consts::PI,
@@ -456,7 +454,29 @@ async fn main() {
             },
         );
 
-        ball.step(get_frame_time(), &settings, delta_pos, maxed_delta);
+        let wall_velocity = delta_pos / get_frame_time();
+
+        let mut remaining_dt = get_frame_time();
+
+        let mut steps = 0;
+        let mut last_hit_wall = 0;
+
+        while remaining_dt > 0.00001 && steps < 10 {
+            steps += 1;
+            remaining_dt = ball.step(
+                remaining_dt,
+                &settings,
+                wall_velocity,
+                maxed_delta,
+                &mut last_hit_wall,
+            );
+        }
+        println!("steps taken: {steps}");
+        if steps > 4 {
+            println!("Too many steps")
+        }
+        println!("");
+
         ball.render(&settings);
 
         if is_menu_open {

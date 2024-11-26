@@ -13,7 +13,7 @@ use miniquad::*;
 use nanoserde::{DeJson, SerJson};
 use sounds::{find_sounds, get_random_sounds};
 use textures::{find_texture, get_random_texture};
-use ui::{create_skin, render_ui, SettingsState, MENU_SIZE};
+use ui::{create_skin, render_ui, SettingsState, UiAssets, MENU_SIZE};
 use window::set_window_position;
 
 pub mod ball;
@@ -240,6 +240,8 @@ async fn main() {
 
     root_ui().push_skin(&skin);
 
+    let ui_assets = UiAssets::new().await;
+
     let mut is_in_settings = false;
     let mut settings_state = SettingsState::Closed;
     let mut interacting_with_ui = false;
@@ -304,18 +306,6 @@ async fn main() {
         } else {
             Vec2::from_f32_tuple(mouse_position()) * screen_dpi_scale()
         };
-        let save = render_ui(
-            &mut editing_settings,
-            &mut settings_state,
-            (settings.box_width, settings.box_height),
-        );
-        if save {
-            settings = editing_settings.clone();
-            write_settings_file(&settings);
-            for sound in ball.sounds.iter() {
-                set_sound_volume(sound, settings.audio_volume);
-            }
-        }
 
         while let Some(character) = get_char_pressed() {
             text_input.push(character.to_ascii_lowercase());
@@ -474,14 +464,28 @@ async fn main() {
 
         ball.render(&settings);
 
-        if is_menu_open {
-            draw_rectangle(
-                -settings.box_width,
-                -settings.box_height,
-                settings.box_width * 2.,
-                settings.box_height * 2.,
-                Color::from_rgba(0, 0, 0, 100),
-            );
+        let old_ui = false;
+
+        let save = if !old_ui {
+            ui_assets.render_ui(
+                &mut editing_settings,
+                &mut settings_state,
+                mouse_pos,
+                (settings.box_width, settings.box_height),
+            )
+        } else {
+            render_ui(
+                &mut editing_settings,
+                &mut settings_state,
+                (settings.box_width, settings.box_height),
+            )
+        };
+        if save {
+            settings = editing_settings.clone();
+            write_settings_file(&settings);
+            for sound in ball.sounds.iter() {
+                set_sound_volume(sound, settings.audio_volume);
+            }
         }
 
         next_frame().await

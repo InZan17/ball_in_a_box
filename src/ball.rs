@@ -79,57 +79,84 @@ impl Ball {
         self.position += total_velocity * dt;
 
         let mut back_amount = 0.0_f32;
+        let mut back_vec = vec2(0., 0.);
 
         let distance_to_floor = settings.box_height - wall_and_ball_offset - self.position.y;
         let distance_to_ceiling = self.position.y + settings.box_height - wall_and_ball_offset;
         let distance_to_right_wall = settings.box_width - wall_and_ball_offset - self.position.x;
         let distance_to_left_wall = self.position.x + settings.box_width - wall_and_ball_offset;
 
-        if distance_to_floor <= 0. && !wall_hits.contains(&1) {
+
+        if distance_to_floor <= 0. {
             // Floor
-            back_amount = back_amount.max(
+            let back_for_axis = back_amount.max(
                 1.0 - calculate_normalized_pos(
                     old_position.y,
                     self.position.y,
                     self.position.y + distance_to_floor,
                 ),
             );
+            back_vec.y = back_vec.y.max(back_for_axis);
+            if !wall_hits.contains(&1) {
+                back_amount = back_for_axis
+            }
         }
         if distance_to_ceiling <= 0. && !wall_hits.contains(&2) {
             // Ceiling
-            back_amount = back_amount.max(
+            let back_for_axis = back_amount.max(
                 1.0 - calculate_normalized_pos(
                     self.position.y,
                     old_position.y,
                     old_position.y + distance_to_ceiling,
                 ),
             );
+            back_vec.y = back_vec.y.max(back_for_axis);
+            if !wall_hits.contains(&2) {
+                back_amount = back_for_axis
+            }
         }
         if distance_to_right_wall <= 0. && !wall_hits.contains(&3) {
             // Right
-            back_amount = back_amount.max(
+            let back_for_axis = back_amount.max(
                 1.0 - calculate_normalized_pos(
                     old_position.x,
                     self.position.x,
                     self.position.x + distance_to_right_wall,
                 ),
             );
+            back_vec.x = back_vec.y.max(back_for_axis);
+            if !wall_hits.contains(&3) {
+                back_amount = back_for_axis
+            }
         }
 
         if distance_to_left_wall <= 0. && !wall_hits.contains(&4) {
             // Left
-            back_amount = back_amount.max(
+            let back_for_axis = back_amount.max(
                 1.0 - calculate_normalized_pos(
                     self.position.x,
                     old_position.x,
                     old_position.x + distance_to_left_wall,
                 ),
             );
+            back_vec.x = back_vec.y.max(back_for_axis);
+            if !wall_hits.contains(&4) {
+                back_amount = back_for_axis
+            }
         }
 
         let new_dt = dt * (1.0 - back_amount);
-        self.position = self.position.lerp(old_position, back_amount);
-        self.velocity = self.velocity.lerp(old_velocity, back_amount);
+
+        back_vec = back_vec.max(vec2(back_amount, back_amount));
+
+        self.position = vec2(
+            self.position.x.lerp(old_position.x, back_vec.x),
+            self.position.y.lerp(old_position.y, back_vec.y),
+        );
+        self.velocity = vec2(
+            self.velocity.x.lerp(old_velocity.x, back_vec.x),
+            self.velocity.y.lerp(old_velocity.y, back_vec.y),
+        );
 
         self.rotation += self.rotation_velocity * new_dt;
         self.rotation %= PI * 2.;

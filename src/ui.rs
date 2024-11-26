@@ -443,7 +443,7 @@ impl UiAssets {
                         "Air friction",
                         TITLE_SIZE,
                         0.0..1.0,
-                        &mut editing_settings.audio_volume,
+                        &mut editing_settings.air_friction,
                     );
 
                     self.render_slider(

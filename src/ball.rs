@@ -16,7 +16,8 @@ pub struct Ball {
     velocity: Vec2,
     rotation: f32,
     rotation_velocity: f32,
-    prev_hit_wall_speed: f32,
+    vertical_sound: bool,
+    horizontal_sound: bool,
     pub texture: Texture2D,
     pub ball_material: Material,
     pub shadow_material: Material,
@@ -35,7 +36,8 @@ impl Ball {
             velocity: Vec2::ZERO,
             rotation: 0.,
             rotation_velocity: 0.,
-            prev_hit_wall_speed: 0.,
+            vertical_sound: true,
+            horizontal_sound: true,
             texture,
             ball_material,
             shadow_material,
@@ -59,7 +61,7 @@ impl Ball {
         let old_velocity = self.velocity;
         let old_position = self.position;
 
-        let mut hit_wall_speed: f32 = 0.;
+        let mut hit_wall_speed = vec2(0., 0.);
 
         let wall_and_ball_offset = settings.ball_radius + WALL_OFFSET;
 
@@ -175,7 +177,7 @@ impl Ball {
                 new_last_hit_wall = 1;
             }
 
-            hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.y.abs());
+            hit_wall_speed.y = hit_wall_speed.y.max(smoothed_total_velocity.y.abs());
             self.position.y = settings.box_height - wall_and_ball_offset;
             self.velocity.y =
                 -self.velocity.y * settings.ball_bounciness - smoothed_wall_velocity.y;
@@ -196,7 +198,7 @@ impl Ball {
                 new_last_hit_wall = 2;
             }
 
-            hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.y.abs());
+            hit_wall_speed.y = hit_wall_speed.y.max(smoothed_total_velocity.y.abs());
             self.position.y = -settings.box_height + wall_and_ball_offset;
             self.velocity.y =
                 -self.velocity.y * settings.ball_bounciness - smoothed_wall_velocity.y;
@@ -217,7 +219,7 @@ impl Ball {
                 new_last_hit_wall = 3;
             }
 
-            hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.x.abs());
+            hit_wall_speed.x = hit_wall_speed.x.max(smoothed_total_velocity.x.abs());
             self.position.x = settings.box_width - wall_and_ball_offset;
             self.velocity.x =
                 -self.velocity.x * settings.ball_bounciness - smoothed_wall_velocity.x;
@@ -239,7 +241,7 @@ impl Ball {
                 new_last_hit_wall = 4;
             }
 
-            hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.x.abs());
+            hit_wall_speed.x = hit_wall_speed.x.max(smoothed_total_velocity.x.abs());
             self.position.x = -settings.box_width + wall_and_ball_offset;
             self.velocity.x =
                 -self.velocity.x * settings.ball_bounciness - smoothed_wall_velocity.x;
@@ -260,17 +262,21 @@ impl Ball {
         const DENSITY: f32 = 0.32;
         const SPEED_LIMIT: f32 = 120.;
 
-        if hit_wall_speed > SPEED_LIMIT && self.prev_hit_wall_speed == 0. {
+        if (self.horizontal_sound && hit_wall_speed.x > SPEED_LIMIT)
+            || (self.vertical_sound && hit_wall_speed.y > SPEED_LIMIT)
+        {
             let inverted_distances_from_corners =
                 self.position.abs() + vec2(0., settings.box_width - settings.box_height);
 
+            let mut sound_volume = hit_wall_speed.max_element();
+
+            // The closer to the center it is, the louder the sound.
             let distance_from_corner =
                 settings.box_width - inverted_distances_from_corners.min_element();
-            // The closer to the center it is, the louder the sound.
-            hit_wall_speed -= SPEED_LIMIT;
-            hit_wall_speed /= 450.;
-            hit_wall_speed *= 1. + distance_from_corner / 200.;
-            let volume = 1. - 1. / E.powf(hit_wall_speed * hit_wall_speed * DENSITY * DENSITY);
+            sound_volume -= SPEED_LIMIT;
+            sound_volume /= 450.;
+            sound_volume *= 1. + distance_from_corner / 200.;
+            let volume = 1. - 1. / E.powf(sound_volume * sound_volume * DENSITY * DENSITY);
             play_sound(
                 &self.sounds[quad_rand::gen_range(0, self.sounds.len())],
                 PlaySoundParams {
@@ -280,7 +286,8 @@ impl Ball {
             );
         }
 
-        self.prev_hit_wall_speed = hit_wall_speed;
+        self.horizontal_sound = hit_wall_speed.x == 0.0;
+        self.vertical_sound = hit_wall_speed.y == 0.0;
 
         return dt - new_dt;
     }

@@ -459,7 +459,7 @@ async fn main() {
         let mut remaining_dt = get_frame_time();
 
         let mut steps = 0;
-        let mut last_hit_wall = 0;
+        let mut wall_hits = [0, 0];
 
         while remaining_dt > 0.00001 && steps < 10 {
             steps += 1;
@@ -468,14 +468,9 @@ async fn main() {
                 &settings,
                 wall_velocity,
                 maxed_delta,
-                &mut last_hit_wall,
+                &mut wall_hits,
             );
         }
-        println!("steps taken: {steps}");
-        if steps > 4 {
-            println!("Too many steps")
-        }
-        println!("");
 
         ball.render(&settings);
 

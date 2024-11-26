@@ -50,8 +50,13 @@ impl Ball {
         settings: &Settings,
         wall_velocity: Vec2,
         smoothed_wall_velocity: Vec2,
-        last_hit_wall: &mut u8,
+        wall_hits: &mut [u8; 2],
     ) -> f32 {
+
+        let temp = wall_hits[0];
+        wall_hits[0] = wall_hits[1];
+        wall_hits[1] = temp;
+
         let old_velocity = self.velocity;
         let old_position = self.position;
 
@@ -80,7 +85,7 @@ impl Ball {
         let distance_to_right_wall = settings.box_width - wall_and_ball_offset - self.position.x;
         let distance_to_left_wall = self.position.x + settings.box_width - wall_and_ball_offset;
 
-        if distance_to_floor <= 0. {
+        if distance_to_floor <= 0. && !wall_hits.contains(&1) {
             // Floor
             back_amount = back_amount.max(
                 1.0 - calculate_normalized_pos(
@@ -90,7 +95,7 @@ impl Ball {
                 ),
             );
         }
-        if distance_to_ceiling <= 0. {
+        if distance_to_ceiling <= 0. && !wall_hits.contains(&2) {
             // Ceiling
             back_amount = back_amount.max(
                 1.0 - calculate_normalized_pos(
@@ -100,7 +105,7 @@ impl Ball {
                 ),
             );
         }
-        if distance_to_right_wall <= 0. {
+        if distance_to_right_wall <= 0. && !wall_hits.contains(&3) {
             // Right
             back_amount = back_amount.max(
                 1.0 - calculate_normalized_pos(
@@ -111,7 +116,7 @@ impl Ball {
             );
         }
 
-        if distance_to_left_wall <= 0. {
+        if distance_to_left_wall <= 0. && !wall_hits.contains(&4) {
             // Left
             back_amount = back_amount.max(
                 1.0 - calculate_normalized_pos(
@@ -123,12 +128,8 @@ impl Ball {
         }
 
         let new_dt = dt * (1.0 - back_amount);
-        println!("current pos is {}", self.position);
-        println!("old pos is {}", old_position);
-        println!("lerping {back_amount}");
         self.position = self.position.lerp(old_position, back_amount);
         self.velocity = self.velocity.lerp(old_velocity, back_amount);
-        println!("lerped pos is {}", self.position);
 
         self.rotation += self.rotation_velocity * new_dt;
         self.rotation %= PI * 2.;
@@ -141,16 +142,16 @@ impl Ball {
         // The small number can be this high because positions are measured in pixels (ish. The coordinate system goes from positive to negative window resolution.).
         const SMALL_NUMBER: f32 = 0.1;
 
+        let mut new_last_hit_wall = 0;
+
         if distance_to_floor <= SMALL_NUMBER {
             // Floor
-            println!("HIT FLOOR");
-
-            if *last_hit_wall == 1 {
-                return 0.0;
+            if !wall_hits.contains(&1) {
+                new_last_hit_wall = 1;
             }
-            *last_hit_wall = 1;
 
             hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.y.abs());
+            self.position.y = settings.box_height - wall_and_ball_offset;
             self.velocity.y =
                 -self.velocity.y * settings.ball_bounciness - smoothed_wall_velocity.y;
 
@@ -166,14 +167,12 @@ impl Ball {
         }
         if distance_to_ceiling <= SMALL_NUMBER {
             // Ceiling
-            println!("HIT CEILING");
-
-            if *last_hit_wall == 2 {
-                return 0.0;
+            if !wall_hits.contains(&2) {
+                new_last_hit_wall = 2;
             }
-            *last_hit_wall = 2;
 
             hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.y.abs());
+            self.position.y = -settings.box_height + wall_and_ball_offset;
             self.velocity.y =
                 -self.velocity.y * settings.ball_bounciness - smoothed_wall_velocity.y;
 
@@ -189,14 +188,12 @@ impl Ball {
         }
         if distance_to_right_wall <= SMALL_NUMBER {
             // Right
-            println!("HIT RIGHT");
-
-            if *last_hit_wall == 3 {
-                return 0.0;
+            if !wall_hits.contains(&3) {
+                new_last_hit_wall = 3;
             }
-            *last_hit_wall = 3;
 
             hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.x.abs());
+            self.position.x = settings.box_width - wall_and_ball_offset;
             self.velocity.x =
                 -self.velocity.x * settings.ball_bounciness - smoothed_wall_velocity.x;
 
@@ -213,14 +210,12 @@ impl Ball {
 
         if distance_to_left_wall <= SMALL_NUMBER {
             // Left
-            println!("HIT LEFT");
-
-            if *last_hit_wall == 4 {
-                return 0.0;
+            if !wall_hits.contains(&4) {
+                new_last_hit_wall = 4;
             }
-            *last_hit_wall = 4;
 
             hit_wall_speed = hit_wall_speed.max(smoothed_total_velocity.x.abs());
+            self.position.x = -settings.box_width + wall_and_ball_offset;
             self.velocity.x =
                 -self.velocity.x * settings.ball_bounciness - smoothed_wall_velocity.x;
 
@@ -234,6 +229,8 @@ impl Ball {
                 false,
             );
         }
+
+        wall_hits[0] = new_last_hit_wall;
 
         const DENSITY: f32 = 0.32;
         const SPEED_LIMIT: f32 = 120.;

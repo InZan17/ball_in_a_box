@@ -87,7 +87,7 @@ impl Ball {
         let distance_to_left_wall = self.position.x + settings.box_width - wall_and_ball_offset;
 
 
-        if distance_to_floor <= 0. {
+        if distance_to_floor <= SMALL_NUMBER && !wall_hits.contains(&1) {
             // Floor
             let back_for_axis = back_amount.max(
                 1.0 - calculate_normalized_pos(
@@ -101,7 +101,7 @@ impl Ball {
                 back_amount = back_for_axis
             }
         }
-        if distance_to_ceiling <= 0. && !wall_hits.contains(&2) {
+        if distance_to_ceiling <= SMALL_NUMBER && !wall_hits.contains(&2) {
             // Ceiling
             let back_for_axis = back_amount.max(
                 1.0 - calculate_normalized_pos(
@@ -115,7 +115,7 @@ impl Ball {
                 back_amount = back_for_axis
             }
         }
-        if distance_to_right_wall <= 0. && !wall_hits.contains(&3) {
+        if distance_to_right_wall <= SMALL_NUMBER && !wall_hits.contains(&3) {
             // Right
             let back_for_axis = back_amount.max(
                 1.0 - calculate_normalized_pos(
@@ -130,7 +130,7 @@ impl Ball {
             }
         }
 
-        if distance_to_left_wall <= 0. && !wall_hits.contains(&4) {
+        if distance_to_left_wall <= SMALL_NUMBER && !wall_hits.contains(&4) {
             // Left
             let back_for_axis = back_amount.max(
                 1.0 - calculate_normalized_pos(
@@ -158,6 +158,9 @@ impl Ball {
             self.velocity.y.lerp(old_velocity.y, back_vec.y),
         );
 
+        println!("back vec is {}", back_vec);
+        println!("new velocity is {}",self.velocity);
+
         self.rotation += self.rotation_velocity * new_dt;
         self.rotation %= PI * 2.;
 
@@ -165,14 +168,18 @@ impl Ball {
         let distance_to_ceiling = self.position.y + settings.box_height - wall_and_ball_offset;
         let distance_to_right_wall = settings.box_width - wall_and_ball_offset - self.position.x;
         let distance_to_left_wall = self.position.x + settings.box_width - wall_and_ball_offset;
+        println!("{distance_to_right_wall}");
 
         // The small number can be this high because positions are measured in pixels (ish. The coordinate system goes from positive to negative window resolution.).
-        const SMALL_NUMBER: f32 = 0.1;
+        // The values for distances can be very innacurate and I have no idea what is causing it.
+        // It's probably calculate_normalized_pos.
+        const SMALL_NUMBER: f32 = 1.0;
 
         let mut new_last_hit_wall = 0;
 
         if distance_to_floor <= SMALL_NUMBER {
             // Floor
+            println!("inverting cause floor");
             if !wall_hits.contains(&1) {
                 new_last_hit_wall = 1;
             }
@@ -194,6 +201,7 @@ impl Ball {
         }
         if distance_to_ceiling <= SMALL_NUMBER {
             // Ceiling
+            println!("inverting cause ceil");
             if !wall_hits.contains(&2) {
                 new_last_hit_wall = 2;
             }
@@ -215,6 +223,7 @@ impl Ball {
         }
         if distance_to_right_wall <= SMALL_NUMBER {
             // Right
+            println!("inverting cause right");
             if !wall_hits.contains(&3) {
                 new_last_hit_wall = 3;
             }
@@ -237,6 +246,7 @@ impl Ball {
 
         if distance_to_left_wall <= SMALL_NUMBER {
             // Left
+            println!("inverting cause left");
             if !wall_hits.contains(&4) {
                 new_last_hit_wall = 4;
             }

@@ -142,14 +142,14 @@ async fn main() {
         };
 
         let panic_message = if let Some(s) = info.payload().downcast_ref::<&str>() {
-            (*s).to_string()
+            s.to_string()
         } else if let Some(s) = info.payload().downcast_ref::<String>() {
             s.to_string()
         } else {
-            "Unknown panic message".to_string()
+            "Unknown crash.".to_string()
         };
 
-        let _ = log_file.write(format!("{panic_message}").as_bytes());
+        let _ = log_file.write(panic_message.as_bytes());
     }));
 
     {

@@ -1,4 +1,4 @@
-use std::{default, ops::Range};
+use std::ops::Range;
 
 use macroquad::{
     prelude::*,

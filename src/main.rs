@@ -8,12 +8,12 @@ use std::{
 };
 
 use ball::Ball;
-use macroquad::{audio::set_sound_volume, prelude::*, rand, ui::root_ui};
+use macroquad::{audio::set_sound_volume, prelude::*, rand};
 use miniquad::*;
 use nanoserde::{DeJson, SerJson};
 use sounds::{find_sounds, get_random_sounds};
 use textures::{find_texture, get_random_texture};
-use ui::{create_skin, render_ui, SettingsState, UiRenderer, MENU_SIZE};
+use ui::{SettingsState, UiRenderer, MENU_SIZE};
 use window::set_window_position;
 
 pub mod ball;
@@ -235,10 +235,6 @@ async fn main() {
     let max_string_len = 100;
 
     let mut text_input = String::new();
-
-    let skin = create_skin().await;
-
-    root_ui().push_skin(&skin);
 
     let mut ui_renderer = UiRenderer::new().await;
 
@@ -464,22 +460,13 @@ async fn main() {
 
         ball.render(&settings);
 
-        let old_ui = false;
+        let save = ui_renderer.render_ui(
+            &mut editing_settings,
+            &mut settings_state,
+            mouse_pos,
+            (settings.box_width, settings.box_height),
+        );
 
-        let save = if !old_ui {
-            ui_renderer.render_ui(
-                &mut editing_settings,
-                &mut settings_state,
-                mouse_pos,
-                (settings.box_width, settings.box_height),
-            )
-        } else {
-            render_ui(
-                &mut editing_settings,
-                &mut settings_state,
-                (settings.box_width, settings.box_height),
-            )
-        };
         if save {
             settings = editing_settings.clone();
             write_settings_file(&settings);

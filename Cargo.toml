@@ -12,6 +12,9 @@ quad-rand = "0.2.2"
 miniquad = {git = "https://github.com/InZan17/miniquad", branch = "ball-in-a-box"}
 
 [profile.release]
-# strip = true
 opt-level = 3
-# lto = true
+codegen-units = 1
+lto = true
+strip = true
+debug-assertions = false
+overflow-checks = false

@@ -30,7 +30,9 @@ pub fn list_available_sounds() -> Vec<(String, PathBuf)> {
 }
 
 pub async fn load_sounds(path: PathBuf) -> Vec<Sound> {
-    let read_dir = fs::read_dir(&path).expect(&format!("Failed to read directory {path:?}"));
+    let lossy_path = path.to_string_lossy();
+    let read_dir =
+        fs::read_dir(&path).expect(&format!("Failed to read directory: \"{lossy_path}\"",));
 
     let sounds_bytes = read_dir
         .map(|entry| {
@@ -48,7 +50,7 @@ pub async fn load_sounds(path: PathBuf) -> Vec<Sound> {
                 return None;
             }
 
-            let bytes = fs::read(&path).expect(&format!("Failed to read bytes from {path:?}"));
+            let bytes = fs::read(&path).expect(&format!("Failed to read bytes from {lossy_path}"));
 
             Some(bytes)
         })

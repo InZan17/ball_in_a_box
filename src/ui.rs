@@ -1,4 +1,4 @@
-use std::ops::Range;
+use std::{default, ops::Range};
 
 use macroquad::{
     prelude::*,
@@ -309,6 +309,8 @@ pub fn render_ui(
 pub struct UiRenderer {
     menu_background: Texture2D,
     button: Texture2D,
+    slider_background: Texture2D,
+    slider_bar: Texture2D,
     font: Font,
     active_id: u64,
 }
@@ -323,6 +325,12 @@ impl UiRenderer {
             button: load_texture("./assets/cardboard_button.png")
                 .await
                 .expect("Failed to load assets/cardboard_button.png file"),
+            slider_background: load_texture("./assets/slider_background.png")
+                .await
+                .expect("Failed to load assets/slider_background.png file"),
+            slider_bar: load_texture("./assets/slider_bar.png")
+                .await
+                .expect("Failed to load assets/slider_bar.png file"),
             font: load_ttf_font("./assets/font.ttf")
                 .await
                 .expect("Failed to load assets/font.ttf file"),
@@ -695,8 +703,10 @@ impl UiRenderer {
 
         let is_active = self.active_id == id;
 
-        let bar_width_pct = 0.15;
+        let bar_width_pct = 0.1;
+        let bar_height_pct = 1.25;
         let bar_width = slider_rect.w * bar_width_pct;
+        let bar_height = slider_rect.h * bar_height_pct;
 
         if is_active {
             let amount = ((mouse_pos.x - slider_rect.x - bar_width / 2.)
@@ -711,25 +721,31 @@ impl UiRenderer {
 
         let bar_rect = Rect::new(
             slider_rect.x + zero_to_width,
-            slider_rect.y,
-            slider_rect.w * bar_width_pct,
-            slider_rect.h,
+            slider_rect.y - bar_height / 2. + slider_rect.h / 2.,
+            bar_width,
+            bar_height,
         );
 
-        draw_rectangle(
+        draw_texture_ex(
+            &self.slider_background,
             slider_rect.x,
             slider_rect.y,
-            slider_rect.w,
-            slider_rect.h,
-            Color::from_rgba(112, 77, 35, 255),
+            Color::from_hex(0xCCCCCC),
+            DrawTextureParams {
+                dest_size: Some(vec2(slider_rect.w, slider_rect.h)),
+                ..Default::default()
+            },
         );
 
-        draw_rectangle(
+        draw_texture_ex(
+            &self.slider_bar,
             bar_rect.x,
             bar_rect.y,
-            bar_rect.w,
-            bar_rect.h,
-            Color::from_rgba(222, 185, 140, 255),
+            WHITE,
+            DrawTextureParams {
+                dest_size: Some(vec2(bar_rect.w, bar_rect.h)),
+                ..Default::default()
+            },
         );
 
         let value_string = format!("{:.2}", *value);

@@ -13,7 +13,7 @@ use miniquad::*;
 use nanoserde::{DeJson, SerJson};
 use sounds::{find_sounds, get_random_sounds};
 use textures::{find_texture, get_random_texture};
-use ui::{create_skin, render_ui, SettingsState, UiAssets, MENU_SIZE};
+use ui::{create_skin, render_ui, SettingsState, UiRenderer, MENU_SIZE};
 use window::set_window_position;
 
 pub mod ball;
@@ -240,7 +240,7 @@ async fn main() {
 
     root_ui().push_skin(&skin);
 
-    let ui_assets = UiAssets::new().await;
+    let mut ui_renderer = UiRenderer::new().await;
 
     let mut is_in_settings = false;
     let mut settings_state = SettingsState::Closed;
@@ -467,7 +467,7 @@ async fn main() {
         let old_ui = false;
 
         let save = if !old_ui {
-            ui_assets.render_ui(
+            ui_renderer.render_ui(
                 &mut editing_settings,
                 &mut settings_state,
                 mouse_pos,

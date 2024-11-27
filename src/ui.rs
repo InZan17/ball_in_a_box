@@ -306,13 +306,14 @@ pub fn render_ui(
     return save;
 }
 
-pub struct UiAssets {
+pub struct UiRenderer {
     menu_background: Texture2D,
     button: Texture2D,
     font: Font,
+    active_id: u64,
 }
 
-impl UiAssets {
+impl UiRenderer {
     pub async fn new() -> Self {
         Self {
             menu_background: load_texture("./assets/main_background.png")
@@ -325,11 +326,12 @@ impl UiAssets {
             font: load_ttf_font("./assets/font.ttf")
                 .await
                 .expect("Failed to load assets/font.ttf file"),
+            active_id: 0,
         }
     }
 
     pub fn render_ui(
-        &self,
+        &mut self,
         editing_settings: &mut Settings,
         settings_state: &mut SettingsState,
         mouse_pos: Vec2,
@@ -382,6 +384,7 @@ impl UiAssets {
 
             if settings_page > 0 {
                 if self.render_button(
+                    hash!(),
                     mouse_pos,
                     vec2(center_offset_x, y_offset),
                     BUTTON_SIZE / SMALLER_BUTTON_DIV,
@@ -394,6 +397,7 @@ impl UiAssets {
 
             if settings_page < LAST_PAGE_INDEX {
                 if self.render_button(
+                    hash!(),
                     mouse_pos,
                     vec2(-center_offset_x, y_offset),
                     BUTTON_SIZE / SMALLER_BUTTON_DIV,
@@ -417,6 +421,7 @@ impl UiAssets {
             match settings_page {
                 0 => {
                     self.render_slider(
+                        hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 0.),
                         vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
@@ -427,6 +432,7 @@ impl UiAssets {
                     );
 
                     self.render_slider(
+                        hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 1.),
                         vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
@@ -437,6 +443,7 @@ impl UiAssets {
                     );
 
                     self.render_slider(
+                        hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 2.),
                         vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
@@ -447,6 +454,7 @@ impl UiAssets {
                     );
 
                     self.render_slider(
+                        hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 3.),
                         vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
@@ -458,6 +466,7 @@ impl UiAssets {
                 }
                 1 => {
                     self.render_slider(
+                        hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 0.),
                         vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
@@ -468,6 +477,7 @@ impl UiAssets {
                     );
 
                     self.render_slider(
+                        hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 1.),
                         vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
@@ -478,6 +488,7 @@ impl UiAssets {
                     );
 
                     self.render_slider(
+                        hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 2.),
                         vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
@@ -488,6 +499,7 @@ impl UiAssets {
                     );
 
                     self.render_slider(
+                        hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 3.),
                         vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
@@ -510,6 +522,7 @@ impl UiAssets {
                 + BUTTON_SIZE.y / SMALL_BUTTON_DIV / 2.;
 
             if self.render_button(
+                hash!(),
                 mouse_pos,
                 vec2(center_offset_x, -y_offset),
                 BUTTON_SIZE / SMALL_BUTTON_DIV,
@@ -520,6 +533,7 @@ impl UiAssets {
             }
 
             if self.render_button(
+                hash!(),
                 mouse_pos,
                 vec2(-center_offset_x, -y_offset),
                 BUTTON_SIZE / SMALL_BUTTON_DIV,
@@ -532,6 +546,7 @@ impl UiAssets {
             let button_y_offsets = BUTTONS_MARGIN + BUTTON_SIZE.y;
 
             if self.render_button(
+                hash!(),
                 mouse_pos,
                 vec2(0., -button_y_offsets),
                 BUTTON_SIZE,
@@ -541,11 +556,19 @@ impl UiAssets {
                 *settings_state = SettingsState::Closed;
             }
 
-            if self.render_button(mouse_pos, vec2(0., 0.), BUTTON_SIZE, "Settings", 28) {
+            if self.render_button(
+                hash!(),
+                mouse_pos,
+                vec2(0., 0.),
+                BUTTON_SIZE,
+                "Settings",
+                28,
+            ) {
                 *settings_state = SettingsState::Settings(0);
             }
 
             if self.render_button(
+                hash!(),
                 mouse_pos,
                 vec2(0., button_y_offsets),
                 BUTTON_SIZE,
@@ -560,7 +583,8 @@ impl UiAssets {
     }
 
     pub fn render_button(
-        &self,
+        &mut self,
+        id: u64,
         mouse_pos: Vec2,
         center_pos: Vec2,
         size: Vec2,
@@ -576,9 +600,20 @@ impl UiAssets {
 
         let contains_mouse = rect.contains(mouse_pos);
         let mouse_is_released = is_mouse_button_released(MouseButton::Left);
+        let mouse_is_pressed = is_mouse_button_pressed(MouseButton::Left);
         let mouse_is_down = is_mouse_button_down(MouseButton::Left) || mouse_is_released;
 
-        let color = if contains_mouse && mouse_is_down {
+        if contains_mouse {
+            if mouse_is_pressed {
+                self.active_id = id;
+            }
+        } else if self.active_id == id {
+            self.active_id = 0;
+        }
+
+        let button_is_active = self.active_id == id;
+
+        let color = if button_is_active && mouse_is_down {
             Color::new(0.80, 0.80, 0.80, 1.0)
         } else if contains_mouse {
             Color::new(0.90, 0.90, 0.90, 1.0)
@@ -612,11 +647,12 @@ impl UiAssets {
             },
         );
 
-        return contains_mouse && mouse_is_released;
+        return button_is_active && mouse_is_released;
     }
 
     pub fn render_slider(
-        &self,
+        &mut self,
+        id: u64,
         mouse_pos: Vec2,
         center_pos: Vec2,
         size: Vec2,
@@ -648,13 +684,21 @@ impl UiAssets {
         );
 
         let contains_mouse = slider_rect.contains(mouse_pos);
-        let mouse_is_released = is_mouse_button_released(MouseButton::Left);
-        let mouse_is_down = is_mouse_button_down(MouseButton::Left) || mouse_is_released;
+        let mouse_is_pressed = is_mouse_button_pressed(MouseButton::Left);
+        let mouse_is_down = is_mouse_button_down(MouseButton::Left);
+
+        if !mouse_is_down && self.active_id == id {
+            self.active_id = 0;
+        } else if contains_mouse && mouse_is_pressed {
+            self.active_id = id;
+        }
+
+        let is_active = self.active_id == id;
 
         let bar_width_pct = 0.15;
         let bar_width = slider_rect.w * bar_width_pct;
 
-        if contains_mouse && mouse_is_down {
+        if is_active {
             let amount = ((mouse_pos.x - slider_rect.x - bar_width / 2.)
                 / (slider_rect.w - bar_width))
                 .clamp(0., 1.);

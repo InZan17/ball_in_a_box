@@ -492,7 +492,7 @@ impl UiRenderer {
             number_rect.x + number_rect.w - size.width - value_font_size_f * 0.5,
             centered_y_offset,
             TextParams {
-                color: Color::new(0.05, 0., 0.1, 1.),
+                color: Color::new(0., 0., 0., 1.),
                 font: Some(&self.font),
                 font_size: value_font_size,
                 font_scale: 2.0,

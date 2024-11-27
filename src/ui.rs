@@ -195,7 +195,7 @@ impl UiRenderer {
                         "Max velocity",
                         TITLE_SIZE,
                         0.0..500.0,
-                        &mut editing_settings.terminal_velocity,
+                        &mut editing_settings.max_velocity,
                     );
                 }
                 1 => {

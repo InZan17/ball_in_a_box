@@ -69,8 +69,8 @@ impl Ball {
 
         self.velocity *= 1. - (settings.air_friction * dt.clamp(0., 1.));
 
-        if self.velocity.length() > settings.terminal_velocity * 1000. {
-            self.velocity = self.velocity.normalize() * settings.terminal_velocity * 1000.;
+        if self.velocity.length() > settings.max_velocity * 1000. {
+            self.velocity = self.velocity.normalize() * settings.max_velocity * 1000.;
         }
 
         let total_velocity = self.velocity + wall_velocity * 2.;

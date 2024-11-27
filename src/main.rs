@@ -63,14 +63,14 @@ impl FromTuple for Vec2 {
 
 #[derive(Debug, SerJson, DeJson, Clone)]
 pub struct Settings {
-    terminal_velocity: f32,
+    audio_volume: f32,
     gravity_strength: f32,
     air_friction: f32,
+    max_velocity: f32,
     ball_bounciness: f32,
     ball_radius: f32,
     ball_weight: f32,
     ball_friction: f32,
-    audio_volume: f32,
     shadow_size: f32,
     shadow_distance_strength: f32,
     box_width: f32,
@@ -84,7 +84,7 @@ impl Default for Settings {
         Self {
             gravity_strength: 3.,
             air_friction: 0.17,
-            terminal_velocity: 100.,
+            max_velocity: 100.,
             ball_bounciness: 0.9,
             ball_radius: 90.,
             ball_weight: 0.65,

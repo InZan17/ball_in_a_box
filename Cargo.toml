@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 macroquad = {git = "https://github.com/not-fl3/macroquad", rev = "2e48cf9", features = ["audio"]}
-nanoserde = "0.1.37"
+nanoserde = {git = "https://github.com/inzan17/nanoserde", rev = "6e42d4c"}
 quad-rand = "0.2.2"
 
 [patch.crates-io]

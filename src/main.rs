@@ -113,7 +113,7 @@ fn read_settings_file() -> Option<Settings> {
 }
 
 fn write_settings_file(settings: &Settings) {
-    let _ = fs::write("./settings_in_a.json", settings.serialize_json());
+    let _ = fs::write("./settings_in_a.json", settings.serialize_json_pretty());
 }
 
 #[macroquad::main(window_conf)]

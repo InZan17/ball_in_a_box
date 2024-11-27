@@ -251,18 +251,16 @@ dependencies = [
 
 [[package]]
 name = "nanoserde"
-version = "0.1.37"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5de9cf844ab1e25a0353525bd74cb889843a6215fa4a0d156fd446f4857a1b99"
+version = "0.2.0-beta.2"
+source = "git+https://github.com/inzan17/nanoserde?rev=6e42d4c#6e42d4cf8a6aeb92ac20060607927ba8e3ce89aa"
 dependencies = [
  "nanoserde-derive",
 ]
 
 [[package]]
 name = "nanoserde-derive"
-version = "0.1.22"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e943b2c21337b7e3ec6678500687cdc741b7639ad457f234693352075c082204"
+version = "0.2.0-beta.2"
+source = "git+https://github.com/inzan17/nanoserde?rev=6e42d4c#6e42d4cf8a6aeb92ac20060607927ba8e3ce89aa"
 
 [[package]]
 name = "ndk-sys"

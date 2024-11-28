@@ -126,12 +126,6 @@ async fn main() {
 
     let mut editing_settings = settings.clone();
 
-    set_window_position(
-        (1920 - settings.box_width as u32) / 2,
-        (1080 - settings.box_height as u32) / 2,
-    );
-    next_frame().await;
-
     panic::set_hook(Box::new(|info| {
         let Ok(mut log_file) = OpenOptions::new()
             .create(true)

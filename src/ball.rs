@@ -312,6 +312,9 @@ impl Ball {
 
         gl_use_material(&self.shadow_material);
 
+        self.shadow_material
+            .set_uniform("shadow_strength", settings.shadow_strength);
+
         self.shadow_material.set_uniform(
             "in_shadow",
             distance_to_floor / self.radius / settings.shadow_distance_strength,
@@ -380,6 +383,18 @@ impl Ball {
             distance_to_right_wall / self.radius / settings.shadow_distance_strength,
         );
         self.ball_material.set_uniform("ball_radius", self.radius);
+        self.ball_material
+            .set_uniform("ambient_occlusion_focus", settings.ambient_occlusion_focus);
+        self.ball_material.set_uniform(
+            "ambient_occlusion_strength",
+            settings.ambient_occlusion_strength,
+        );
+        self.ball_material
+            .set_uniform("ambient_light", settings.ambient_light);
+        self.ball_material
+            .set_uniform("specular_focus", settings.specular_focus);
+        self.ball_material
+            .set_uniform("specular_strength", settings.specular_strength);
 
         draw_texture_ex(
             &self.texture,

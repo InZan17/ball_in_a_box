@@ -14,7 +14,7 @@ const MENU_PADDING: f32 = 10.;
 const SMALL_BUTTON_DIV: f32 = 1.5;
 const SMALLER_BUTTON_DIV: f32 = 1.75;
 
-const LAST_PAGE_INDEX: u8 = 2;
+const LAST_PAGE_INDEX: u8 = 4;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum SettingsState {
@@ -288,6 +288,96 @@ impl UiRenderer {
                         &mut editing_settings.box_depth,
                     );
                 }
+                3 => {
+                    self.render_slider(
+                        hash!(),
+                        mouse_pos,
+                        vec2(0., start + lower_down * 0.),
+                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                        "AO focus",
+                        TITLE_SIZE,
+                        0.0..5.0,
+                        &mut editing_settings.ambient_occlusion_focus,
+                    );
+
+                    self.render_slider(
+                        hash!(),
+                        mouse_pos,
+                        vec2(0., start + lower_down * 1.),
+                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                        "AO strength",
+                        TITLE_SIZE,
+                        0.0..5.0,
+                        &mut editing_settings.ambient_occlusion_strength,
+                    );
+
+                    self.render_slider(
+                        hash!(),
+                        mouse_pos,
+                        vec2(0., start + lower_down * 2.),
+                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                        "Specular focus",
+                        TITLE_SIZE,
+                        0.0..100.0,
+                        &mut editing_settings.specular_focus,
+                    );
+
+                    self.render_slider(
+                        hash!(),
+                        mouse_pos,
+                        vec2(0., start + lower_down * 3.),
+                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                        "Specular strength",
+                        TITLE_SIZE,
+                        0.0..10.0,
+                        &mut editing_settings.specular_strength,
+                    );
+                }
+                4 => {
+                    self.render_slider(
+                        hash!(),
+                        mouse_pos,
+                        vec2(0., start + lower_down * 0.),
+                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                        "Ambient light",
+                        TITLE_SIZE,
+                        0.0..1.0,
+                        &mut editing_settings.ambient_light,
+                    );
+
+                    self.render_slider(
+                        hash!(),
+                        mouse_pos,
+                        vec2(0., start + lower_down * 1.),
+                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                        "Shadow size",
+                        TITLE_SIZE,
+                        0.0..10.0,
+                        &mut editing_settings.shadow_size,
+                    );
+
+                    self.render_slider(
+                        hash!(),
+                        mouse_pos,
+                        vec2(0., start + lower_down * 2.),
+                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                        "Shadow dist strength",
+                        TITLE_SIZE - 2,
+                        0.0..10.0,
+                        &mut editing_settings.shadow_distance_strength,
+                    );
+
+                    self.render_slider(
+                        hash!(),
+                        mouse_pos,
+                        vec2(0., start + lower_down * 3.),
+                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                        "Shadow strength",
+                        TITLE_SIZE,
+                        0.0..10.0,
+                        &mut editing_settings.shadow_strength,
+                    );
+                }
                 _ => {
                     unimplemented!()
                 }
@@ -357,15 +447,6 @@ impl UiRenderer {
                 order_quit();
             }
         }
-
-        self.render_button(
-            hash!(),
-            mouse_pos,
-            mouse_pos / 2. + vec2(11., 11.),
-            vec2(10., 10.),
-            "b",
-            10,
-        );
 
         return save;
     }

@@ -127,6 +127,11 @@ async fn main() {
                 UniformDesc::new("left_distance", UniformType::Float1),
                 UniformDesc::new("right_distance", UniformType::Float1),
                 UniformDesc::new("ball_radius", UniformType::Float1),
+                UniformDesc::new("ambient_occlusion_focus", UniformType::Float1),
+                UniformDesc::new("ambient_occlusion_strength", UniformType::Float1),
+                UniformDesc::new("ambient_light", UniformType::Float1),
+                UniformDesc::new("specular_focus", UniformType::Float1),
+                UniformDesc::new("specular_strength", UniformType::Float1),
             ],
             pipeline_params: PipelineParams {
                 color_blend: Some(BlendState::new(
@@ -149,7 +154,10 @@ async fn main() {
                 .expect("Couldn't find the assets/shadow.frag file"),
         },
         MaterialParams {
-            uniforms: vec![UniformDesc::new("in_shadow", UniformType::Float1)],
+            uniforms: vec![
+                UniformDesc::new("in_shadow", UniformType::Float1),
+                UniformDesc::new("shadow_strength", UniformType::Float1),
+            ],
             pipeline_params: PipelineParams {
                 color_blend: Some(BlendState::new(
                     Equation::Add,

@@ -8,6 +8,11 @@ uniform float ceil_distance;
 uniform float left_distance;
 uniform float right_distance;
 uniform float ball_radius;
+uniform float ambient_occlusion_focus;
+uniform float ambient_occlusion_strength;
+uniform float ambient_light;
+uniform float specular_focus;
+uniform float specular_strength;
 
 uniform sampler2D Texture;
 
@@ -53,18 +58,14 @@ void main() {
     vec3 light_dir = vec3(0.6, 0.8, -1.2);
     vec3 normalized_light_dir = normalize(light_dir);
 
-    float shadow_power = 1.1;
-    float shadow_strength = 0.7;
     vec4 cardboard_shadow_color = vec4(82, 43, 12, 255) / 255.;
     vec4 ambient_color = vec4(185, 159, 123, 255) / 255.;
 
-    float ambient = 0.5;
-    float specular_strength = 0.3;
 
     float diffuse = max(dot(normal, -normalized_light_dir), 0);
-    float ambient_color_influence = max(ambient - diffuse, 0);
-    diffuse = min(diffuse + ambient, 1);
-    float specular = pow(max(dot(normal, -normalized_light_dir), 0), 32) * specular_strength;
+    float ambient_color_influence = max(ambient_light - diffuse, 0);
+    diffuse = min(diffuse + ambient_light, 1);
+    float specular = pow(max(dot(normal, -normalized_light_dir), 0), specular_focus) * specular_strength;
     
 
     vec3 up = vec3(rotate(vec2(0,-1), 0),0);
@@ -77,12 +78,12 @@ void main() {
     float left_strength = 1 - min(left_distance / 2, 1);
     float right_strength = 1 - min(right_distance / 2, 1);
 
-    float ceil_shadow = pow(max(dot(normal * ceil_strength, up), 0), shadow_power) * shadow_strength;
-    float floor_shadow = pow(max(dot(normal * floor_strength, down), 0), shadow_power) * shadow_strength;
-    float left_shadow = pow(max(dot(normal * left_strength, left), 0), shadow_power) * shadow_strength;
-    float right_shadow = pow(max(dot(normal * right_strength, right), 0), shadow_power) * shadow_strength;
+    float ceil_shadow = pow(max(dot(normal * ceil_strength, up), 0), ambient_occlusion_focus) * ambient_occlusion_strength;
+    float floor_shadow = pow(max(dot(normal * floor_strength, down), 0), ambient_occlusion_focus) * ambient_occlusion_strength;
+    float left_shadow = pow(max(dot(normal * left_strength, left), 0), ambient_occlusion_focus) * ambient_occlusion_strength;
+    float right_shadow = pow(max(dot(normal * right_strength, right), 0), ambient_occlusion_focus) * ambient_occlusion_strength;
 
-    float total_shadow = clamp(ceil_shadow + floor_shadow + left_shadow + right_shadow, 0, shadow_strength);
+    float total_shadow = clamp(ceil_shadow + floor_shadow + left_shadow + right_shadow, 0, ambient_occlusion_strength);
     
     vec4 texture_color = texture2D(Texture, uv) * color;
 

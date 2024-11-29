@@ -15,12 +15,18 @@ pub struct DeserializeSettings {
     ball_radius: Option<f32>,
     ball_weight: Option<f32>,
     ball_friction: Option<f32>,
-    shadow_size: Option<f32>,
-    shadow_distance_strength: Option<f32>,
     box_width: Option<f32>,
     box_height: Option<f32>,
     box_thickness: Option<f32>,
     box_depth: Option<f32>,
+    ambient_occlusion_focus: Option<f32>,
+    ambient_occlusion_strength: Option<f32>,
+    specular_focus: Option<f32>,
+    specular_strength: Option<f32>,
+    ambient_light: Option<f32>,
+    shadow_size: Option<f32>,
+    shadow_distance_strength: Option<f32>,
+    shadow_strength: Option<f32>,
     last_ball: Option<String>,
     last_sounds: Option<String>,
 }
@@ -35,10 +41,17 @@ impl DeserializeSettings {
             || self.ball_radius.is_none()
             || self.ball_weight.is_none()
             || self.ball_friction.is_none()
-            || self.shadow_size.is_none()
-            || self.shadow_distance_strength.is_none()
             || self.box_width.is_none()
             || self.box_height.is_none()
+            || self.box_thickness.is_none()
+            || self.box_depth.is_none()
+            || self.ambient_occlusion_focus.is_none()
+            || self.ambient_occlusion_strength.is_none()
+            || self.specular_focus.is_none()
+            || self.ambient_light.is_none()
+            || self.shadow_strength.is_none()
+            || self.shadow_size.is_none()
+            || self.shadow_distance_strength.is_none()
             || self.last_ball.is_none()
             || self.last_sounds.is_none()
     }
@@ -108,6 +121,22 @@ impl DeserializeSettings {
                     }
                 })
                 .unwrap_or(default_settings.box_depth),
+            ambient_occlusion_focus: self
+                .ambient_occlusion_focus
+                .unwrap_or(default_settings.ambient_occlusion_focus),
+            ambient_occlusion_strength: self
+                .ambient_occlusion_strength
+                .unwrap_or(default_settings.ambient_occlusion_strength),
+            specular_focus: self
+                .specular_focus
+                .unwrap_or(default_settings.specular_focus),
+            specular_strength: self
+                .specular_strength
+                .unwrap_or(default_settings.specular_strength),
+            ambient_light: self.ambient_light.unwrap_or(default_settings.ambient_light),
+            shadow_strength: self
+                .shadow_strength
+                .unwrap_or(default_settings.shadow_strength),
             shadow_size: self.shadow_size.unwrap_or(default_settings.shadow_size),
             shadow_distance_strength: self
                 .shadow_distance_strength
@@ -126,16 +155,27 @@ pub struct Settings {
     pub gravity_strength: f32,
     pub air_friction: f32,
     pub max_velocity: f32,
+
     pub ball_bounciness: f32,
     pub ball_radius: u32,
     pub ball_weight: f32,
     pub ball_friction: f32,
+
     pub box_width: u32,
     pub box_height: u32,
     pub box_thickness: u32,
     pub box_depth: u32,
+
+    pub ambient_occlusion_focus: f32,
+    pub ambient_occlusion_strength: f32,
+    pub specular_focus: f32,
+    pub specular_strength: f32,
+
+    pub ambient_light: f32,
     pub shadow_size: f32,
     pub shadow_distance_strength: f32,
+    pub shadow_strength: f32,
+
     pub last_ball: String,
     pub last_sounds: String,
 }
@@ -158,8 +198,16 @@ impl Default for Settings {
             box_thickness: 20,
             box_depth: 20,
 
+            ambient_occlusion_focus: 1.1,
+            ambient_occlusion_strength: 0.7,
+            specular_focus: 32.0,
+            specular_strength: 0.3,
+
+            ambient_light: 0.5,
             shadow_size: 1.2,
             shadow_distance_strength: 0.55,
+            shadow_strength: 1.1,
+
             last_ball: "grinning".to_string(),
             last_sounds: "thud".to_string(),
         }

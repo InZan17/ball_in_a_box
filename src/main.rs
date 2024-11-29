@@ -1,7 +1,7 @@
 use core::str;
 use std::{
     f32::consts::PI,
-    fs::{self, OpenOptions},
+    fs::OpenOptions,
     io::Write,
     panic,
     time::{SystemTime, UNIX_EPOCH},
@@ -10,13 +10,14 @@ use std::{
 use ball::Ball;
 use macroquad::{audio::set_sound_volume, prelude::*, rand};
 use miniquad::*;
-use nanoserde::{DeJson, SerJson};
+use settings::{read_settings_file, write_settings_file, Settings};
 use sounds::{find_sounds, get_random_sounds};
 use textures::{find_texture, get_random_texture};
 use ui::{SettingsState, UiRenderer, MENU_SIZE};
 use window::{set_window_position, set_window_size};
 
 pub mod ball;
+pub mod settings;
 pub mod sounds;
 pub mod textures;
 pub mod ui;
@@ -40,7 +41,6 @@ pub fn window_conf() -> Conf {
 pub trait FromTuple {
     fn from_u32_tuple(tuple: (u32, u32)) -> Self;
     fn from_i32_tuple(tuple: (i32, i32)) -> Self;
-    fn from_f32_tuple(tuple: (f32, f32)) -> Self;
 }
 
 impl FromTuple for Vec2 {
@@ -51,190 +51,6 @@ impl FromTuple for Vec2 {
     fn from_i32_tuple(tuple: (i32, i32)) -> Self {
         Vec2::new(tuple.0 as f32, tuple.1 as f32)
     }
-
-    fn from_f32_tuple(tuple: (f32, f32)) -> Self {
-        Vec2::new(tuple.0, tuple.1)
-    }
-}
-
-#[derive(Debug, DeJson)]
-#[nserde(serialize_none_as_null)]
-pub struct DeserializeSettings {
-    audio_volume: Option<f32>,
-    gravity_strength: Option<f32>,
-    air_friction: Option<f32>,
-    max_velocity: Option<f32>,
-    ball_bounciness: Option<f32>,
-    ball_radius: Option<f32>,
-    ball_weight: Option<f32>,
-    ball_friction: Option<f32>,
-    shadow_size: Option<f32>,
-    shadow_distance_strength: Option<f32>,
-    box_width: Option<f32>,
-    box_height: Option<f32>,
-    box_thickness: Option<f32>,
-    box_depth: Option<f32>,
-    last_ball: Option<String>,
-    last_sounds: Option<String>,
-}
-
-impl DeserializeSettings {
-    pub fn contains_none(&self) -> bool {
-        self.audio_volume.is_none()
-            || self.gravity_strength.is_none()
-            || self.air_friction.is_none()
-            || self.max_velocity.is_none()
-            || self.ball_bounciness.is_none()
-            || self.ball_radius.is_none()
-            || self.ball_weight.is_none()
-            || self.ball_friction.is_none()
-            || self.shadow_size.is_none()
-            || self.shadow_distance_strength.is_none()
-            || self.box_width.is_none()
-            || self.box_height.is_none()
-            || self.last_ball.is_none()
-            || self.last_sounds.is_none()
-    }
-
-    pub fn to_settings(self) -> (Settings, bool) {
-        let default_settings = Settings::default();
-        let has_none = self.contains_none();
-        let settings = Settings {
-            audio_volume: self.audio_volume.unwrap_or(default_settings.audio_volume),
-            gravity_strength: self
-                .gravity_strength
-                .unwrap_or(default_settings.gravity_strength),
-            air_friction: self.air_friction.unwrap_or(default_settings.air_friction),
-            max_velocity: self.max_velocity.unwrap_or(default_settings.max_velocity),
-            ball_bounciness: self
-                .ball_bounciness
-                .unwrap_or(default_settings.ball_bounciness),
-            ball_radius: self
-                .ball_radius
-                .and_then(|ball_radius| {
-                    if ball_radius < 1. {
-                        return None;
-                    } else {
-                        return Some(ball_radius as u32);
-                    }
-                })
-                .unwrap_or(default_settings.ball_radius),
-            ball_weight: self.ball_weight.unwrap_or(default_settings.ball_weight),
-            ball_friction: self.ball_friction.unwrap_or(default_settings.ball_friction),
-            box_width: self
-                .box_width
-                .and_then(|box_width| {
-                    if box_width < 0. {
-                        return None;
-                    } else {
-                        return Some(box_width as u32);
-                    }
-                })
-                .unwrap_or(default_settings.box_width),
-            box_height: self
-                .box_height
-                .and_then(|box_height| {
-                    if box_height < 0. {
-                        return None;
-                    } else {
-                        return Some(box_height as u32);
-                    }
-                })
-                .unwrap_or(default_settings.box_height),
-            box_thickness: self
-                .box_thickness
-                .and_then(|box_thickness| {
-                    if box_thickness < 1. {
-                        return None;
-                    } else {
-                        return Some(box_thickness as u32);
-                    }
-                })
-                .unwrap_or(default_settings.box_thickness),
-            box_depth: self
-                .box_depth
-                .and_then(|box_depth| {
-                    if box_depth < 1. {
-                        return None;
-                    } else {
-                        return Some(box_depth as u32);
-                    }
-                })
-                .unwrap_or(default_settings.box_depth),
-            shadow_size: self.shadow_size.unwrap_or(default_settings.shadow_size),
-            shadow_distance_strength: self
-                .shadow_distance_strength
-                .unwrap_or(default_settings.shadow_distance_strength),
-            last_ball: self.last_ball.unwrap_or(default_settings.last_ball),
-            last_sounds: self.last_sounds.unwrap_or(default_settings.last_sounds),
-        };
-        (settings, has_none)
-    }
-}
-
-#[derive(Debug, SerJson, Clone)]
-#[nserde(serialize_none_as_null)]
-pub struct Settings {
-    audio_volume: f32,
-    gravity_strength: f32,
-    air_friction: f32,
-    max_velocity: f32,
-    ball_bounciness: f32,
-    ball_radius: u32,
-    ball_weight: f32,
-    ball_friction: f32,
-    box_width: u32,
-    box_height: u32,
-    box_thickness: u32,
-    box_depth: u32,
-    shadow_size: f32,
-    shadow_distance_strength: f32,
-    last_ball: String,
-    last_sounds: String,
-}
-
-impl Default for Settings {
-    fn default() -> Self {
-        Self {
-            audio_volume: 0.6,
-            gravity_strength: 3.,
-            air_friction: 0.17,
-            max_velocity: 100.,
-
-            ball_bounciness: 0.9,
-            ball_radius: 90,
-            ball_weight: 0.65,
-            ball_friction: 0.75,
-
-            box_width: 640,
-            box_height: 480,
-            box_thickness: 20,
-            box_depth: 20,
-
-            shadow_size: 1.2,
-            shadow_distance_strength: 0.55,
-            last_ball: "grinning".to_string(),
-            last_sounds: "thud".to_string(),
-        }
-    }
-}
-
-fn read_settings_file() -> Option<Settings> {
-    let bytes = fs::read("./settings_in_a.json").ok()?;
-    let string = str::from_utf8(&bytes).ok()?;
-    let de_settings = DeserializeSettings::deserialize_json(string).ok()?;
-
-    let (settings, is_incomplete) = de_settings.to_settings();
-
-    if is_incomplete {
-        write_settings_file(&settings);
-    }
-
-    return Some(settings);
-}
-
-fn write_settings_file(settings: &Settings) {
-    let _ = fs::write("./settings_in_a.json", settings.serialize_json_pretty());
 }
 
 #[macroquad::main(window_conf)]
@@ -418,7 +234,7 @@ async fn main() {
         let mouse_pos = if let Some(mouse_pos) = mouse_offset {
             -mouse_pos
         } else {
-            Vec2::from_f32_tuple(mouse_position()) * screen_dpi_scale()
+            Vec2::from(mouse_position()) * screen_dpi_scale()
         };
 
         while let Some(character) = get_char_pressed() {

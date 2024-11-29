@@ -14,7 +14,7 @@ const MENU_PADDING: f32 = 10.;
 const SMALL_BUTTON_DIV: f32 = 1.5;
 const SMALLER_BUTTON_DIV: f32 = 1.75;
 
-const LAST_PAGE_INDEX: u8 = 1;
+const LAST_PAGE_INDEX: u8 = 2;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum SettingsState {
@@ -75,7 +75,7 @@ impl UiRenderer {
             return false;
         }
 
-        let mouse_pos = mouse_pos * 2. - vec2(box_size.x, box_size.y);
+        let mouse_pos = mouse_pos * 2. - box_size;
 
         draw_rectangle(
             -box_size.x,
@@ -243,6 +243,51 @@ impl UiRenderer {
                         &mut editing_settings.ball_friction,
                     );
                 }
+                2 => {
+                    self.render_slider_uint(
+                        hash!(),
+                        mouse_pos,
+                        vec2(0., start + lower_down * 0.),
+                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                        "Box width",
+                        TITLE_SIZE,
+                        300..1000,
+                        &mut editing_settings.box_width,
+                    );
+
+                    self.render_slider_uint(
+                        hash!(),
+                        mouse_pos,
+                        vec2(0., start + lower_down * 1.),
+                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                        "Box height",
+                        TITLE_SIZE,
+                        400..1000,
+                        &mut editing_settings.box_height,
+                    );
+
+                    self.render_slider_uint(
+                        hash!(),
+                        mouse_pos,
+                        vec2(0., start + lower_down * 2.),
+                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                        "Box thickness",
+                        TITLE_SIZE,
+                        0..100,
+                        &mut editing_settings.box_thickness,
+                    );
+
+                    self.render_slider_uint(
+                        hash!(),
+                        mouse_pos,
+                        vec2(0., start + lower_down * 3.),
+                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                        "Box depth",
+                        TITLE_SIZE,
+                        0..100,
+                        &mut editing_settings.box_depth,
+                    );
+                }
                 _ => {
                     unimplemented!()
                 }
@@ -312,6 +357,15 @@ impl UiRenderer {
                 order_quit();
             }
         }
+
+        self.render_button(
+            hash!(),
+            mouse_pos,
+            mouse_pos / 2. + vec2(11., 11.),
+            vec2(10., 10.),
+            "b",
+            10,
+        );
 
         return save;
     }

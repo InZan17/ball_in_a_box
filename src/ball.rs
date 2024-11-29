@@ -9,7 +9,7 @@ use macroquad::{
     texture::{draw_texture_ex, DrawTextureParams, Texture2D},
 };
 
-use crate::{Settings, WALL_DEPTH, WALL_OFFSET, WALL_THICKNESS};
+use crate::Settings;
 
 pub struct Ball {
     position: Vec2,
@@ -58,6 +58,10 @@ impl Ball {
         wall_hits: &mut [u8; 2],
         box_size: Vec2,
     ) -> f32 {
+        let box_thickness = settings.box_thickness as f32;
+        let box_depth = settings.box_depth as f32;
+        let box_offset = box_thickness + box_depth;
+
         let temp = wall_hits[0];
         wall_hits[0] = wall_hits[1];
         wall_hits[1] = temp;
@@ -67,7 +71,7 @@ impl Ball {
 
         let mut hit_wall_speed = vec2(0., 0.);
 
-        let wall_and_ball_offset = self.radius + WALL_OFFSET;
+        let wall_and_ball_offset = self.radius + box_offset;
 
         self.velocity += Vec2::new(0., settings.gravity_strength * 1000. * dt);
 
@@ -296,7 +300,10 @@ impl Ball {
     }
 
     pub fn render(&mut self, settings: &Settings, box_size: Vec2) {
-        let wall_and_ball_offset = self.radius + WALL_OFFSET;
+        let box_thickness = settings.box_thickness as f32;
+        let box_depth = settings.box_depth as f32;
+        let box_offset = box_thickness + box_depth;
+        let wall_and_ball_offset = self.radius + box_offset;
 
         let distance_to_floor = box_size.y - wall_and_ball_offset - self.position.y;
         let distance_to_ceiling = self.position.y + box_size.y - wall_and_ball_offset;
@@ -311,9 +318,9 @@ impl Ball {
         );
         draw_rectangle(
             self.position.x - self.radius * settings.shadow_size,
-            box_size.y - WALL_OFFSET - WALL_DEPTH,
+            box_size.y - box_offset - box_depth,
             self.radius * settings.shadow_size * 2.,
-            WALL_DEPTH * 2.,
+            box_depth * 2.,
             WHITE,
         );
 
@@ -323,9 +330,9 @@ impl Ball {
         );
         draw_rectangle(
             self.position.x - self.radius * settings.shadow_size,
-            -box_size.y + WALL_THICKNESS,
+            -box_size.y + box_thickness,
             self.radius * settings.shadow_size * 2.,
-            WALL_DEPTH * 2.,
+            box_depth * 2.,
             WHITE,
         );
 
@@ -334,9 +341,9 @@ impl Ball {
             distance_to_right_wall / self.radius / settings.shadow_distance_strength,
         );
         draw_rectangle(
-            box_size.x - WALL_OFFSET - WALL_DEPTH,
+            box_size.x - box_offset - box_depth,
             self.position.y - self.radius * settings.shadow_size,
-            WALL_DEPTH * 2.,
+            box_depth * 2.,
             self.radius * settings.shadow_size * 2.,
             WHITE,
         );
@@ -346,9 +353,9 @@ impl Ball {
             distance_to_left_wall / self.radius / settings.shadow_distance_strength,
         );
         draw_rectangle(
-            -box_size.x + WALL_THICKNESS,
+            -box_size.x + box_thickness,
             self.position.y - self.radius * settings.shadow_size,
-            WALL_DEPTH * 2.,
+            box_depth * 2.,
             self.radius * settings.shadow_size * 2.,
             WHITE,
         );

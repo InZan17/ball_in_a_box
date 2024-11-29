@@ -61,20 +61,114 @@ impl FromTuple for Vec2 {
     }
 }
 
-#[derive(Debug, SerJson, DeJson, Clone)]
+#[derive(Debug, DeJson)]
+#[nserde(serialize_none_as_null)]
+pub struct DeserializeSettings {
+    audio_volume: Option<f32>,
+    gravity_strength: Option<f32>,
+    air_friction: Option<f32>,
+    max_velocity: Option<f32>,
+    ball_bounciness: Option<f32>,
+    ball_radius: Option<f32>,
+    ball_weight: Option<f32>,
+    ball_friction: Option<f32>,
+    shadow_size: Option<f32>,
+    shadow_distance_strength: Option<f32>,
+    box_width: Option<f32>,
+    box_height: Option<f32>,
+    last_ball: Option<String>,
+    last_sounds: Option<String>,
+}
+
+impl DeserializeSettings {
+    pub fn contains_none(&self) -> bool {
+        self.audio_volume.is_none()
+            || self.gravity_strength.is_none()
+            || self.air_friction.is_none()
+            || self.max_velocity.is_none()
+            || self.ball_bounciness.is_none()
+            || self.ball_radius.is_none()
+            || self.ball_weight.is_none()
+            || self.ball_friction.is_none()
+            || self.shadow_size.is_none()
+            || self.shadow_distance_strength.is_none()
+            || self.box_width.is_none()
+            || self.box_height.is_none()
+            || self.last_ball.is_none()
+            || self.last_sounds.is_none()
+    }
+
+    pub fn to_settings(self) -> (Settings, bool) {
+        let default_settings = Settings::default();
+        let has_none = self.contains_none();
+        let settings = Settings {
+            audio_volume: self.audio_volume.unwrap_or(default_settings.audio_volume),
+            gravity_strength: self
+                .gravity_strength
+                .unwrap_or(default_settings.gravity_strength),
+            air_friction: self.air_friction.unwrap_or(default_settings.air_friction),
+            max_velocity: self.max_velocity.unwrap_or(default_settings.max_velocity),
+            ball_bounciness: self
+                .ball_bounciness
+                .unwrap_or(default_settings.ball_bounciness),
+            ball_radius: self
+                .ball_radius
+                .and_then(|ball_radius| {
+                    if ball_radius < 1. {
+                        return None;
+                    } else {
+                        return Some(ball_radius as u32);
+                    }
+                })
+                .unwrap_or(default_settings.ball_radius),
+            ball_weight: self.ball_weight.unwrap_or(default_settings.ball_weight),
+            ball_friction: self.ball_friction.unwrap_or(default_settings.ball_friction),
+            shadow_size: self.shadow_size.unwrap_or(default_settings.shadow_size),
+            shadow_distance_strength: self
+                .shadow_distance_strength
+                .unwrap_or(default_settings.shadow_distance_strength),
+            box_width: self
+                .box_width
+                .and_then(|box_width| {
+                    if box_width < 1. {
+                        return None;
+                    } else {
+                        return Some(box_width as u32);
+                    }
+                })
+                .unwrap_or(default_settings.box_width),
+            box_height: self
+                .box_height
+                .and_then(|box_height| {
+                    if box_height < 1. {
+                        return None;
+                    } else {
+                        return Some(box_height as u32);
+                    }
+                })
+                .unwrap_or(default_settings.box_height),
+            last_ball: self.last_ball.unwrap_or(default_settings.last_ball),
+            last_sounds: self.last_sounds.unwrap_or(default_settings.last_sounds),
+        };
+        (settings, has_none)
+    }
+}
+
+#[derive(Debug, SerJson, Clone)]
+#[nserde(serialize_none_as_null)]
 pub struct Settings {
     audio_volume: f32,
     gravity_strength: f32,
     air_friction: f32,
     max_velocity: f32,
     ball_bounciness: f32,
-    ball_radius: f32,
+    ball_radius: u32,
     ball_weight: f32,
     ball_friction: f32,
     shadow_size: f32,
     shadow_distance_strength: f32,
-    box_width: f32,
-    box_height: f32,
+    box_width: u32,
+    box_height: u32,
     last_ball: String,
     last_sounds: String,
 }
@@ -86,14 +180,14 @@ impl Default for Settings {
             air_friction: 0.17,
             max_velocity: 100.,
             ball_bounciness: 0.9,
-            ball_radius: 90.,
+            ball_radius: 90,
             ball_weight: 0.65,
             ball_friction: 0.75,
             audio_volume: 0.6,
             shadow_size: 1.2,
             shadow_distance_strength: 0.55,
-            box_width: 640.,
-            box_height: 480.,
+            box_width: 640,
+            box_height: 480,
             last_ball: "grinning".to_string(),
             last_sounds: "thud".to_string(),
         }
@@ -103,11 +197,13 @@ impl Default for Settings {
 fn read_settings_file() -> Option<Settings> {
     let bytes = fs::read("./settings_in_a.json").ok()?;
     let string = str::from_utf8(&bytes).ok()?;
-    let mut settings = Settings::deserialize_json(string).ok()?;
+    let de_settings = DeserializeSettings::deserialize_json(string).ok()?;
 
-    // Fix values so it doesn't break when creating windows.
-    settings.box_width = settings.box_width.floor().max(1.0);
-    settings.box_height = settings.box_height.floor().max(1.0);
+    let (settings, is_incomplete) = de_settings.to_settings();
+
+    if is_incomplete {
+        write_settings_file(&settings);
+    }
 
     return Some(settings);
 }
@@ -123,6 +219,8 @@ async fn main() {
         write_settings_file(&settings);
         settings
     });
+
+    let box_size = vec2(settings.box_width as f32, settings.box_height as f32);
 
     let mut editing_settings = settings.clone();
 
@@ -258,16 +356,17 @@ async fn main() {
                 .1,
             ball_material,
             shadow_material,
+            settings.ball_radius as f32,
             sounds.1,
         )
     };
 
     set_camera(&Camera2D {
-        zoom: vec2(1. / settings.box_width, 1. / settings.box_height),
+        zoom: vec2(1. / box_size.x, 1. / box_size.y),
         ..Default::default()
     });
 
-    let max_axis = settings.box_width.max(settings.box_height);
+    let max_axis = box_size.max_element();
 
     loop {
         clear_background(DARKGRAY);
@@ -325,8 +424,7 @@ async fn main() {
         last_mouse_position = current_mouse_position;
 
         if is_mouse_button_pressed(MouseButton::Left) && is_menu_open {
-            let abs_mouse_pos_from_center =
-                (mouse_pos - vec2(settings.box_width, settings.box_height) / 2.).abs();
+            let abs_mouse_pos_from_center = (mouse_pos - box_size / 2.).abs();
             if abs_mouse_pos_from_center.x < MENU_SIZE.x / 2.
                 && abs_mouse_pos_from_center.y < MENU_SIZE.y / 2.
             {
@@ -370,13 +468,13 @@ async fn main() {
 
         draw_texture_ex(
             &background_texture,
-            -settings.box_width + WALL_THICKNESS,
-            -settings.box_height + WALL_THICKNESS,
+            -box_size.x + WALL_THICKNESS,
+            -box_size.y + WALL_THICKNESS,
             WHITE,
             DrawTextureParams {
                 dest_size: Some(vec2(
-                    (settings.box_width - WALL_THICKNESS) * 2.,
-                    (settings.box_height - WALL_THICKNESS) * 2.,
+                    (box_size.x - WALL_THICKNESS) * 2.,
+                    (box_size.y - WALL_THICKNESS) * 2.,
                 )),
                 ..Default::default()
             },
@@ -385,7 +483,7 @@ async fn main() {
         // Left
         draw_texture_ex(
             &side_texture,
-            -settings.box_width - max_axis + WALL_THICKNESS / 2.,
+            -box_size.x - max_axis + WALL_THICKNESS / 2.,
             0.,
             Color::from_hex(0x999999),
             DrawTextureParams {
@@ -398,7 +496,7 @@ async fn main() {
         // Right
         draw_texture_ex(
             &side_texture,
-            -WALL_THICKNESS / 2. - max_axis + settings.box_width,
+            -WALL_THICKNESS / 2. - max_axis + box_size.x,
             0.,
             Color::from_hex(0xb0b0b0),
             DrawTextureParams {
@@ -411,8 +509,8 @@ async fn main() {
         // Top
         draw_texture_ex(
             &side_texture,
-            -settings.box_width,
-            -settings.box_height,
+            -box_size.x,
+            -box_size.y,
             Color::from_hex(0xbababa),
             DrawTextureParams {
                 rotation: PI * 1.0,
@@ -424,8 +522,8 @@ async fn main() {
         // Bottom
         draw_texture_ex(
             &side_texture,
-            -settings.box_width,
-            settings.box_height - WALL_THICKNESS,
+            -box_size.x,
+            box_size.y - WALL_THICKNESS,
             Color::from_hex(0xe0e0e0),
             DrawTextureParams {
                 rotation: PI * 2.0,
@@ -449,16 +547,17 @@ async fn main() {
                 wall_velocity,
                 maxed_delta,
                 &mut wall_hits,
+                box_size,
             );
         }
 
-        ball.render(&settings);
+        ball.render(&settings, box_size);
 
         let save = ui_renderer.render_ui(
             &mut editing_settings,
             &mut settings_state,
             mouse_pos,
-            (settings.box_width, settings.box_height),
+            box_size,
         );
 
         if save {
@@ -467,6 +566,7 @@ async fn main() {
             for sound in ball.sounds.iter() {
                 set_sound_volume(sound, settings.audio_volume);
             }
+            ball.radius = settings.ball_radius as f32;
         }
 
         next_frame().await

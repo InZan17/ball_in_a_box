@@ -18,6 +18,7 @@ pub struct Ball {
     rotation_velocity: f32,
     vertical_sound: bool,
     horizontal_sound: bool,
+    pub radius: f32,
     pub texture: Texture2D,
     pub ball_material: Material,
     pub shadow_material: Material,
@@ -29,6 +30,7 @@ impl Ball {
         texture: Texture2D,
         ball_material: Material,
         shadow_material: Material,
+        radius: f32,
         sounds: Vec<Sound>,
     ) -> Ball {
         Ball {
@@ -38,6 +40,7 @@ impl Ball {
             rotation_velocity: 0.,
             vertical_sound: true,
             horizontal_sound: true,
+            radius,
             texture,
             ball_material,
             shadow_material,
@@ -53,6 +56,7 @@ impl Ball {
         wall_velocity: Vec2,
         smoothed_wall_velocity: Vec2,
         wall_hits: &mut [u8; 2],
+        box_size: Vec2,
     ) -> f32 {
         let temp = wall_hits[0];
         wall_hits[0] = wall_hits[1];
@@ -63,7 +67,7 @@ impl Ball {
 
         let mut hit_wall_speed = vec2(0., 0.);
 
-        let wall_and_ball_offset = settings.ball_radius + WALL_OFFSET;
+        let wall_and_ball_offset = self.radius + WALL_OFFSET;
 
         self.velocity += Vec2::new(0., settings.gravity_strength * 1000. * dt);
 
@@ -82,10 +86,10 @@ impl Ball {
         let mut back_amount = 0.0_f32;
         let mut back_vec = vec2(0., 0.);
 
-        let distance_to_floor = settings.box_height - wall_and_ball_offset - self.position.y;
-        let distance_to_ceiling = self.position.y + settings.box_height - wall_and_ball_offset;
-        let distance_to_right_wall = settings.box_width - wall_and_ball_offset - self.position.x;
-        let distance_to_left_wall = self.position.x + settings.box_width - wall_and_ball_offset;
+        let distance_to_floor = box_size.y - wall_and_ball_offset - self.position.y;
+        let distance_to_ceiling = self.position.y + box_size.y - wall_and_ball_offset;
+        let distance_to_right_wall = box_size.x - wall_and_ball_offset - self.position.x;
+        let distance_to_left_wall = self.position.x + box_size.x - wall_and_ball_offset;
 
         if distance_to_floor <= 0. {
             // Floor
@@ -161,10 +165,10 @@ impl Ball {
         self.rotation += self.rotation_velocity * new_dt;
         self.rotation %= PI * 2.;
 
-        let distance_to_floor = settings.box_height - wall_and_ball_offset - self.position.y;
-        let distance_to_ceiling = self.position.y + settings.box_height - wall_and_ball_offset;
-        let distance_to_right_wall = settings.box_width - wall_and_ball_offset - self.position.x;
-        let distance_to_left_wall = self.position.x + settings.box_width - wall_and_ball_offset;
+        let distance_to_floor = box_size.y - wall_and_ball_offset - self.position.y;
+        let distance_to_ceiling = self.position.y + box_size.y - wall_and_ball_offset;
+        let distance_to_right_wall = box_size.x - wall_and_ball_offset - self.position.x;
+        let distance_to_left_wall = self.position.x + box_size.x - wall_and_ball_offset;
 
         // Putting this to 0 seems to work fine. But just in case, I will put a small number abocve 0.
         const SMALL_NUMBER: f32 = 0.01;
@@ -178,7 +182,7 @@ impl Ball {
             }
 
             hit_wall_speed.y = hit_wall_speed.y.max(smoothed_total_velocity.y.abs());
-            self.position.y = settings.box_height - wall_and_ball_offset;
+            self.position.y = box_size.y - wall_and_ball_offset;
             self.velocity.y =
                 -self.velocity.y * settings.ball_bounciness - smoothed_wall_velocity.y;
 
@@ -186,7 +190,7 @@ impl Ball {
                 self.velocity.x,
                 smoothed_wall_velocity.x,
                 self.rotation_velocity,
-                settings.ball_radius,
+                self.radius,
                 settings.ball_weight,
                 settings.ball_friction,
                 false,
@@ -199,7 +203,7 @@ impl Ball {
             }
 
             hit_wall_speed.y = hit_wall_speed.y.max(smoothed_total_velocity.y.abs());
-            self.position.y = -settings.box_height + wall_and_ball_offset;
+            self.position.y = -box_size.y + wall_and_ball_offset;
             self.velocity.y =
                 -self.velocity.y * settings.ball_bounciness - smoothed_wall_velocity.y;
 
@@ -207,7 +211,7 @@ impl Ball {
                 self.velocity.x,
                 smoothed_wall_velocity.x,
                 self.rotation_velocity,
-                settings.ball_radius,
+                self.radius,
                 settings.ball_weight,
                 settings.ball_friction,
                 true,
@@ -220,7 +224,7 @@ impl Ball {
             }
 
             hit_wall_speed.x = hit_wall_speed.x.max(smoothed_total_velocity.x.abs());
-            self.position.x = settings.box_width - wall_and_ball_offset;
+            self.position.x = box_size.x - wall_and_ball_offset;
             self.velocity.x =
                 -self.velocity.x * settings.ball_bounciness - smoothed_wall_velocity.x;
 
@@ -228,7 +232,7 @@ impl Ball {
                 self.velocity.y,
                 smoothed_wall_velocity.y,
                 self.rotation_velocity,
-                settings.ball_radius,
+                self.radius,
                 settings.ball_weight,
                 settings.ball_friction,
                 true,
@@ -242,7 +246,7 @@ impl Ball {
             }
 
             hit_wall_speed.x = hit_wall_speed.x.max(smoothed_total_velocity.x.abs());
-            self.position.x = -settings.box_width + wall_and_ball_offset;
+            self.position.x = -box_size.x + wall_and_ball_offset;
             self.velocity.x =
                 -self.velocity.x * settings.ball_bounciness - smoothed_wall_velocity.x;
 
@@ -250,7 +254,7 @@ impl Ball {
                 self.velocity.y,
                 smoothed_wall_velocity.y,
                 self.rotation_velocity,
-                settings.ball_radius,
+                self.radius,
                 settings.ball_weight,
                 settings.ball_friction,
                 false,
@@ -266,13 +270,12 @@ impl Ball {
             || (self.vertical_sound && hit_wall_speed.y > SPEED_LIMIT)
         {
             let inverted_distances_from_corners =
-                self.position.abs() + vec2(0., settings.box_width - settings.box_height);
+                self.position.abs() + vec2(0., box_size.x - box_size.y);
 
             let mut sound_volume = hit_wall_speed.max_element();
 
             // The closer to the center it is, the louder the sound.
-            let distance_from_corner =
-                settings.box_width - inverted_distances_from_corners.min_element();
+            let distance_from_corner = box_size.x - inverted_distances_from_corners.min_element();
             sound_volume -= SPEED_LIMIT;
             sound_volume /= 450.;
             sound_volume *= 1. + distance_from_corner / 200.;
@@ -292,61 +295,61 @@ impl Ball {
         return dt - new_dt;
     }
 
-    pub fn render(&mut self, settings: &Settings) {
-        let wall_and_ball_offset = settings.ball_radius + WALL_OFFSET;
+    pub fn render(&mut self, settings: &Settings, box_size: Vec2) {
+        let wall_and_ball_offset = self.radius + WALL_OFFSET;
 
-        let distance_to_floor = settings.box_height - wall_and_ball_offset - self.position.y;
-        let distance_to_ceiling = self.position.y + settings.box_height - wall_and_ball_offset;
-        let distance_to_right_wall = settings.box_width - wall_and_ball_offset - self.position.x;
-        let distance_to_left_wall = self.position.x + settings.box_width - wall_and_ball_offset;
+        let distance_to_floor = box_size.y - wall_and_ball_offset - self.position.y;
+        let distance_to_ceiling = self.position.y + box_size.y - wall_and_ball_offset;
+        let distance_to_right_wall = box_size.x - wall_and_ball_offset - self.position.x;
+        let distance_to_left_wall = self.position.x + box_size.x - wall_and_ball_offset;
 
         gl_use_material(&self.shadow_material);
 
         self.shadow_material.set_uniform(
             "in_shadow",
-            distance_to_floor / settings.ball_radius / settings.shadow_distance_strength,
+            distance_to_floor / self.radius / settings.shadow_distance_strength,
         );
         draw_rectangle(
-            self.position.x - settings.ball_radius * settings.shadow_size,
-            settings.box_height - WALL_OFFSET - WALL_DEPTH,
-            settings.ball_radius * settings.shadow_size * 2.,
+            self.position.x - self.radius * settings.shadow_size,
+            box_size.y - WALL_OFFSET - WALL_DEPTH,
+            self.radius * settings.shadow_size * 2.,
             WALL_DEPTH * 2.,
             WHITE,
         );
 
         self.shadow_material.set_uniform(
             "in_shadow",
-            distance_to_ceiling / settings.ball_radius / settings.shadow_distance_strength,
+            distance_to_ceiling / self.radius / settings.shadow_distance_strength,
         );
         draw_rectangle(
-            self.position.x - settings.ball_radius * settings.shadow_size,
-            -settings.box_height + WALL_THICKNESS,
-            settings.ball_radius * settings.shadow_size * 2.,
+            self.position.x - self.radius * settings.shadow_size,
+            -box_size.y + WALL_THICKNESS,
+            self.radius * settings.shadow_size * 2.,
             WALL_DEPTH * 2.,
             WHITE,
         );
 
         self.shadow_material.set_uniform(
             "in_shadow",
-            distance_to_right_wall / settings.ball_radius / settings.shadow_distance_strength,
+            distance_to_right_wall / self.radius / settings.shadow_distance_strength,
         );
         draw_rectangle(
-            settings.box_width - WALL_OFFSET - WALL_DEPTH,
-            self.position.y - settings.ball_radius * settings.shadow_size,
+            box_size.x - WALL_OFFSET - WALL_DEPTH,
+            self.position.y - self.radius * settings.shadow_size,
             WALL_DEPTH * 2.,
-            settings.ball_radius * settings.shadow_size * 2.,
+            self.radius * settings.shadow_size * 2.,
             WHITE,
         );
 
         self.shadow_material.set_uniform(
             "in_shadow",
-            distance_to_left_wall / settings.ball_radius / settings.shadow_distance_strength,
+            distance_to_left_wall / self.radius / settings.shadow_distance_strength,
         );
         draw_rectangle(
-            -settings.box_width + WALL_THICKNESS,
-            self.position.y - settings.ball_radius * settings.shadow_size,
+            -box_size.x + WALL_THICKNESS,
+            self.position.y - self.radius * settings.shadow_size,
             WALL_DEPTH * 2.,
-            settings.ball_radius * settings.shadow_size * 2.,
+            self.radius * settings.shadow_size * 2.,
             WHITE,
         );
 
@@ -355,30 +358,29 @@ impl Ball {
         self.ball_material.set_uniform("rotation", self.rotation);
         self.ball_material.set_uniform(
             "floor_distance",
-            distance_to_floor / settings.ball_radius / settings.shadow_distance_strength,
+            distance_to_floor / self.radius / settings.shadow_distance_strength,
         );
         self.ball_material.set_uniform(
             "ceil_distance",
-            distance_to_ceiling / settings.ball_radius / settings.shadow_distance_strength,
+            distance_to_ceiling / self.radius / settings.shadow_distance_strength,
         );
         self.ball_material.set_uniform(
             "left_distance",
-            distance_to_left_wall / settings.ball_radius / settings.shadow_distance_strength,
+            distance_to_left_wall / self.radius / settings.shadow_distance_strength,
         );
         self.ball_material.set_uniform(
             "right_distance",
-            distance_to_right_wall / settings.ball_radius / settings.shadow_distance_strength,
+            distance_to_right_wall / self.radius / settings.shadow_distance_strength,
         );
-        self.ball_material
-            .set_uniform("ball_radius", settings.ball_radius);
+        self.ball_material.set_uniform("ball_radius", self.radius);
 
         draw_texture_ex(
             &self.texture,
-            self.position.x - settings.ball_radius,
-            self.position.y - settings.ball_radius,
+            self.position.x - self.radius,
+            self.position.y - self.radius,
             WHITE,
             DrawTextureParams {
-                dest_size: Some(vec2(settings.ball_radius * 2., settings.ball_radius * 2.)),
+                dest_size: Some(vec2(self.radius * 2., self.radius * 2.)),
                 rotation: self.rotation,
                 ..Default::default()
             },

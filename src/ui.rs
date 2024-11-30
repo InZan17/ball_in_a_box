@@ -87,8 +87,6 @@ impl UiRenderer {
         let mult = box_size / RELATIVE_BOX_SIZE;
         self.mult = mult.min_element();
 
-        println!("{}", self.mult);
-
         let mouse_pos = mouse_pos * 2. - box_size;
 
         draw_rectangle(

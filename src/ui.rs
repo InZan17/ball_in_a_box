@@ -595,17 +595,12 @@ impl UiRenderer {
         if !contains_mouse && mouse_is_pressed && self.active_id == id {
             self.active_id = 0;
             self.user_input = String::new()
-        } else if contains_mouse && mouse_is_down {
-            if self.active_id != id {
-                self.active_id = id;
-                self.slider_follow = slider_contains_mouse;
-            } else {
-                self.slider_follow = self.slider_follow || slider_contains_mouse;
-            }
+        } else if contains_mouse && mouse_is_pressed {
             self.active_id = id;
-            if mouse_is_pressed {
-                self.user_input = String::new()
-            }
+            self.slider_follow = slider_contains_mouse;
+            self.user_input = String::new()
+        } else if contains_mouse && mouse_is_down && self.active_id == id {
+            self.slider_follow = self.slider_follow || slider_contains_mouse;
         } else if is_key_pressed(KeyCode::Enter) && self.active_id == id {
             self.active_id = 0;
             self.user_input = String::new()
@@ -761,17 +756,12 @@ impl UiRenderer {
         if !contains_mouse && mouse_is_pressed && self.active_id == id {
             self.active_id = 0;
             self.user_input = String::new()
-        } else if contains_mouse && mouse_is_down {
-            if self.active_id != id {
-                self.active_id = id;
-                self.slider_follow = slider_contains_mouse;
-            } else {
-                self.slider_follow = self.slider_follow || slider_contains_mouse;
-            }
+        } else if contains_mouse && mouse_is_pressed {
             self.active_id = id;
-            if mouse_is_pressed {
-                self.user_input = String::new()
-            }
+            self.slider_follow = slider_contains_mouse;
+            self.user_input = String::new()
+        } else if contains_mouse && mouse_is_down && self.active_id == id {
+            self.slider_follow = self.slider_follow || slider_contains_mouse;
         } else if is_key_pressed(KeyCode::Enter) && self.active_id == id {
             self.active_id = 0;
             self.user_input = String::new()

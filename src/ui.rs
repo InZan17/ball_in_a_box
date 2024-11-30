@@ -6,6 +6,8 @@ use window::order_quit;
 
 use crate::Settings;
 
+const RELATIVE_BOX_SIZE: Vec2 = vec2(372., 480.);
+
 pub const MENU_SIZE: Vec2 = vec2(310., 400.);
 const BUTTON_SIZE: Vec2 = vec2(160., 75.);
 const BUTTONS_MARGIN: f32 = 20.;
@@ -39,6 +41,7 @@ pub struct UiRenderer {
     slider_bar: Texture2D,
     font: Font,
     pub user_input: String,
+    pub mult: f32,
     slider_follow: bool,
     active_id: u64,
 }
@@ -63,6 +66,7 @@ impl UiRenderer {
                 .await
                 .expect("Failed to load assets/font.ttf file"),
             user_input: String::new(),
+            mult: 1.,
             slider_follow: false,
             active_id: 0,
         }
@@ -80,6 +84,11 @@ impl UiRenderer {
             return false;
         }
 
+        let mult = box_size / RELATIVE_BOX_SIZE;
+        self.mult = mult.min_element();
+
+        println!("{}", self.mult);
+
         let mouse_pos = mouse_pos * 2. - box_size;
 
         draw_rectangle(
@@ -95,10 +104,10 @@ impl UiRenderer {
         let menu_position = -MENU_SIZE;
 
         let menu_rect = Rect::new(
-            menu_position.x,
-            menu_position.y,
-            MENU_SIZE.x * 2.,
-            MENU_SIZE.y * 2.,
+            menu_position.x * self.mult,
+            menu_position.y * self.mult,
+            MENU_SIZE.x * 2. * self.mult,
+            MENU_SIZE.y * 2. * self.mult,
         );
 
         draw_texture_ex(
@@ -486,10 +495,10 @@ impl UiRenderer {
         font_size: u16,
     ) -> bool {
         let rect = Rect::new(
-            center_pos.x * 2. - size.x,
-            center_pos.y * 2. - size.y,
-            size.x * 2.,
-            size.y * 2.,
+            (center_pos.x * 2. - size.x) * self.mult,
+            (center_pos.y * 2. - size.y) * self.mult,
+            size.x * 2. * self.mult,
+            size.y * 2. * self.mult,
         );
 
         let contains_mouse = rect.contains(mouse_pos);
@@ -526,17 +535,17 @@ impl UiRenderer {
             },
         );
 
-        let size = measure_text(text, Some(&self.font), font_size, 2.0);
+        let size = measure_text(text, Some(&self.font), font_size, 2.0 * self.mult);
 
         draw_text_ex(
             text,
             rect.x + rect.w / 2. - size.width / 2.,
-            rect.y + rect.h / 2. + font_size as f32 / 2.,
+            rect.y + rect.h / 2. + font_size as f32 / 2. * self.mult,
             TextParams {
                 color: Color::new(0.05, 0., 0.1, 1.),
                 font: Some(&self.font),
                 font_size,
-                font_scale: 2.0,
+                font_scale: 2.0 * self.mult,
                 ..Default::default()
             },
         );
@@ -559,10 +568,10 @@ impl UiRenderer {
         let slider_size = 0.85;
 
         let full_rect = Rect::new(
-            center_pos.x * 2. - size.x,
-            center_pos.y * 2. - size.y,
-            size.x * 2.,
-            size.y * 2.,
+            (center_pos.x * 2. - size.x) * self.mult,
+            (center_pos.y * 2. - size.y) * self.mult,
+            size.x * 2. * self.mult,
+            size.y * 2. * self.mult,
         );
 
         let slider_rect = Rect::new(
@@ -666,9 +675,14 @@ impl UiRenderer {
 
         let value_font_size_f = number_rect.h * font_size_mult;
 
-        let value_font_size = value_font_size_f as u16;
+        let value_font_size = (value_font_size_f / self.mult) as u16;
 
-        let size = measure_text(&value_string, Some(&self.font), value_font_size, 2.0);
+        let size = measure_text(
+            &value_string,
+            Some(&self.font),
+            value_font_size,
+            2.0 * self.mult,
+        );
 
         draw_text_ex(
             &value_string,
@@ -684,7 +698,7 @@ impl UiRenderer {
                 },
                 font: Some(&self.font),
                 font_size: value_font_size,
-                font_scale: 2.0,
+                font_scale: 2.0 * self.mult,
                 ..Default::default()
             },
         );
@@ -692,12 +706,12 @@ impl UiRenderer {
         draw_text_ex(
             title,
             full_rect.x,
-            full_rect.y - font_size as f32 * 0.65,
+            full_rect.y - font_size as f32 * 0.65 * self.mult,
             TextParams {
                 color: Color::new(0.05, 0., 0.1, 1.),
                 font: Some(&self.font),
                 font_size,
-                font_scale: 2.0,
+                font_scale: 2.0 * self.mult,
                 ..Default::default()
             },
         );
@@ -720,10 +734,10 @@ impl UiRenderer {
         let slider_size = 0.85;
 
         let full_rect = Rect::new(
-            center_pos.x * 2. - size.x,
-            center_pos.y * 2. - size.y,
-            size.x * 2.,
-            size.y * 2.,
+            (center_pos.x * 2. - size.x) * self.mult,
+            (center_pos.y * 2. - size.y) * self.mult,
+            size.x * 2. * self.mult,
+            size.y * 2. * self.mult,
         );
 
         let slider_rect = Rect::new(
@@ -827,9 +841,14 @@ impl UiRenderer {
 
         let value_font_size_f = number_rect.h * font_size_mult;
 
-        let value_font_size = value_font_size_f as u16;
+        let value_font_size = (value_font_size_f / self.mult) as u16;
 
-        let size = measure_text(&value_string, Some(&self.font), value_font_size, 2.0);
+        let size = measure_text(
+            &value_string,
+            Some(&self.font),
+            value_font_size,
+            2.0 * self.mult,
+        );
 
         draw_text_ex(
             &value_string,
@@ -845,7 +864,7 @@ impl UiRenderer {
                 },
                 font: Some(&self.font),
                 font_size: value_font_size,
-                font_scale: 2.0,
+                font_scale: 2.0 * self.mult,
                 ..Default::default()
             },
         );
@@ -853,12 +872,12 @@ impl UiRenderer {
         draw_text_ex(
             title,
             full_rect.x,
-            full_rect.y - font_size as f32 * 0.65,
+            full_rect.y - font_size as f32 * 0.65 * self.mult,
             TextParams {
                 color: Color::new(0.05, 0., 0.1, 1.),
                 font: Some(&self.font),
                 font_size,
-                font_scale: 2.0,
+                font_scale: 2.0 * self.mult,
                 ..Default::default()
             },
         );

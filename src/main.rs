@@ -289,8 +289,8 @@ async fn main() {
 
         if is_mouse_button_pressed(MouseButton::Left) && is_menu_open {
             let abs_mouse_pos_from_center = (mouse_pos - box_size / 2.).abs();
-            if abs_mouse_pos_from_center.x < MENU_SIZE.x / 2.
-                && abs_mouse_pos_from_center.y < MENU_SIZE.y / 2.
+            if abs_mouse_pos_from_center.x < MENU_SIZE.x / 2. * ui_renderer.mult
+                && abs_mouse_pos_from_center.y < MENU_SIZE.y / 2. * ui_renderer.mult
             {
                 interacting_with_ui = true
             }

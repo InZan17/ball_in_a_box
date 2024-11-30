@@ -254,6 +254,10 @@ async fn main() {
         };
 
         while let Some(character) = get_char_pressed() {
+            if character.is_control() {
+                continue;
+            }
+            ui_renderer.user_input.push(character);
             text_input.push(character.to_ascii_lowercase());
 
             if let Some((ball_name, texture)) = find_texture(&text_input) {
@@ -269,6 +273,9 @@ async fn main() {
                 editing_settings.last_sounds = sounds_name;
                 write_settings_file(&settings);
             }
+        }
+        if is_key_pressed(KeyCode::Backspace) {
+            ui_renderer.user_input.pop();
         }
 
         if text_input.len() > max_string_len {
@@ -414,6 +421,7 @@ async fn main() {
 
         let save = ui_renderer.render_ui(
             &mut editing_settings,
+            &settings,
             &mut settings_state,
             mouse_pos,
             box_size,

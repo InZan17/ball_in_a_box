@@ -38,6 +38,8 @@ pub struct UiRenderer {
     slider_background: Texture2D,
     slider_bar: Texture2D,
     font: Font,
+    pub user_input: String,
+    slider_follow: bool,
     active_id: u64,
 }
 
@@ -60,6 +62,8 @@ impl UiRenderer {
             font: load_ttf_font("./assets/font.ttf")
                 .await
                 .expect("Failed to load assets/font.ttf file"),
+            user_input: String::new(),
+            slider_follow: false,
             active_id: 0,
         }
     }
@@ -67,6 +71,7 @@ impl UiRenderer {
     pub fn render_ui(
         &mut self,
         editing_settings: &mut Settings,
+        current_settings: &Settings,
         settings_state: &mut SettingsState,
         mouse_pos: Vec2,
         box_size: Vec2,
@@ -162,6 +167,7 @@ impl UiRenderer {
                         "Audio volume",
                         TITLE_SIZE,
                         0.0..1.0,
+                        current_settings.audio_volume,
                         &mut editing_settings.audio_volume,
                     );
 
@@ -173,6 +179,7 @@ impl UiRenderer {
                         "Gravity strength",
                         TITLE_SIZE,
                         -30.0..30.0,
+                        current_settings.gravity_strength,
                         &mut editing_settings.gravity_strength,
                     );
 
@@ -184,6 +191,7 @@ impl UiRenderer {
                         "Air friction",
                         TITLE_SIZE,
                         0.0..1.0,
+                        current_settings.air_friction,
                         &mut editing_settings.air_friction,
                     );
 
@@ -195,6 +203,7 @@ impl UiRenderer {
                         "Max velocity",
                         TITLE_SIZE,
                         0.0..500.0,
+                        current_settings.max_velocity,
                         &mut editing_settings.max_velocity,
                     );
                 }
@@ -207,6 +216,7 @@ impl UiRenderer {
                         "Ball bounciness",
                         TITLE_SIZE,
                         0.0..1.0,
+                        current_settings.ball_bounciness,
                         &mut editing_settings.ball_bounciness,
                     );
 
@@ -218,6 +228,7 @@ impl UiRenderer {
                         "Ball radius",
                         TITLE_SIZE,
                         1..400,
+                        current_settings.ball_radius,
                         &mut editing_settings.ball_radius,
                     );
 
@@ -229,6 +240,7 @@ impl UiRenderer {
                         "Ball weight",
                         TITLE_SIZE,
                         0.0..1.0,
+                        current_settings.ball_weight,
                         &mut editing_settings.ball_weight,
                     );
 
@@ -240,6 +252,7 @@ impl UiRenderer {
                         "Ball friction",
                         TITLE_SIZE,
                         0.0..1.0,
+                        current_settings.ball_friction,
                         &mut editing_settings.ball_friction,
                     );
                 }
@@ -252,6 +265,7 @@ impl UiRenderer {
                         "Box width",
                         TITLE_SIZE,
                         300..1000,
+                        current_settings.box_width,
                         &mut editing_settings.box_width,
                     );
 
@@ -263,6 +277,7 @@ impl UiRenderer {
                         "Box height",
                         TITLE_SIZE,
                         400..1000,
+                        current_settings.box_height,
                         &mut editing_settings.box_height,
                     );
 
@@ -274,6 +289,7 @@ impl UiRenderer {
                         "Box thickness",
                         TITLE_SIZE,
                         0..100,
+                        current_settings.box_thickness,
                         &mut editing_settings.box_thickness,
                     );
 
@@ -285,6 +301,7 @@ impl UiRenderer {
                         "Box depth",
                         TITLE_SIZE,
                         0..100,
+                        current_settings.box_depth,
                         &mut editing_settings.box_depth,
                     );
                 }
@@ -297,6 +314,7 @@ impl UiRenderer {
                         "AO focus",
                         TITLE_SIZE,
                         0.0..5.0,
+                        current_settings.ambient_occlusion_focus,
                         &mut editing_settings.ambient_occlusion_focus,
                     );
 
@@ -308,6 +326,7 @@ impl UiRenderer {
                         "AO strength",
                         TITLE_SIZE,
                         0.0..5.0,
+                        current_settings.ambient_occlusion_strength,
                         &mut editing_settings.ambient_occlusion_strength,
                     );
 
@@ -319,6 +338,7 @@ impl UiRenderer {
                         "Specular focus",
                         TITLE_SIZE,
                         0.0..100.0,
+                        current_settings.specular_focus,
                         &mut editing_settings.specular_focus,
                     );
 
@@ -330,6 +350,7 @@ impl UiRenderer {
                         "Specular strength",
                         TITLE_SIZE,
                         0.0..10.0,
+                        current_settings.specular_strength,
                         &mut editing_settings.specular_strength,
                     );
                 }
@@ -342,6 +363,7 @@ impl UiRenderer {
                         "Ambient light",
                         TITLE_SIZE,
                         0.0..1.0,
+                        current_settings.ambient_light,
                         &mut editing_settings.ambient_light,
                     );
 
@@ -353,6 +375,7 @@ impl UiRenderer {
                         "Shadow size",
                         TITLE_SIZE,
                         0.0..10.0,
+                        current_settings.shadow_size,
                         &mut editing_settings.shadow_size,
                     );
 
@@ -364,6 +387,7 @@ impl UiRenderer {
                         "Shadow dist strength",
                         TITLE_SIZE - 2,
                         0.0..10.0,
+                        current_settings.shadow_distance_strength,
                         &mut editing_settings.shadow_distance_strength,
                     );
 
@@ -375,6 +399,7 @@ impl UiRenderer {
                         "Shadow strength",
                         TITLE_SIZE,
                         0.0..10.0,
+                        current_settings.shadow_strength,
                         &mut editing_settings.shadow_strength,
                     );
                 }
@@ -528,6 +553,7 @@ impl UiRenderer {
         title: &str,
         font_size: u16,
         range: Range<f32>,
+        prev_value: f32,
         value: &mut f32,
     ) -> bool {
         let slider_size = 0.85;
@@ -552,30 +578,54 @@ impl UiRenderer {
             full_rect.h,
         );
 
-        let contains_mouse = slider_rect.contains(mouse_pos);
+        let contains_mouse = full_rect.contains(mouse_pos);
+        let slider_contains_mouse = slider_rect.contains(mouse_pos);
         let mouse_is_pressed = is_mouse_button_pressed(MouseButton::Left);
         let mouse_is_down = is_mouse_button_down(MouseButton::Left);
 
-        if !mouse_is_down && self.active_id == id {
+        if !contains_mouse && mouse_is_pressed && self.active_id == id {
             self.active_id = 0;
-        } else if contains_mouse && mouse_is_pressed {
+            self.user_input = String::new()
+        } else if contains_mouse && mouse_is_down {
+            if self.active_id != id {
+                self.active_id = id;
+                self.slider_follow = slider_contains_mouse;
+            } else {
+                self.slider_follow = self.slider_follow || slider_contains_mouse;
+            }
             self.active_id = id;
+            if mouse_is_pressed {
+                self.user_input = String::new()
+            }
+        } else if is_key_pressed(KeyCode::Enter) && self.active_id == id {
+            self.active_id = 0;
+            self.user_input = String::new()
         }
 
         let is_active = self.active_id == id;
+        let will_follow = is_active && mouse_is_down && self.slider_follow;
 
         let bar_width_pct = 0.1;
         let bar_height_pct = 1.25;
         let bar_width = slider_rect.w * bar_width_pct;
         let bar_height = slider_rect.h * bar_height_pct;
 
-        if is_active {
+        let value_string = if will_follow {
             let amount = ((mouse_pos.x - slider_rect.x - bar_width / 2.)
                 / (slider_rect.w - bar_width))
                 .clamp(0., 1.);
             let ranged_amount = range.start + amount * (range.end - range.start);
             *value = ranged_amount;
-        }
+            self.user_input = String::new();
+            &format!("{:.2}", *value)
+        } else if is_active && !self.user_input.is_empty() {
+            if let Ok(parsed_value) = self.user_input.parse::<f32>() {
+                *value = parsed_value.clamp(range.start, range.end)
+            }
+            &self.user_input
+        } else {
+            &format!("{:.2}", *value)
+        };
 
         let zero_to_one = (*value - range.start) / (range.end - range.start);
         let zero_to_width = zero_to_one * slider_rect.w * (1. - bar_width_pct);
@@ -609,8 +659,6 @@ impl UiRenderer {
             },
         );
 
-        let value_string = format!("{:.2}", *value);
-
         let font_size_mult = 0.4;
 
         let centered_y_offset =
@@ -627,7 +675,13 @@ impl UiRenderer {
             number_rect.x + number_rect.w - size.width - value_font_size_f * 0.5,
             centered_y_offset,
             TextParams {
-                color: Color::new(0., 0., 0., 1.),
+                color: if is_active {
+                    Color::new(0.3, 0., 0.6, 1.)
+                } else if prev_value != *value {
+                    Color::new(0.15, 0., 0.3, 1.)
+                } else {
+                    Color::new(0., 0., 0., 1.)
+                },
                 font: Some(&self.font),
                 font_size: value_font_size,
                 font_scale: 2.0,
@@ -660,6 +714,7 @@ impl UiRenderer {
         title: &str,
         font_size: u16,
         range: Range<u32>,
+        prev_value: u32,
         value: &mut u32,
     ) -> bool {
         let slider_size = 0.85;
@@ -684,31 +739,54 @@ impl UiRenderer {
             full_rect.h,
         );
 
-        let contains_mouse = slider_rect.contains(mouse_pos);
+        let contains_mouse = full_rect.contains(mouse_pos);
+        let slider_contains_mouse = slider_rect.contains(mouse_pos);
         let mouse_is_pressed = is_mouse_button_pressed(MouseButton::Left);
         let mouse_is_down = is_mouse_button_down(MouseButton::Left);
 
-        if !mouse_is_down && self.active_id == id {
+        if !contains_mouse && mouse_is_pressed && self.active_id == id {
             self.active_id = 0;
-        } else if contains_mouse && mouse_is_pressed {
+            self.user_input = String::new()
+        } else if contains_mouse && mouse_is_down {
+            if self.active_id != id {
+                self.active_id = id;
+                self.slider_follow = slider_contains_mouse;
+            } else {
+                self.slider_follow = self.slider_follow || slider_contains_mouse;
+            }
             self.active_id = id;
+            if mouse_is_pressed {
+                self.user_input = String::new()
+            }
+        } else if is_key_pressed(KeyCode::Enter) && self.active_id == id {
+            self.active_id = 0;
+            self.user_input = String::new()
         }
 
         let is_active = self.active_id == id;
+        let will_follow = is_active && mouse_is_down;
 
         let bar_width_pct = 0.1;
         let bar_height_pct = 1.25;
         let bar_width = slider_rect.w * bar_width_pct;
         let bar_height = slider_rect.h * bar_height_pct;
 
-        if is_active {
+        let value_string = if will_follow {
             let amount = ((mouse_pos.x - slider_rect.x - bar_width / 2.)
                 / (slider_rect.w - bar_width))
                 .clamp(0., 1.);
             let ranged_amount =
                 range.start as f32 + amount * (range.end as f32 - range.start as f32);
             *value = ranged_amount as u32;
-        }
+            &format!("{}", *value)
+        } else if is_active && !self.user_input.is_empty() {
+            if let Ok(parsed_value) = self.user_input.parse::<u32>() {
+                *value = parsed_value.clamp(range.start, range.end)
+            }
+            &self.user_input
+        } else {
+            &format!("{}", *value)
+        };
 
         let zero_to_one = (*value - range.start) as f32 / (range.end - range.start) as f32;
         let zero_to_width = zero_to_one * slider_rect.w * (1. - bar_width_pct);
@@ -742,8 +820,6 @@ impl UiRenderer {
             },
         );
 
-        let value_string = format!("{:.2}", *value);
-
         let font_size_mult = 0.4;
 
         let centered_y_offset =
@@ -760,7 +836,13 @@ impl UiRenderer {
             number_rect.x + number_rect.w - size.width - value_font_size_f * 0.5,
             centered_y_offset,
             TextParams {
-                color: Color::new(0., 0., 0., 1.),
+                color: if is_active {
+                    Color::new(0.3, 0., 0.6, 1.)
+                } else if prev_value != *value {
+                    Color::new(0.15, 0., 0.3, 1.)
+                } else {
+                    Color::new(0., 0., 0., 1.)
+                },
                 font: Some(&self.font),
                 font_size: value_font_size,
                 font_scale: 2.0,

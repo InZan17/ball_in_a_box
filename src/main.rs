@@ -8,6 +8,7 @@ use std::{
 };
 
 use ball::Ball;
+use conf::Icon;
 use macroquad::{audio::set_sound_volume, prelude::*, rand};
 use miniquad::*;
 use settings::{read_settings_file, write_settings_file, Settings};
@@ -22,6 +23,8 @@ pub mod sounds;
 pub mod textures;
 pub mod ui;
 
+include!(concat!(env!("OUT_DIR"), "/icon_data.rs"));
+
 pub fn window_conf() -> Conf {
     let settings = read_settings_file().unwrap_or_default();
 
@@ -34,6 +37,11 @@ pub fn window_conf() -> Conf {
         fullscreen: false,
         window_resizable: false,
         sample_count: 0,
+        icon: Some(Icon {
+            small: ICON_SMALL,
+            medium: ICON_MEDIUM,
+            big: ICON_BIG,
+        }),
         ..Default::default()
     }
 }

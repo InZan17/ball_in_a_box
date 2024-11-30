@@ -8,6 +8,9 @@ macroquad = {git = "https://github.com/not-fl3/macroquad", rev = "2e48cf9", feat
 nanoserde = {git = "https://github.com/inzan17/nanoserde", rev = "6e42d4c"}
 quad-rand = "0.2.2"
 
+[build-dependencies]
+image = { version = "0.24", default-features = false, features = ["png"] }
+
 [patch.crates-io]
 miniquad = {git = "https://github.com/InZan17/miniquad", branch = "ball-in-a-box"}
 

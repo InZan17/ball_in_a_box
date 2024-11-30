@@ -228,7 +228,7 @@ async fn main() {
 
         let box_thickness = settings.box_thickness as f32;
 
-        if is_key_pressed(KeyCode::Escape) {
+        if is_key_pressed(KeyCode::Escape) || is_mouse_button_pressed(MouseButton::Right) {
             if settings_state != SettingsState::Closed {
                 settings_state = SettingsState::Closed
             } else {

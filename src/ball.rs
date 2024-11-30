@@ -181,14 +181,14 @@ impl Ball {
 
         if distance_to_floor <= SMALL_NUMBER {
             // Floor
-            if !wall_hits.contains(&1) {
-                new_last_hit_wall = 1;
-            }
-
             hit_wall_speed.y = hit_wall_speed.y.max(smoothed_total_velocity.y.abs());
             self.position.y = box_size.y - wall_and_ball_offset;
-            self.velocity.y =
-                -self.velocity.y * settings.ball_bounciness - smoothed_wall_velocity.y;
+
+            if !wall_hits.contains(&1) {
+                new_last_hit_wall = 1;
+                self.velocity.y =
+                    -self.velocity.y * settings.ball_bounciness - smoothed_wall_velocity.y;
+            }
 
             (self.rotation_velocity, self.velocity.x) = calculate_bounce_spin(
                 self.velocity.x,
@@ -202,14 +202,14 @@ impl Ball {
         }
         if distance_to_ceiling <= SMALL_NUMBER {
             // Ceiling
-            if !wall_hits.contains(&2) {
-                new_last_hit_wall = 2;
-            }
-
             hit_wall_speed.y = hit_wall_speed.y.max(smoothed_total_velocity.y.abs());
             self.position.y = -box_size.y + wall_and_ball_offset;
-            self.velocity.y =
-                -self.velocity.y * settings.ball_bounciness - smoothed_wall_velocity.y;
+
+            if !wall_hits.contains(&2) {
+                new_last_hit_wall = 2;
+                self.velocity.y =
+                    -self.velocity.y * settings.ball_bounciness - smoothed_wall_velocity.y;
+            }
 
             (self.rotation_velocity, self.velocity.x) = calculate_bounce_spin(
                 self.velocity.x,
@@ -223,14 +223,14 @@ impl Ball {
         }
         if distance_to_right_wall <= SMALL_NUMBER {
             // Right
-            if !wall_hits.contains(&3) {
-                new_last_hit_wall = 3;
-            }
-
             hit_wall_speed.x = hit_wall_speed.x.max(smoothed_total_velocity.x.abs());
             self.position.x = box_size.x - wall_and_ball_offset;
-            self.velocity.x =
-                -self.velocity.x * settings.ball_bounciness - smoothed_wall_velocity.x;
+
+            if !wall_hits.contains(&3) {
+                new_last_hit_wall = 3;
+                self.velocity.x =
+                    -self.velocity.x * settings.ball_bounciness - smoothed_wall_velocity.x;
+            }
 
             (self.rotation_velocity, self.velocity.y) = calculate_bounce_spin(
                 self.velocity.y,
@@ -245,14 +245,14 @@ impl Ball {
 
         if distance_to_left_wall <= SMALL_NUMBER {
             // Left
-            if !wall_hits.contains(&4) {
-                new_last_hit_wall = 4;
-            }
-
             hit_wall_speed.x = hit_wall_speed.x.max(smoothed_total_velocity.x.abs());
             self.position.x = -box_size.x + wall_and_ball_offset;
-            self.velocity.x =
-                -self.velocity.x * settings.ball_bounciness - smoothed_wall_velocity.x;
+
+            if !wall_hits.contains(&4) {
+                new_last_hit_wall = 4;
+                self.velocity.x =
+                    -self.velocity.x * settings.ball_bounciness - smoothed_wall_velocity.x;
+            }
 
             (self.rotation_velocity, self.velocity.y) = calculate_bounce_spin(
                 self.velocity.y,

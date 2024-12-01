@@ -42,6 +42,8 @@ pub struct UiRenderer {
     font: Font,
     pub user_input: String,
     pub mult: f32,
+    pub reset_field: bool,
+    default_settings: Settings,
     slider_follow: bool,
     active_id: u64,
 }
@@ -68,6 +70,8 @@ impl UiRenderer {
             user_input: String::new(),
             mult: 1.,
             slider_follow: false,
+            reset_field: false,
+            default_settings: Settings::default(),
             active_id: 0,
         }
     }
@@ -175,6 +179,7 @@ impl UiRenderer {
                         "Audio volume",
                         TITLE_SIZE,
                         0.0..1.0,
+                        self.default_settings.audio_volume,
                         current_settings.audio_volume,
                         &mut editing_settings.audio_volume,
                     );
@@ -187,6 +192,7 @@ impl UiRenderer {
                         "Gravity strength",
                         TITLE_SIZE,
                         -30.0..30.0,
+                        self.default_settings.gravity_strength,
                         current_settings.gravity_strength,
                         &mut editing_settings.gravity_strength,
                     );
@@ -199,6 +205,7 @@ impl UiRenderer {
                         "Air friction",
                         TITLE_SIZE,
                         0.0..1.0,
+                        self.default_settings.air_friction,
                         current_settings.air_friction,
                         &mut editing_settings.air_friction,
                     );
@@ -211,6 +218,7 @@ impl UiRenderer {
                         "Max velocity",
                         TITLE_SIZE,
                         0.0..500.0,
+                        self.default_settings.max_velocity,
                         current_settings.max_velocity,
                         &mut editing_settings.max_velocity,
                     );
@@ -224,6 +232,7 @@ impl UiRenderer {
                         "Ball bounciness",
                         TITLE_SIZE,
                         0.0..1.0,
+                        self.default_settings.ball_bounciness,
                         current_settings.ball_bounciness,
                         &mut editing_settings.ball_bounciness,
                     );
@@ -236,6 +245,7 @@ impl UiRenderer {
                         "Ball radius",
                         TITLE_SIZE,
                         1..400,
+                        self.default_settings.ball_radius,
                         current_settings.ball_radius,
                         &mut editing_settings.ball_radius,
                     );
@@ -248,6 +258,7 @@ impl UiRenderer {
                         "Ball weight",
                         TITLE_SIZE,
                         0.0..1.0,
+                        self.default_settings.ball_weight,
                         current_settings.ball_weight,
                         &mut editing_settings.ball_weight,
                     );
@@ -260,6 +271,7 @@ impl UiRenderer {
                         "Ball friction",
                         TITLE_SIZE,
                         0.0..1.0,
+                        self.default_settings.ball_friction,
                         current_settings.ball_friction,
                         &mut editing_settings.ball_friction,
                     );
@@ -273,6 +285,7 @@ impl UiRenderer {
                         "Box width",
                         TITLE_SIZE,
                         300..1000,
+                        self.default_settings.box_width,
                         current_settings.box_width,
                         &mut editing_settings.box_width,
                     );
@@ -285,6 +298,7 @@ impl UiRenderer {
                         "Box height",
                         TITLE_SIZE,
                         400..1000,
+                        self.default_settings.box_height,
                         current_settings.box_height,
                         &mut editing_settings.box_height,
                     );
@@ -297,6 +311,7 @@ impl UiRenderer {
                         "Box thickness",
                         TITLE_SIZE,
                         0..100,
+                        self.default_settings.box_thickness,
                         current_settings.box_thickness,
                         &mut editing_settings.box_thickness,
                     );
@@ -309,6 +324,7 @@ impl UiRenderer {
                         "Box depth",
                         TITLE_SIZE,
                         0..100,
+                        self.default_settings.box_depth,
                         current_settings.box_depth,
                         &mut editing_settings.box_depth,
                     );
@@ -322,6 +338,7 @@ impl UiRenderer {
                         "AO focus",
                         TITLE_SIZE,
                         0.0..5.0,
+                        self.default_settings.ambient_occlusion_focus,
                         current_settings.ambient_occlusion_focus,
                         &mut editing_settings.ambient_occlusion_focus,
                     );
@@ -334,6 +351,7 @@ impl UiRenderer {
                         "AO strength",
                         TITLE_SIZE,
                         0.0..5.0,
+                        self.default_settings.ambient_occlusion_strength,
                         current_settings.ambient_occlusion_strength,
                         &mut editing_settings.ambient_occlusion_strength,
                     );
@@ -346,6 +364,7 @@ impl UiRenderer {
                         "Specular focus",
                         TITLE_SIZE,
                         0.0..100.0,
+                        self.default_settings.specular_focus,
                         current_settings.specular_focus,
                         &mut editing_settings.specular_focus,
                     );
@@ -358,6 +377,7 @@ impl UiRenderer {
                         "Specular strength",
                         TITLE_SIZE,
                         0.0..10.0,
+                        self.default_settings.specular_strength,
                         current_settings.specular_strength,
                         &mut editing_settings.specular_strength,
                     );
@@ -371,6 +391,7 @@ impl UiRenderer {
                         "Ambient light",
                         TITLE_SIZE,
                         0.0..1.0,
+                        self.default_settings.ambient_light,
                         current_settings.ambient_light,
                         &mut editing_settings.ambient_light,
                     );
@@ -383,6 +404,7 @@ impl UiRenderer {
                         "Shadow size",
                         TITLE_SIZE,
                         0.0..10.0,
+                        self.default_settings.shadow_size,
                         current_settings.shadow_size,
                         &mut editing_settings.shadow_size,
                     );
@@ -395,6 +417,7 @@ impl UiRenderer {
                         "Shadow dist strength",
                         TITLE_SIZE - 2,
                         0.0..10.0,
+                        self.default_settings.shadow_distance_strength,
                         current_settings.shadow_distance_strength,
                         &mut editing_settings.shadow_distance_strength,
                     );
@@ -407,6 +430,7 @@ impl UiRenderer {
                         "Shadow strength",
                         TITLE_SIZE,
                         0.0..10.0,
+                        self.default_settings.shadow_strength,
                         current_settings.shadow_strength,
                         &mut editing_settings.shadow_strength,
                     );
@@ -480,6 +504,8 @@ impl UiRenderer {
                 order_quit();
             }
         }
+
+        self.reset_field = false;
 
         return save;
     }
@@ -562,6 +588,7 @@ impl UiRenderer {
         title: &str,
         font_size: u16,
         range: Range<f32>,
+        default_value: f32,
         prev_value: f32,
         value: &mut f32,
     ) -> bool {
@@ -631,6 +658,9 @@ impl UiRenderer {
                 *value = parsed_value.clamp(range.start, range.end)
             }
             &self.user_input
+        } else if is_active && self.reset_field {
+            *value = default_value;
+            &format!("{:.2}", *value)
         } else {
             &format!("{:.2}", *value)
         };
@@ -727,6 +757,7 @@ impl UiRenderer {
         title: &str,
         font_size: u16,
         range: Range<u32>,
+        default_value: u32,
         prev_value: u32,
         value: &mut u32,
     ) -> bool {
@@ -796,6 +827,9 @@ impl UiRenderer {
                 *value = parsed_value.clamp(range.start, range.end)
             }
             &self.user_input
+        } else if is_active && self.reset_field {
+            *value = default_value;
+            &format!("{}", *value)
         } else {
             &format!("{}", *value)
         };

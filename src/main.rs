@@ -284,7 +284,9 @@ async fn main() {
             }
         }
         if is_key_pressed(KeyCode::Backspace) {
-            ui_renderer.user_input.pop();
+            if ui_renderer.user_input.pop().is_none() {
+                ui_renderer.reset_field = true;
+            }
         }
 
         if text_input.len() > max_string_len {

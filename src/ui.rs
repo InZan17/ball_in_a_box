@@ -16,13 +16,13 @@ const MENU_PADDING: f32 = 10.;
 const SMALL_BUTTON_DIV: f32 = 1.5;
 const SMALLER_BUTTON_DIV: f32 = 1.75;
 
-const LAST_PAGE_INDEX: u8 = 4;
+const LAST_PAGE_INDEX: u8 = 5;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum SettingsState {
     Closed,
     Open,
-    Settings(u8),
+    Settings,
 }
 
 impl SettingsState {
@@ -43,6 +43,7 @@ pub struct UiRenderer {
     pub user_input: String,
     pub mult: f32,
     pub reset_field: bool,
+    last_page: u8,
     default_settings: Settings,
     slider_follow: bool,
     active_id: u64,
@@ -71,6 +72,7 @@ impl UiRenderer {
             mult: 1.,
             slider_follow: false,
             reset_field: false,
+            last_page: 0,
             default_settings: Settings::default(),
             active_id: 0,
         }
@@ -124,16 +126,23 @@ impl UiRenderer {
             },
         );
 
-        if let SettingsState::Settings(settings_page) = settings_state.clone() {
+        if *settings_state == SettingsState::Settings {
             let center_offset_x =
-                -MENU_SIZE.x / 2. + BUTTON_SIZE.x / SMALLER_BUTTON_DIV + BUTTONS_MARGIN / 2.;
+                -MENU_SIZE.x / 2. + BUTTON_SIZE.x / SMALLER_BUTTON_DIV + BUTTONS_MARGIN / 2. - 4.;
 
             let y_offset = -MENU_SIZE.y / 2.
                 + MENU_PADDING
                 + BUTTONS_MARGIN
                 + BUTTON_SIZE.y / SMALLER_BUTTON_DIV / 2.;
 
-            if settings_page > 0 {
+            self.render_text(
+                vec2(0., y_offset - 4.),
+                vec2(10., 10.),
+                &format!("{}", self.last_page + 1),
+                28,
+            );
+
+            if self.last_page > 0 {
                 if self.render_button(
                     hash!(),
                     mouse_pos,
@@ -142,11 +151,11 @@ impl UiRenderer {
                     "Prev",
                     28,
                 ) {
-                    *settings_state = SettingsState::Settings(settings_page - 1);
+                    self.last_page -= 1;
                 }
             }
 
-            if settings_page < LAST_PAGE_INDEX {
+            if self.last_page < LAST_PAGE_INDEX {
                 if self.render_button(
                     hash!(),
                     mouse_pos,
@@ -155,7 +164,7 @@ impl UiRenderer {
                     "Next",
                     28,
                 ) {
-                    *settings_state = SettingsState::Settings(settings_page + 1);
+                    self.last_page += 1;
                 }
             }
 
@@ -169,7 +178,7 @@ impl UiRenderer {
 
             let lower_down = SLIDER_HEIGHT + TITLE_SIZE as f32 + OPTIONS_SPACING;
 
-            match settings_page {
+            match self.last_page {
                 0 => {
                     self.render_slider(
                         hash!(),
@@ -435,6 +444,19 @@ impl UiRenderer {
                         &mut editing_settings.shadow_strength,
                     );
                 }
+                5 => {
+                    if self.render_button(
+                        hash!(),
+                        mouse_pos,
+                        vec2(0., 0.),
+                        BUTTON_SIZE * vec2(1.1, 0.9),
+                        "Reset settings",
+                        21,
+                    ) {
+                        *editing_settings = self.default_settings.clone();
+                        save = true
+                    }
+                }
                 _ => {
                     unimplemented!()
                 }
@@ -490,7 +512,7 @@ impl UiRenderer {
                 "Settings",
                 28,
             ) {
-                *settings_state = SettingsState::Settings(0);
+                *settings_state = SettingsState::Settings;
             }
 
             if self.render_button(
@@ -508,6 +530,30 @@ impl UiRenderer {
         self.reset_field = false;
 
         return save;
+    }
+
+    pub fn render_text(&mut self, center_pos: Vec2, size: Vec2, text: &str, font_size: u16) {
+        let rect = Rect::new(
+            (center_pos.x * 2. - size.x) * self.mult,
+            (center_pos.y * 2. - size.y) * self.mult,
+            size.x * 2. * self.mult,
+            size.y * 2. * self.mult,
+        );
+
+        let size = measure_text(text, Some(&self.font), font_size, 2.0 * self.mult);
+
+        draw_text_ex(
+            text,
+            rect.x + rect.w / 2. - size.width / 2.,
+            rect.y + rect.h / 2. + font_size as f32 / 2. * self.mult,
+            TextParams {
+                color: Color::new(0.05, 0., 0.1, 1.),
+                font: Some(&self.font),
+                font_size,
+                font_scale: 2.0 * self.mult,
+                ..Default::default()
+            },
+        );
     }
 
     pub fn render_button(

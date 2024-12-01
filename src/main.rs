@@ -262,7 +262,7 @@ async fn main() {
             }
         }
 
-        if let SettingsState::Settings(_) = settings_state {
+        if settings_state == SettingsState::Settings {
             if !is_in_settings {
                 editing_settings = settings.clone();
                 is_in_settings = true

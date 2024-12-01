@@ -8,7 +8,7 @@ use std::{
 };
 
 use ball::Ball;
-use conf::Icon;
+use conf::{Icon, Platform};
 use loop_array::LoopArray;
 use macroquad::{audio::set_sound_volume, prelude::*, rand};
 use miniquad::*;
@@ -44,12 +44,18 @@ pub fn window_conf() -> Conf {
             medium: ICON_MEDIUM,
             big: ICON_BIG,
         }),
+        platform: Platform {
+            swap_interval: Some(1),
+            ..Default::default()
+        },
         ..Default::default()
     }
 }
 
 // Whenever the delta time is less than this, it will try to smooth out the window position over the duration of MIN_DELTA_TIME.
 const MIN_DELTA_TIME: f32 = 1.0 / 60.0;
+
+const DAMPEN_POWER: f32 = 0.05;
 
 pub trait FromTuple {
     fn from_u32_tuple(tuple: (u32, u32)) -> Self;
@@ -230,10 +236,21 @@ async fn main() {
 
     let mut box_deltas: LoopArray<(f32, Vec2), 10> = LoopArray::new();
 
+    let mut frames_after_start: u8 = 0;
+
     loop {
         clear_background(DARKGRAY);
 
-        let delta_time = get_frame_time() * settings.speed_mul;
+        let delta_time;
+
+        // First frame loads everything, second frame will have a high delta time because of loading a lot the previous frame.
+        // Delay the actual delta time until after that so the user can see the ball spawn in middle and bounce.
+        if frames_after_start >= 2 {
+            delta_time = get_frame_time() * settings.speed_mul
+        } else {
+            frames_after_start += 1;
+            delta_time = 0.0
+        }
 
         let box_thickness = settings.box_thickness as f32;
 
@@ -329,7 +346,8 @@ async fn main() {
         };
 
         let mut restricted_delta_pos = if delta_time < MIN_DELTA_TIME && delta_pos != Vec2::ZERO {
-            box_deltas.push((MIN_DELTA_TIME, delta_pos));
+            let dampen = (delta_time / MIN_DELTA_TIME).powf(DAMPEN_POWER);
+            box_deltas.push((MIN_DELTA_TIME, delta_pos * dampen));
             Vec2::ZERO
         } else {
             delta_pos

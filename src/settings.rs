@@ -27,6 +27,7 @@ pub struct DeserializeSettings {
     shadow_size: Option<f32>,
     shadow_distance_strength: Option<f32>,
     shadow_strength: Option<f32>,
+    speed_mul: Option<f32>,
     last_ball: Option<String>,
     last_sounds: Option<String>,
 }
@@ -141,6 +142,7 @@ impl DeserializeSettings {
             shadow_distance_strength: self
                 .shadow_distance_strength
                 .unwrap_or(default_settings.shadow_distance_strength),
+            speed_mul: self.speed_mul.unwrap_or(default_settings.speed_mul),
             last_ball: self.last_ball.unwrap_or(default_settings.last_ball),
             last_sounds: self.last_sounds.unwrap_or(default_settings.last_sounds),
         };
@@ -176,6 +178,7 @@ pub struct Settings {
     pub shadow_distance_strength: f32,
     pub shadow_strength: f32,
 
+    pub speed_mul: f32,
     pub last_ball: String,
     pub last_sounds: String,
 }
@@ -208,6 +211,7 @@ impl Default for Settings {
             shadow_distance_strength: 0.55,
             shadow_strength: 1.1,
 
+            speed_mul: 1.0,
             last_ball: "grinning".to_string(),
             last_sounds: "thud".to_string(),
         }

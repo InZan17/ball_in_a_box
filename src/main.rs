@@ -233,7 +233,7 @@ async fn main() {
     loop {
         clear_background(DARKGRAY);
 
-        let delta_time = get_frame_time();
+        let delta_time = get_frame_time() * settings.speed_mul;
 
         let box_thickness = settings.box_thickness as f32;
 

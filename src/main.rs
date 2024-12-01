@@ -9,6 +9,7 @@ use std::{
 
 use ball::Ball;
 use conf::Icon;
+use loop_array::LoopArray;
 use macroquad::{audio::set_sound_volume, prelude::*, rand};
 use miniquad::*;
 use settings::{read_settings_file, write_settings_file, Settings};
@@ -18,6 +19,7 @@ use ui::{SettingsState, UiRenderer, MENU_SIZE};
 use window::{set_window_position, set_window_size};
 
 pub mod ball;
+pub mod loop_array;
 pub mod settings;
 pub mod sounds;
 pub mod textures;
@@ -45,6 +47,9 @@ pub fn window_conf() -> Conf {
         ..Default::default()
     }
 }
+
+// Whenever the delta time is less than this, it will try to smooth out the window position over the duration of MIN_DELTA_TIME.
+const MIN_DELTA_TIME: f32 = 1.0 / 60.0;
 
 pub trait FromTuple {
     fn from_u32_tuple(tuple: (u32, u32)) -> Self;
@@ -223,8 +228,12 @@ async fn main() {
         ..Default::default()
     });
 
+    let mut box_deltas: LoopArray<(f32, Vec2), 10> = LoopArray::new();
+
     loop {
         clear_background(DARKGRAY);
+
+        let delta_time = get_frame_time();
 
         let box_thickness = settings.box_thickness as f32;
 
@@ -317,7 +326,31 @@ async fn main() {
             Vec2::ZERO
         };
 
-        smoothed_delta = smoothed_delta.lerp(delta_pos, 0.5);
+        let mut restricted_delta_pos = if delta_time < MIN_DELTA_TIME && delta_pos != Vec2::ZERO {
+            box_deltas.push((MIN_DELTA_TIME, delta_pos));
+            Vec2::ZERO
+        } else {
+            delta_pos
+        };
+
+        let mut discard_amount = 0;
+
+        for i in 0..box_deltas.len() {
+            let (time_left, smear_delta_pos) = box_deltas.get_mut(i);
+            if *time_left <= delta_time {
+                let pct = *time_left / MIN_DELTA_TIME;
+                restricted_delta_pos += *smear_delta_pos * pct;
+                discard_amount += 1;
+            } else {
+                let pct = delta_time / MIN_DELTA_TIME;
+                restricted_delta_pos += *smear_delta_pos * pct;
+                *time_left -= delta_time;
+            }
+        }
+
+        box_deltas.remove_amount(discard_amount);
+
+        smoothed_delta = smoothed_delta.lerp(restricted_delta_pos, 0.5);
         smoothed_magnitude = smoothed_magnitude
             .lerp(smoothed_delta.length(), 0.15)
             .min(smoothed_delta.length());
@@ -328,7 +361,7 @@ async fn main() {
             smoothed_delta
         };
 
-        let maxed_delta = smoothed_delta.max(delta_pos) / get_frame_time() * 2.;
+        let maxed_delta = smoothed_delta.max(restricted_delta_pos) / delta_time * 2.;
 
         draw_texture_ex(
             &background_texture,
@@ -398,9 +431,9 @@ async fn main() {
             },
         );
 
-        let wall_velocity = delta_pos / get_frame_time();
+        let wall_velocity = delta_pos / delta_time;
 
-        let mut remaining_dt = get_frame_time();
+        let mut remaining_dt = delta_time;
 
         let mut steps = 0;
         let mut wall_hits = [0, 0];

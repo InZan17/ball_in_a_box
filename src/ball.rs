@@ -9,15 +9,15 @@ use macroquad::{
     texture::{draw_texture_ex, DrawTextureParams, Texture2D},
 };
 
-use crate::Settings;
+use crate::{Settings, MIN_DELTA_TIME};
 
 pub struct Ball {
     position: Vec2,
     velocity: Vec2,
     rotation: f32,
     rotation_velocity: f32,
-    vertical_sound: bool,
-    horizontal_sound: bool,
+    vertical_sound_timer: f32,
+    horizontal_sound_timer: f32,
     pub radius: f32,
     pub texture: Texture2D,
     pub ball_material: Material,
@@ -38,8 +38,8 @@ impl Ball {
             velocity: Vec2::ZERO,
             rotation: 0.,
             rotation_velocity: 0.,
-            vertical_sound: true,
-            horizontal_sound: true,
+            vertical_sound_timer: 0.,
+            horizontal_sound_timer: 0.,
             radius,
             texture,
             ball_material,
@@ -270,8 +270,11 @@ impl Ball {
         const DENSITY: f32 = 0.32;
         const SPEED_LIMIT: f32 = 120.;
 
-        if (self.horizontal_sound && hit_wall_speed.x > SPEED_LIMIT)
-            || (self.vertical_sound && hit_wall_speed.y > SPEED_LIMIT)
+        let horizontal_sound = self.horizontal_sound_timer <= 0.;
+        let vertical_sound = self.vertical_sound_timer <= 0.;
+
+        if (horizontal_sound && hit_wall_speed.x > SPEED_LIMIT)
+            || (vertical_sound && hit_wall_speed.y > SPEED_LIMIT)
         {
             let inverted_distances_from_corners =
                 self.position.abs() + vec2(0., box_size.x - box_size.y);
@@ -293,8 +296,15 @@ impl Ball {
             );
         }
 
-        self.horizontal_sound = hit_wall_speed.x == 0.0;
-        self.vertical_sound = hit_wall_speed.y == 0.0;
+        self.horizontal_sound_timer -= new_dt;
+        self.vertical_sound_timer -= new_dt;
+
+        if hit_wall_speed.x != 0. {
+            self.horizontal_sound_timer = MIN_DELTA_TIME;
+        }
+        if hit_wall_speed.y != 0. {
+            self.vertical_sound_timer = MIN_DELTA_TIME;
+        }
 
         return dt - new_dt;
     }

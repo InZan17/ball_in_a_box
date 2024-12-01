@@ -3,11 +3,13 @@
 
 use std::{env, fs::File, io::Write, path::Path};
 
-use image::imageops::FilterType;
+use image::{imageops::FilterType, ImageFormat};
+use winresource::WindowsResource;
 
 fn main() {
     let out_dir = env::var_os("OUT_DIR").expect("OUT_DIR not set");
     let dest_path = Path::new(&out_dir).join("icon_data.rs");
+    let ico_path = Path::new(&out_dir).join("icon.ico");
     let mut f = File::create(&dest_path).expect("Failed to create file");
 
     for (name, path, size) in [
@@ -26,5 +28,21 @@ fn main() {
             img_bytes
         )
         .expect("Failed to write into image");
+
+        if size == 64 {
+            if env::var_os("CARGO_CFG_WINDOWS").is_some() {
+                resized
+                    .save_with_format(&ico_path, ImageFormat::Ico)
+                    .expect("Failed to save icon.ico");
+                WindowsResource::new()
+                    .set_icon(
+                        ico_path
+                            .to_str()
+                            .expect("Failed to convert icon path to a str"),
+                    )
+                    .compile()
+                    .expect("Failed to compile WIndowsResource");
+            }
+        }
     }
 }

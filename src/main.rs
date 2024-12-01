@@ -361,7 +361,20 @@ async fn main() {
             smoothed_delta
         };
 
-        let maxed_delta = smoothed_delta.max(restricted_delta_pos) / delta_time * 2.;
+        let maxed_delta = vec2(
+            if smoothed_delta.x.abs() > restricted_delta_pos.x.abs() {
+                smoothed_delta.x
+            } else {
+                restricted_delta_pos.x
+            },
+            if smoothed_delta.y.abs() > restricted_delta_pos.y.abs() {
+                smoothed_delta.y
+            } else {
+                restricted_delta_pos.y
+            },
+        );
+
+        let smoothed_wall_velocity = maxed_delta / delta_time * 2.;
 
         draw_texture_ex(
             &background_texture,
@@ -444,7 +457,7 @@ async fn main() {
                 remaining_dt,
                 &settings,
                 wall_velocity,
-                maxed_delta,
+                smoothed_wall_velocity,
                 &mut wall_hits,
                 box_size,
             );

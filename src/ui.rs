@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use macroquad::{prelude::*, ui::hash};
 use miniquad::*;
-use window::order_quit;
+use window::{order_quit, set_mouse_cursor};
 
 use crate::Settings;
 
@@ -80,6 +80,7 @@ impl UiRenderer {
         mouse_pos: Vec2,
         box_size: Vec2,
     ) -> bool {
+        set_mouse_cursor(CursorIcon::Default);
         if *settings_state == SettingsState::Closed {
             return false;
         }
@@ -505,6 +506,7 @@ impl UiRenderer {
         let mouse_is_down = is_mouse_button_down(MouseButton::Left) || mouse_is_released;
 
         if contains_mouse {
+            set_mouse_cursor(CursorIcon::Pointer);
             if mouse_is_pressed {
                 self.active_id = id;
             }
@@ -589,6 +591,10 @@ impl UiRenderer {
         let slider_contains_mouse = slider_rect.contains(mouse_pos);
         let mouse_is_pressed = is_mouse_button_pressed(MouseButton::Left);
         let mouse_is_down = is_mouse_button_down(MouseButton::Left);
+
+        if contains_mouse {
+            set_mouse_cursor(CursorIcon::Pointer);
+        }
 
         if !contains_mouse && mouse_is_pressed && self.active_id == id {
             self.active_id = 0;
@@ -751,6 +757,10 @@ impl UiRenderer {
         let mouse_is_pressed = is_mouse_button_pressed(MouseButton::Left);
         let mouse_is_down = is_mouse_button_down(MouseButton::Left);
 
+        if contains_mouse {
+            set_mouse_cursor(CursorIcon::Pointer);
+        }
+
         if !contains_mouse && mouse_is_pressed && self.active_id == id {
             self.active_id = 0;
             self.user_input = String::new()
@@ -766,7 +776,7 @@ impl UiRenderer {
         }
 
         let is_active = self.active_id == id;
-        let will_follow = is_active && mouse_is_down;
+        let will_follow = is_active && mouse_is_down && self.slider_follow;
 
         let bar_width_pct = 0.1;
         let bar_height_pct = 1.25;

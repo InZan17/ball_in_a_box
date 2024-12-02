@@ -16,7 +16,7 @@ use settings::{read_settings_file, write_settings_file, Settings};
 use sounds::{find_sounds, get_random_sounds};
 use textures::{find_texture, get_random_texture};
 use ui::{SettingsState, UiRenderer, MENU_SIZE};
-use window::{set_window_position, set_window_size};
+use window::{get_window_position, set_window_position, set_window_size};
 
 pub mod ball;
 pub mod loop_array;
@@ -236,6 +236,10 @@ async fn main() {
 
     let mut box_deltas: LoopArray<(f32, Vec2), 10> = LoopArray::new();
 
+    let mut mouse_deltas: LoopArray<Vec2, 100> = LoopArray::new();
+
+    let mut last_recorded_window_pos = Vec2::ZERO;
+
     let mut frames_after_start: u8 = 0;
 
     loop {
@@ -273,10 +277,23 @@ async fn main() {
 
         let is_menu_open = settings_state.is_open();
 
-        let mouse_pos = if let Some(mouse_pos) = mouse_offset {
+        let current_mouse_position = Vec2::from_i32_tuple(window::get_screen_mouse_position());
+        let delta_mouse_position = current_mouse_position - last_mouse_position;
+
+        let delay_frames = settings.delay_frames as usize;
+        if delay_frames != 0 {
+            if mouse_deltas.len() == delay_frames {
+                mouse_deltas.remove_amount(1);
+            }
+            if mouse_offset.is_some() && !is_mouse_button_released(MouseButton::Left) {
+                mouse_deltas.push(delta_mouse_position);
+            }
+        }
+
+        let local_mouse_pos = if let Some(mouse_pos) = mouse_offset {
             -mouse_pos
         } else {
-            Vec2::from(mouse_position()) * screen_dpi_scale()
+            current_mouse_position - Vec2::from_u32_tuple(get_window_position())
         };
 
         while let Some(character) = get_char_pressed() {
@@ -311,12 +328,8 @@ async fn main() {
             text_input = text_input[remove..].to_string();
         }
 
-        let current_mouse_position = Vec2::from_i32_tuple(window::get_screen_mouse_position());
-        let delta_mouse_position = current_mouse_position - last_mouse_position;
-        last_mouse_position = current_mouse_position;
-
         if is_mouse_button_pressed(MouseButton::Left) && is_menu_open {
-            let abs_mouse_pos_from_center = (mouse_pos - box_size / 2.).abs();
+            let abs_mouse_pos_from_center = (local_mouse_pos - box_size / 2.).abs();
             if abs_mouse_pos_from_center.x < MENU_SIZE.x / 2. * ui_renderer.mult
                 && abs_mouse_pos_from_center.y < MENU_SIZE.y / 2. * ui_renderer.mult
             {
@@ -327,23 +340,53 @@ async fn main() {
             interacting_with_ui = false
         }
 
-        let delta_pos = if interacting_with_ui {
-            Vec2::ZERO
-        } else if is_mouse_button_down(MouseButton::Left) {
-            let mouse_offset = match mouse_offset {
-                Some(mouse_offset) => mouse_offset,
+        let delta_pos = if !interacting_with_ui && is_mouse_button_down(MouseButton::Left) {
+            let (mouse_offset, delta_pos) = match mouse_offset {
+                Some(mouse_offset) => (mouse_offset, delta_mouse_position),
                 None => {
-                    mouse_offset = Some(-mouse_pos);
-                    -mouse_pos
+                    mouse_offset = Some(-local_mouse_pos);
+                    (-local_mouse_pos, Vec2::ZERO)
                 }
             };
-            let new_pos = current_mouse_position + mouse_offset;
+            let mut new_pos = current_mouse_position + mouse_offset;
+
+            last_recorded_window_pos = new_pos;
+
+            let mut delayed_delta_pos = Vec2::ZERO;
+
+            for i in 0..mouse_deltas.len() {
+                delayed_delta_pos += *mouse_deltas.get_mut(i);
+            }
+            new_pos -= delayed_delta_pos;
+
             set_window_position(new_pos.x as u32, new_pos.y as u32);
-            -delta_mouse_position
+
+            -delta_pos
         } else {
             mouse_offset = None;
+            if mouse_deltas.len() > 0 {
+                mouse_deltas.push(Vec2::ZERO);
+                let mut new_pos = last_recorded_window_pos;
+
+                let mut delayed_delta_pos = Vec2::ZERO;
+
+                for i in 0..mouse_deltas.len() {
+                    delayed_delta_pos += *mouse_deltas.get_mut(i);
+                }
+
+                if delayed_delta_pos == Vec2::ZERO {
+                    mouse_deltas.clear();
+                } else {
+                }
+
+                new_pos -= delayed_delta_pos;
+
+                set_window_position(new_pos.x as u32, new_pos.y as u32);
+            };
             Vec2::ZERO
         };
+
+        last_mouse_position = current_mouse_position;
 
         let mut restricted_delta_pos = if delta_time < MIN_DELTA_TIME && delta_pos != Vec2::ZERO {
             let dampen = (delta_time / MIN_DELTA_TIME).powf(DAMPEN_POWER);
@@ -489,7 +532,7 @@ async fn main() {
             &mut editing_settings,
             &settings,
             &mut settings_state,
-            mouse_pos,
+            local_mouse_pos,
             box_size,
         );
 

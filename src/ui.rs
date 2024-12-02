@@ -445,6 +445,18 @@ impl UiRenderer {
                     );
                 }
                 5 => {
+                    self.render_slider_uint(
+                        hash!(),
+                        mouse_pos,
+                        vec2(0., start + lower_down * 0.),
+                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                        "Delay frames",
+                        TITLE_SIZE,
+                        0..100,
+                        self.default_settings.delay_frames,
+                        current_settings.delay_frames,
+                        &mut editing_settings.delay_frames,
+                    );
                     if self.render_button(
                         hash!(),
                         mouse_pos,

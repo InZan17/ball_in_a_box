@@ -330,16 +330,16 @@ async fn main() {
         let delta_pos = if interacting_with_ui {
             Vec2::ZERO
         } else if is_mouse_button_down(MouseButton::Left) {
-            let mouse_offset = match mouse_offset {
-                Some(mouse_offset) => mouse_offset,
+            let (mouse_offset, mouse_delta) = match mouse_offset {
+                Some(mouse_offset) => (mouse_offset, delta_mouse_position),
                 None => {
                     mouse_offset = Some(-mouse_pos);
-                    -mouse_pos
+                    (-mouse_pos, Vec2::ZERO)
                 }
             };
-            let new_pos = current_mouse_position + mouse_offset - delta_mouse_position;
+            let new_pos = current_mouse_position + mouse_offset - mouse_delta;
             set_window_position(new_pos.x as u32, new_pos.y as u32);
-            -delta_mouse_position
+            -mouse_delta
         } else {
             mouse_offset = None;
             Vec2::ZERO

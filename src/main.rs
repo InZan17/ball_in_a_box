@@ -337,7 +337,7 @@ async fn main() {
                     -mouse_pos
                 }
             };
-            let new_pos = current_mouse_position + mouse_offset;
+            let new_pos = current_mouse_position + mouse_offset - delta_mouse_position;
             set_window_position(new_pos.x as u32, new_pos.y as u32);
             -delta_mouse_position
         } else {

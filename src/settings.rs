@@ -28,6 +28,7 @@ pub struct DeserializeSettings {
     shadow_distance_strength: Option<f32>,
     shadow_strength: Option<f32>,
     delay_frames: Option<u32>,
+    max_fps: Option<u32>,
     speed_mul: Option<f32>,
     last_ball: Option<String>,
     last_sounds: Option<String>,
@@ -55,6 +56,7 @@ impl DeserializeSettings {
             || self.shadow_distance_strength.is_none()
             || self.shadow_strength.is_none()
             || self.delay_frames.is_none()
+            || self.max_fps.is_none()
             || self.speed_mul.is_none()
             || self.last_ball.is_none()
             || self.last_sounds.is_none()
@@ -146,6 +148,7 @@ impl DeserializeSettings {
                 .shadow_distance_strength
                 .unwrap_or(default_settings.shadow_distance_strength),
             delay_frames: self.delay_frames.unwrap_or(default_settings.delay_frames),
+            max_fps: self.max_fps.unwrap_or(default_settings.max_fps).max(1),
             speed_mul: self.speed_mul.unwrap_or(default_settings.speed_mul),
             last_ball: self.last_ball.unwrap_or(default_settings.last_ball),
             last_sounds: self.last_sounds.unwrap_or(default_settings.last_sounds),
@@ -183,6 +186,7 @@ pub struct Settings {
     pub shadow_strength: f32,
 
     pub delay_frames: u32,
+    pub max_fps: u32,
     pub speed_mul: f32,
     pub last_ball: String,
     pub last_sounds: String,
@@ -217,6 +221,7 @@ impl Default for Settings {
             shadow_strength: 1.1,
 
             delay_frames: 0,
+            max_fps: 500,
             speed_mul: 1.0,
             last_ball: "grinning".to_string(),
             last_sounds: "thud".to_string(),

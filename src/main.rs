@@ -3,8 +3,8 @@ use std::{
     f32::consts::PI,
     fs::OpenOptions,
     io::Write,
-    panic,
-    time::{SystemTime, UNIX_EPOCH},
+    panic, thread,
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 use ball::Ball;
@@ -242,6 +242,8 @@ async fn main() {
     let mut frames_after_start: u8 = 0;
 
     let mut moved_since_right_click = false;
+
+    let mut prev_render_time = get_time();
 
     loop {
         clear_background(DARKGRAY);
@@ -569,6 +571,21 @@ async fn main() {
                 zoom: vec2(1. / box_size.x, 1. / box_size.y),
                 ..Default::default()
             });
+        }
+
+        let min_fps_delta = 1. / settings.max_fps as f64;
+
+        let time_now = get_time();
+
+        let time_difference = time_now - prev_render_time;
+
+        if time_difference < min_fps_delta {
+            let duration = min_fps_delta - time_difference;
+            thread::sleep(Duration::from_secs_f64(duration));
+            prev_render_time = time_now + duration;
+        } else {
+            let offset = (time_difference - min_fps_delta) % min_fps_delta;
+            prev_render_time = time_now - offset;
         }
 
         next_frame().await

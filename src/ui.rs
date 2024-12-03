@@ -332,7 +332,7 @@ impl UiRenderer {
                         vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
                         "Box depth",
                         TITLE_SIZE,
-                        0..100,
+                        1..100,
                         self.default_settings.box_depth,
                         current_settings.box_depth,
                         &mut editing_settings.box_depth,
@@ -457,10 +457,24 @@ impl UiRenderer {
                         current_settings.delay_frames,
                         &mut editing_settings.delay_frames,
                     );
+
+                    self.render_slider_uint(
+                        hash!(),
+                        mouse_pos,
+                        vec2(0., start + lower_down * 1.),
+                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                        "Max FPS",
+                        TITLE_SIZE,
+                        0..500,
+                        self.default_settings.max_fps,
+                        current_settings.max_fps,
+                        &mut editing_settings.max_fps,
+                    );
+
                     if self.render_button(
                         hash!(),
                         mouse_pos,
-                        vec2(0., 0.),
+                        vec2(0., 0. + lower_down * 1.),
                         BUTTON_SIZE * vec2(1.1, 0.9),
                         "Reset settings",
                         21,

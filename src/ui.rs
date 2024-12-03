@@ -193,12 +193,13 @@ impl UiRenderer {
                         &mut editing_settings.delay_frames,
                     );
 
-                    self.render_slider_uint(
+                    self.render_maxed_slider_uint(
                         hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 1.),
                         vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
                         "Max FPS",
+                        "None",
                         TITLE_SIZE,
                         0..500,
                         self.default_settings.max_fps,
@@ -918,6 +919,189 @@ impl UiRenderer {
             &format!("{}", *value)
         } else {
             &format!("{}", *value)
+        };
+
+        let zero_to_one = (*value - range.start) as f32 / (range.end - range.start) as f32;
+        let zero_to_width = zero_to_one * slider_rect.w * (1. - bar_width_pct);
+
+        let bar_rect = Rect::new(
+            slider_rect.x + zero_to_width,
+            slider_rect.y - bar_height / 2. + slider_rect.h / 2.,
+            bar_width,
+            bar_height,
+        );
+
+        draw_texture_ex(
+            &self.slider_background,
+            slider_rect.x,
+            slider_rect.y,
+            Color::from_hex(0xCCCCCC),
+            DrawTextureParams {
+                dest_size: Some(vec2(slider_rect.w, slider_rect.h)),
+                ..Default::default()
+            },
+        );
+
+        draw_texture_ex(
+            &self.slider_bar,
+            bar_rect.x,
+            bar_rect.y,
+            WHITE,
+            DrawTextureParams {
+                dest_size: Some(vec2(bar_rect.w, bar_rect.h)),
+                ..Default::default()
+            },
+        );
+
+        let font_size_mult = 0.4;
+
+        let centered_y_offset =
+            number_rect.y + number_rect.h * ((1. - (0.65 - font_size_mult) / 0.65) / 2. + 0.5);
+
+        let value_font_size_f = number_rect.h * font_size_mult;
+
+        let value_font_size = (value_font_size_f / self.mult) as u16;
+
+        let size = measure_text(
+            &value_string,
+            Some(&self.font),
+            value_font_size,
+            2.0 * self.mult,
+        );
+
+        draw_text_ex(
+            &value_string,
+            number_rect.x + number_rect.w - size.width - value_font_size_f * 0.5,
+            centered_y_offset,
+            TextParams {
+                color: if is_active {
+                    Color::new(0.3, 0., 0.6, 1.)
+                } else if prev_value != *value {
+                    Color::new(0.15, 0., 0.3, 1.)
+                } else {
+                    Color::new(0., 0., 0., 1.)
+                },
+                font: Some(&self.font),
+                font_size: value_font_size,
+                font_scale: 2.0 * self.mult,
+                ..Default::default()
+            },
+        );
+
+        draw_text_ex(
+            title,
+            full_rect.x,
+            full_rect.y - font_size as f32 * 0.65 * self.mult,
+            TextParams {
+                color: Color::new(0.05, 0., 0.1, 1.),
+                font: Some(&self.font),
+                font_size,
+                font_scale: 2.0 * self.mult,
+                ..Default::default()
+            },
+        );
+
+        return false;
+    }
+
+    pub fn render_maxed_slider_uint(
+        &mut self,
+        id: u64,
+        mouse_pos: Vec2,
+        center_pos: Vec2,
+        size: Vec2,
+        title: &str,
+        maxed_text: &str,
+        font_size: u16,
+        range: Range<u32>,
+        default_value: u32,
+        prev_value: u32,
+        value: &mut u32,
+    ) -> bool {
+        let slider_size = 0.85;
+
+        let full_rect = Rect::new(
+            (center_pos.x * 2. - size.x) * self.mult,
+            (center_pos.y * 2. - size.y) * self.mult,
+            size.x * 2. * self.mult,
+            size.y * 2. * self.mult,
+        );
+
+        let slider_rect = Rect::new(
+            full_rect.x + full_rect.w * (1. - slider_size),
+            full_rect.y,
+            full_rect.w * slider_size,
+            full_rect.h,
+        );
+        let number_rect = Rect::new(
+            full_rect.x,
+            full_rect.y,
+            full_rect.w * (1. - slider_size),
+            full_rect.h,
+        );
+
+        let contains_mouse = full_rect.contains(mouse_pos);
+        let slider_contains_mouse = slider_rect.contains(mouse_pos);
+        let mouse_is_pressed = is_mouse_button_pressed(MouseButton::Left);
+        let mouse_is_down = is_mouse_button_down(MouseButton::Left);
+
+        if contains_mouse {
+            set_mouse_cursor(CursorIcon::Pointer);
+        }
+
+        if !contains_mouse && mouse_is_pressed && self.active_id == id {
+            self.active_id = 0;
+            self.user_input = String::new()
+        } else if contains_mouse && mouse_is_pressed {
+            self.active_id = id;
+            self.slider_follow = slider_contains_mouse;
+            self.user_input = String::new()
+        } else if contains_mouse && mouse_is_down && self.active_id == id {
+            self.slider_follow = self.slider_follow || slider_contains_mouse;
+        } else if is_key_pressed(KeyCode::Enter) && self.active_id == id {
+            self.active_id = 0;
+            self.user_input = String::new()
+        }
+
+        let is_active = self.active_id == id;
+        let will_follow = is_active && mouse_is_down && self.slider_follow;
+
+        let bar_width_pct = 0.1;
+        let bar_height_pct = 1.25;
+        let bar_width = slider_rect.w * bar_width_pct;
+        let bar_height = slider_rect.h * bar_height_pct;
+
+        let value_string = if will_follow {
+            let amount = ((mouse_pos.x - slider_rect.x - bar_width / 2.)
+                / (slider_rect.w - bar_width))
+                .clamp(0., 1.);
+            let ranged_amount =
+                range.start as f32 + amount * (range.end as f32 - range.start as f32);
+            *value = ranged_amount.round() as u32;
+
+            if *value >= range.end {
+                maxed_text
+            } else {
+                &format!("{}", *value)
+            }
+        } else if is_active && !self.user_input.is_empty() {
+            if let Ok(parsed_value) = self.user_input.parse::<u32>() {
+                *value = parsed_value.clamp(range.start, range.end)
+            }
+            &self.user_input
+        } else if is_active && self.reset_field {
+            *value = default_value;
+            if *value >= range.end {
+                maxed_text
+            } else {
+                &format!("{}", *value)
+            }
+        } else {
+            if *value >= range.end {
+                maxed_text
+            } else {
+                &format!("{}", *value)
+            }
         };
 
         let zero_to_one = (*value - range.start) as f32 / (range.end - range.start) as f32;

@@ -16,7 +16,7 @@ use settings::{read_settings_file, write_settings_file, Settings};
 use sounds::{find_sounds, get_random_sounds};
 use textures::{find_texture, get_random_texture};
 use ui::{SettingsState, UiRenderer, MENU_SIZE};
-use window::{get_window_position, set_window_position, set_window_size};
+use window::{get_window_position, set_swap_interval, set_window_position, set_window_size};
 
 pub mod ball;
 pub mod settings;
@@ -571,6 +571,7 @@ async fn main() {
                 zoom: vec2(1. / box_size.x, 1. / box_size.y),
                 ..Default::default()
             });
+            set_swap_interval(if settings.vsync { 1 } else { 0 })
         }
 
         let min_fps_delta = 1. / settings.max_fps as f64;

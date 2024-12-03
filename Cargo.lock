@@ -240,7 +240,7 @@ checksum = "60302e4db3a61da70c0cb7991976248362f30319e88850c487b9b95bbf059e00"
 [[package]]
 name = "miniquad"
 version = "0.4.6"
-source = "git+https://github.com/InZan17/miniquad?branch=ball-in-a-box#b02d085daf5e881a09ea63a74629849d6217e70e"
+source = "git+https://github.com/InZan17/miniquad?branch=ball-in-a-box#34ae2f2d4184de08c4b6863e8e5c520dca4a1c5e"
 dependencies = [
  "libc",
  "ndk-sys",

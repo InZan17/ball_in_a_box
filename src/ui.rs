@@ -474,8 +474,22 @@ impl UiRenderer {
                     if self.render_button(
                         hash!(),
                         mouse_pos,
-                        vec2(0., 0. + lower_down * 1.),
-                        BUTTON_SIZE * vec2(1.1, 0.9),
+                        vec2(0., 0. + lower_down * 0.4),
+                        BUTTON_SIZE * vec2(0.8, 0.75),
+                        &format!(
+                            "VSync: {}",
+                            if editing_settings.vsync { "On" } else { "Off" }
+                        ),
+                        21,
+                    ) {
+                        editing_settings.vsync = !editing_settings.vsync;
+                    }
+
+                    if self.render_button(
+                        hash!(),
+                        mouse_pos,
+                        vec2(0., 0. + lower_down * 1.4),
+                        BUTTON_SIZE * vec2(1.1, 0.75),
                         "Reset settings",
                         21,
                     ) {

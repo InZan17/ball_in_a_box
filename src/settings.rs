@@ -160,7 +160,7 @@ impl DeserializeSettings {
     }
 }
 
-#[derive(Debug, SerJson, Clone)]
+#[derive(Debug, SerJson, Clone, PartialEq)]
 #[nserde(serialize_none_as_null)]
 pub struct Settings {
     pub audio_volume: f32,

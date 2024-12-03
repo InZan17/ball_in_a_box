@@ -18,6 +18,10 @@ const SMALLER_BUTTON_DIV: f32 = 1.75;
 
 const LAST_PAGE_INDEX: u8 = 5;
 
+const DEFAULT_TEXT_COLOR: Color = Color::new(0.05, 0., 0.1, 1.);
+const ACTIVE_TEXT_COLOR: Color = Color::new(0.3, 0., 0.6, 1.);
+const CHANGED_TEXT_COLOR: Color = Color::new(0.2, 0., 0.4, 1.);
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum SettingsState {
     Closed,
@@ -149,6 +153,7 @@ impl UiRenderer {
                     vec2(center_offset_x, y_offset),
                     BUTTON_SIZE / SMALLER_BUTTON_DIV,
                     "Prev",
+                    DEFAULT_TEXT_COLOR,
                     28,
                 ) {
                     self.last_page -= 1;
@@ -162,6 +167,7 @@ impl UiRenderer {
                     vec2(-center_offset_x, y_offset),
                     BUTTON_SIZE / SMALLER_BUTTON_DIV,
                     "Next",
+                    DEFAULT_TEXT_COLOR,
                     28,
                 ) {
                     self.last_page += 1;
@@ -207,6 +213,12 @@ impl UiRenderer {
                         &mut editing_settings.max_fps,
                     );
 
+                    let vsync_text_color = if editing_settings.vsync != current_settings.vsync {
+                        CHANGED_TEXT_COLOR
+                    } else {
+                        BLACK
+                    };
+
                     if self.render_button(
                         hash!(),
                         mouse_pos,
@@ -216,6 +228,7 @@ impl UiRenderer {
                             "VSync: {}",
                             if editing_settings.vsync { "On" } else { "Off" }
                         ),
+                        vsync_text_color,
                         21,
                     ) {
                         editing_settings.vsync = !editing_settings.vsync;
@@ -227,10 +240,10 @@ impl UiRenderer {
                         vec2(0., 0. + lower_down * 1.4),
                         BUTTON_SIZE * vec2(1.1, 0.75),
                         "Reset settings",
+                        DEFAULT_TEXT_COLOR,
                         21,
                     ) {
                         *editing_settings = self.default_settings.clone();
-                        save = true
                     }
                 }
                 1 => {
@@ -516,10 +529,17 @@ impl UiRenderer {
                 vec2(center_offset_x, -y_offset),
                 BUTTON_SIZE / SMALL_BUTTON_DIV,
                 "Back",
+                DEFAULT_TEXT_COLOR,
                 28,
             ) {
                 *settings_state = SettingsState::Open;
             }
+
+            let apply_color = if editing_settings != current_settings {
+                CHANGED_TEXT_COLOR
+            } else {
+                DEFAULT_TEXT_COLOR
+            };
 
             if self.render_button(
                 hash!(),
@@ -527,6 +547,7 @@ impl UiRenderer {
                 vec2(-center_offset_x, -y_offset),
                 BUTTON_SIZE / SMALL_BUTTON_DIV,
                 "Apply",
+                apply_color,
                 28,
             ) {
                 save = true;
@@ -540,6 +561,7 @@ impl UiRenderer {
                 vec2(0., -button_y_offsets),
                 BUTTON_SIZE,
                 "Continue",
+                DEFAULT_TEXT_COLOR,
                 28,
             ) {
                 *settings_state = SettingsState::Closed;
@@ -551,6 +573,7 @@ impl UiRenderer {
                 vec2(0., 0.),
                 BUTTON_SIZE,
                 "Settings",
+                DEFAULT_TEXT_COLOR,
                 28,
             ) {
                 *settings_state = SettingsState::Settings;
@@ -562,6 +585,7 @@ impl UiRenderer {
                 vec2(0., button_y_offsets),
                 BUTTON_SIZE,
                 "Quit",
+                DEFAULT_TEXT_COLOR,
                 28,
             ) {
                 order_quit();
@@ -588,7 +612,7 @@ impl UiRenderer {
             rect.x + rect.w / 2. - size.width / 2.,
             rect.y + rect.h / 2. + font_size as f32 / 2. * self.mult,
             TextParams {
-                color: Color::new(0.05, 0., 0.1, 1.),
+                color: DEFAULT_TEXT_COLOR,
                 font: Some(&self.font),
                 font_size,
                 font_scale: 2.0 * self.mult,
@@ -604,6 +628,7 @@ impl UiRenderer {
         center_pos: Vec2,
         size: Vec2,
         text: &str,
+        text_color: Color,
         font_size: u16,
     ) -> bool {
         let rect = Rect::new(
@@ -655,7 +680,7 @@ impl UiRenderer {
             rect.x + rect.w / 2. - size.width / 2.,
             rect.y + rect.h / 2. + font_size as f32 / 2. * self.mult,
             TextParams {
-                color: Color::new(0.05, 0., 0.1, 1.),
+                color: text_color,
                 font: Some(&self.font),
                 font_size,
                 font_scale: 2.0 * self.mult,
@@ -806,11 +831,11 @@ impl UiRenderer {
             centered_y_offset,
             TextParams {
                 color: if is_active {
-                    Color::new(0.3, 0., 0.6, 1.)
+                    ACTIVE_TEXT_COLOR
                 } else if prev_value != *value {
-                    Color::new(0.15, 0., 0.3, 1.)
+                    CHANGED_TEXT_COLOR
                 } else {
-                    Color::new(0., 0., 0., 1.)
+                    BLACK
                 },
                 font: Some(&self.font),
                 font_size: value_font_size,
@@ -824,7 +849,7 @@ impl UiRenderer {
             full_rect.x,
             full_rect.y - font_size as f32 * 0.65 * self.mult,
             TextParams {
-                color: Color::new(0.05, 0., 0.1, 1.),
+                color: DEFAULT_TEXT_COLOR,
                 font: Some(&self.font),
                 font_size,
                 font_scale: 2.0 * self.mult,
@@ -975,11 +1000,11 @@ impl UiRenderer {
             centered_y_offset,
             TextParams {
                 color: if is_active {
-                    Color::new(0.3, 0., 0.6, 1.)
+                    ACTIVE_TEXT_COLOR
                 } else if prev_value != *value {
-                    Color::new(0.15, 0., 0.3, 1.)
+                    CHANGED_TEXT_COLOR
                 } else {
-                    Color::new(0., 0., 0., 1.)
+                    BLACK
                 },
                 font: Some(&self.font),
                 font_size: value_font_size,
@@ -993,7 +1018,7 @@ impl UiRenderer {
             full_rect.x,
             full_rect.y - font_size as f32 * 0.65 * self.mult,
             TextParams {
-                color: Color::new(0.05, 0., 0.1, 1.),
+                color: DEFAULT_TEXT_COLOR,
                 font: Some(&self.font),
                 font_size,
                 font_scale: 2.0 * self.mult,
@@ -1158,11 +1183,11 @@ impl UiRenderer {
             centered_y_offset,
             TextParams {
                 color: if is_active {
-                    Color::new(0.3, 0., 0.6, 1.)
+                    ACTIVE_TEXT_COLOR
                 } else if prev_value != *value {
-                    Color::new(0.15, 0., 0.3, 1.)
+                    CHANGED_TEXT_COLOR
                 } else {
-                    Color::new(0., 0., 0., 1.)
+                    BLACK
                 },
                 font: Some(&self.font),
                 font_size: value_font_size,
@@ -1176,7 +1201,7 @@ impl UiRenderer {
             full_rect.x,
             full_rect.y - font_size as f32 * 0.65 * self.mult,
             TextParams {
-                color: Color::new(0.05, 0., 0.1, 1.),
+                color: DEFAULT_TEXT_COLOR,
                 font: Some(&self.font),
                 font_size,
                 font_scale: 2.0 * self.mult,

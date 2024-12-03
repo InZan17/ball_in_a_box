@@ -44,7 +44,7 @@ pub fn window_conf() -> Conf {
             big: ICON_BIG,
         }),
         platform: Platform {
-            swap_interval: Some(1),
+            swap_interval: Some(if settings.vsync { 1 } else { 0 }),
             ..Default::default()
         },
         ..Default::default()
@@ -559,6 +559,8 @@ async fn main() {
         );
 
         if save {
+            let change_ball = editing_settings.last_ball != settings.last_ball;
+            let change_sounds = editing_settings.last_sounds != settings.last_sounds;
             settings = editing_settings.clone();
             write_settings_file(&settings);
             for sound in ball.sounds.iter() {
@@ -571,7 +573,18 @@ async fn main() {
                 zoom: vec2(1. / box_size.x, 1. / box_size.y),
                 ..Default::default()
             });
-            set_swap_interval(if settings.vsync { 1 } else { 0 })
+            set_swap_interval(if settings.vsync { 1 } else { 0 });
+            if change_ball {
+                if let Some((_, texture)) = find_texture(&settings.last_ball) {
+                    ball.texture = texture
+                }
+            }
+
+            if change_sounds {
+                if let Some((_, sounds)) = find_sounds(&settings.last_sounds).await {
+                    ball.sounds = sounds;
+                }
+            }
         }
 
         let min_fps_delta = 1. / settings.max_fps as f64;

@@ -241,6 +241,8 @@ async fn main() {
 
     let mut frames_after_start: u8 = 0;
 
+    let mut moved_since_right_click = false;
+
     loop {
         clear_background(DARKGRAY);
 
@@ -257,7 +259,13 @@ async fn main() {
 
         let box_thickness = settings.box_thickness as f32;
 
-        if is_key_pressed(KeyCode::Escape) || is_mouse_button_pressed(MouseButton::Right) {
+        if is_mouse_button_pressed(MouseButton::Right) {
+            moved_since_right_click = false;
+        }
+
+        if is_key_pressed(KeyCode::Escape)
+            || (is_mouse_button_released(MouseButton::Right) && !moved_since_right_click)
+        {
             if settings_state != SettingsState::Closed {
                 settings_state = SettingsState::Closed
             } else {
@@ -339,7 +347,11 @@ async fn main() {
             interacting_with_ui = false
         }
 
-        let delta_pos = if !interacting_with_ui && is_mouse_button_down(MouseButton::Left) {
+        let moveable = !interacting_with_ui
+            && (is_mouse_button_down(MouseButton::Left)
+                || is_mouse_button_down(MouseButton::Right));
+
+        let delta_pos = if moveable {
             let (mouse_offset, delta_pos) = match mouse_offset {
                 Some(mouse_offset) => (mouse_offset, delta_mouse_position),
                 None => {
@@ -347,6 +359,11 @@ async fn main() {
                     (-local_mouse_pos, Vec2::ZERO)
                 }
             };
+
+            if delta_pos != Vec2::ZERO {
+                moved_since_right_click = true
+            }
+
             let mut new_pos = current_mouse_position + mouse_offset;
 
             last_recorded_window_pos = new_pos;

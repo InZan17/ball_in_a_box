@@ -180,6 +180,59 @@ impl UiRenderer {
 
             match self.last_page {
                 0 => {
+                    self.render_slider_uint(
+                        hash!(),
+                        mouse_pos,
+                        vec2(0., start + lower_down * 0.),
+                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                        "Delay frames",
+                        TITLE_SIZE,
+                        0..10,
+                        self.default_settings.delay_frames,
+                        current_settings.delay_frames,
+                        &mut editing_settings.delay_frames,
+                    );
+
+                    self.render_slider_uint(
+                        hash!(),
+                        mouse_pos,
+                        vec2(0., start + lower_down * 1.),
+                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                        "Max FPS",
+                        TITLE_SIZE,
+                        0..500,
+                        self.default_settings.max_fps,
+                        current_settings.max_fps,
+                        &mut editing_settings.max_fps,
+                    );
+
+                    if self.render_button(
+                        hash!(),
+                        mouse_pos,
+                        vec2(0., 0. + lower_down * 0.4),
+                        BUTTON_SIZE * vec2(0.8, 0.75),
+                        &format!(
+                            "VSync: {}",
+                            if editing_settings.vsync { "On" } else { "Off" }
+                        ),
+                        21,
+                    ) {
+                        editing_settings.vsync = !editing_settings.vsync;
+                    }
+
+                    if self.render_button(
+                        hash!(),
+                        mouse_pos,
+                        vec2(0., 0. + lower_down * 1.4),
+                        BUTTON_SIZE * vec2(1.1, 0.75),
+                        "Reset settings",
+                        21,
+                    ) {
+                        *editing_settings = self.default_settings.clone();
+                        save = true
+                    }
+                }
+                1 => {
                     self.render_slider(
                         hash!(),
                         mouse_pos,
@@ -232,7 +285,7 @@ impl UiRenderer {
                         &mut editing_settings.max_velocity,
                     );
                 }
-                1 => {
+                2 => {
                     self.render_slider(
                         hash!(),
                         mouse_pos,
@@ -285,7 +338,7 @@ impl UiRenderer {
                         &mut editing_settings.ball_friction,
                     );
                 }
-                2 => {
+                3 => {
                     self.render_slider_uint(
                         hash!(),
                         mouse_pos,
@@ -338,7 +391,7 @@ impl UiRenderer {
                         &mut editing_settings.box_depth,
                     );
                 }
-                3 => {
+                4 => {
                     self.render_slider(
                         hash!(),
                         mouse_pos,
@@ -391,7 +444,7 @@ impl UiRenderer {
                         &mut editing_settings.specular_strength,
                     );
                 }
-                4 => {
+                5 => {
                     self.render_slider(
                         hash!(),
                         mouse_pos,
@@ -443,59 +496,6 @@ impl UiRenderer {
                         current_settings.shadow_strength,
                         &mut editing_settings.shadow_strength,
                     );
-                }
-                5 => {
-                    self.render_slider_uint(
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., start + lower_down * 0.),
-                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
-                        "Delay frames",
-                        TITLE_SIZE,
-                        0..10,
-                        self.default_settings.delay_frames,
-                        current_settings.delay_frames,
-                        &mut editing_settings.delay_frames,
-                    );
-
-                    self.render_slider_uint(
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., start + lower_down * 1.),
-                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
-                        "Max FPS",
-                        TITLE_SIZE,
-                        0..500,
-                        self.default_settings.max_fps,
-                        current_settings.max_fps,
-                        &mut editing_settings.max_fps,
-                    );
-
-                    if self.render_button(
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., 0. + lower_down * 0.4),
-                        BUTTON_SIZE * vec2(0.8, 0.75),
-                        &format!(
-                            "VSync: {}",
-                            if editing_settings.vsync { "On" } else { "Off" }
-                        ),
-                        21,
-                    ) {
-                        editing_settings.vsync = !editing_settings.vsync;
-                    }
-
-                    if self.render_button(
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., 0. + lower_down * 1.4),
-                        BUTTON_SIZE * vec2(1.1, 0.75),
-                        "Reset settings",
-                        21,
-                    ) {
-                        *editing_settings = self.default_settings.clone();
-                        save = true
-                    }
                 }
                 _ => {
                     unimplemented!()
@@ -906,7 +906,7 @@ impl UiRenderer {
                 .clamp(0., 1.);
             let ranged_amount =
                 range.start as f32 + amount * (range.end as f32 - range.start as f32);
-            *value = ranged_amount as u32;
+            *value = ranged_amount.round() as u32;
             &format!("{}", *value)
         } else if is_active && !self.user_input.is_empty() {
             if let Ok(parsed_value) = self.user_input.parse::<u32>() {

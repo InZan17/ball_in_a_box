@@ -452,7 +452,7 @@ impl UiRenderer {
                         vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
                         "Delay frames",
                         TITLE_SIZE,
-                        0..100,
+                        0..10,
                         self.default_settings.delay_frames,
                         current_settings.delay_frames,
                         &mut editing_settings.delay_frames,

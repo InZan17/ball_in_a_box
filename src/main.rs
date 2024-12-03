@@ -236,7 +236,7 @@ async fn main() {
 
     let mut box_deltas: LoopArray<(f32, Vec2), 10> = LoopArray::new();
 
-    let mut mouse_deltas: LoopArray<Vec2, 100> = LoopArray::new();
+    let mut mouse_deltas: LoopArray<Vec2, 10> = LoopArray::new();
 
     let mut last_recorded_window_pos = Vec2::ZERO;
 

@@ -335,7 +335,10 @@ async fn main() {
             text_input = text_input[remove..].to_string();
         }
 
-        if is_mouse_button_pressed(MouseButton::Left) && is_menu_open {
+        if (is_mouse_button_pressed(MouseButton::Left)
+            || is_mouse_button_pressed(MouseButton::Right))
+            && is_menu_open
+        {
             let abs_mouse_pos_from_center = (local_mouse_pos - box_size / 2.).abs();
             if abs_mouse_pos_from_center.x < MENU_SIZE.x / 2. * ui_renderer.mult
                 && abs_mouse_pos_from_center.y < MENU_SIZE.y / 2. * ui_renderer.mult
@@ -343,15 +346,15 @@ async fn main() {
                 interacting_with_ui = true
             }
         }
-        if is_mouse_button_released(MouseButton::Left) {
+
+        let button_is_down =
+            is_mouse_button_down(MouseButton::Left) || is_mouse_button_down(MouseButton::Right);
+
+        if !button_is_down {
             interacting_with_ui = false
         }
 
-        let moveable = !interacting_with_ui
-            && (is_mouse_button_down(MouseButton::Left)
-                || is_mouse_button_down(MouseButton::Right));
-
-        let delta_pos = if moveable {
+        let delta_pos = if !interacting_with_ui && button_is_down {
             let (mouse_offset, delta_pos) = match mouse_offset {
                 Some(mouse_offset) => (mouse_offset, delta_mouse_position),
                 None => {

@@ -8,8 +8,8 @@ use std::{
 };
 
 use ball::Ball;
+use circular_buffer::CircularBuffer;
 use conf::{Icon, Platform};
-use loop_array::LoopArray;
 use macroquad::{audio::set_sound_volume, prelude::*, rand};
 use miniquad::*;
 use settings::{read_settings_file, write_settings_file, Settings};
@@ -19,7 +19,6 @@ use ui::{SettingsState, UiRenderer, MENU_SIZE};
 use window::{get_window_position, set_window_position, set_window_size};
 
 pub mod ball;
-pub mod loop_array;
 pub mod settings;
 pub mod sounds;
 pub mod textures;
@@ -234,9 +233,9 @@ async fn main() {
         ..Default::default()
     });
 
-    let mut box_deltas: LoopArray<(f32, Vec2), 10> = LoopArray::new();
+    let mut box_deltas: CircularBuffer<10, (f32, Vec2)> = CircularBuffer::new();
 
-    let mut mouse_deltas: LoopArray<Vec2, 10> = LoopArray::new();
+    let mut mouse_deltas: CircularBuffer<10, Vec2> = CircularBuffer::new();
 
     let mut last_recorded_window_pos = Vec2::ZERO;
 
@@ -282,11 +281,11 @@ async fn main() {
 
         let delay_frames = settings.delay_frames as usize;
         if delay_frames != 0 {
-            if mouse_deltas.len() == delay_frames {
-                mouse_deltas.remove_amount(1);
+            while mouse_deltas.len() >= delay_frames {
+                mouse_deltas.pop_front();
             }
             if mouse_offset.is_some() && !is_mouse_button_released(MouseButton::Left) {
-                mouse_deltas.push(delta_mouse_position);
+                mouse_deltas.push_back(delta_mouse_position);
             }
         }
 
@@ -354,8 +353,8 @@ async fn main() {
 
             let mut delayed_delta_pos = Vec2::ZERO;
 
-            for i in 0..mouse_deltas.len() {
-                delayed_delta_pos += *mouse_deltas.get_mut(i);
+            for delta in mouse_deltas.iter() {
+                delayed_delta_pos += *delta;
             }
             new_pos -= delayed_delta_pos;
 
@@ -365,13 +364,13 @@ async fn main() {
         } else {
             mouse_offset = None;
             if mouse_deltas.len() > 0 {
-                mouse_deltas.push(Vec2::ZERO);
+                mouse_deltas.push_back(Vec2::ZERO);
                 let mut new_pos = last_recorded_window_pos;
 
                 let mut delayed_delta_pos = Vec2::ZERO;
 
-                for i in 0..mouse_deltas.len() {
-                    delayed_delta_pos += *mouse_deltas.get_mut(i);
+                for delta in mouse_deltas.iter() {
+                    delayed_delta_pos += *delta;
                 }
 
                 if delayed_delta_pos == Vec2::ZERO {
@@ -390,7 +389,7 @@ async fn main() {
 
         let mut restricted_delta_pos = if delta_time < MIN_DELTA_TIME && delta_pos != Vec2::ZERO {
             let dampen = (delta_time / MIN_DELTA_TIME).powf(DAMPEN_POWER);
-            box_deltas.push((MIN_DELTA_TIME, delta_pos * dampen));
+            box_deltas.push_front((MIN_DELTA_TIME, delta_pos * dampen));
             Vec2::ZERO
         } else {
             delta_pos
@@ -398,8 +397,7 @@ async fn main() {
 
         let mut discard_amount = 0;
 
-        for i in 0..box_deltas.len() {
-            let (time_left, smear_delta_pos) = box_deltas.get_mut(i);
+        for (time_left, smear_delta_pos) in box_deltas.iter_mut() {
             if *time_left <= delta_time {
                 let pct = *time_left / MIN_DELTA_TIME;
                 restricted_delta_pos += *smear_delta_pos * pct;
@@ -411,7 +409,9 @@ async fn main() {
             }
         }
 
-        box_deltas.remove_amount(discard_amount);
+        for _ in 0..discard_amount {
+            box_deltas.pop_front();
+        }
 
         smoothed_delta = smoothed_delta.lerp(restricted_delta_pos, 0.5);
         smoothed_magnitude = smoothed_magnitude

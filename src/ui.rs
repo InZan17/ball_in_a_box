@@ -4,7 +4,7 @@ use macroquad::{prelude::*, ui::hash};
 use miniquad::*;
 use window::{order_quit, set_mouse_cursor};
 
-use crate::Settings;
+use crate::{Settings, FPS_LIMIT};
 
 const RELATIVE_BOX_SIZE: Vec2 = vec2(372., 480.);
 
@@ -21,6 +21,7 @@ const LAST_PAGE_INDEX: u8 = 5;
 const DEFAULT_TEXT_COLOR: Color = Color::new(0.05, 0., 0.1, 1.);
 const ACTIVE_TEXT_COLOR: Color = Color::new(0.3, 0., 0.6, 1.);
 const CHANGED_TEXT_COLOR: Color = Color::new(0.2, 0., 0.4, 1.);
+const DARKRED_TEXT_COLOR: Color = Color::new(0.3, 0., 0.0, 1.);
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum SettingsState {
@@ -207,7 +208,7 @@ impl UiRenderer {
                         "Max FPS",
                         "None",
                         TITLE_SIZE,
-                        0..500,
+                        0..FPS_LIMIT,
                         self.default_settings.max_fps,
                         current_settings.max_fps,
                         &mut editing_settings.max_fps,
@@ -240,7 +241,7 @@ impl UiRenderer {
                         vec2(0., 0. + lower_down * 1.4),
                         BUTTON_SIZE * vec2(1.1, 0.75),
                         "Reset settings",
-                        DEFAULT_TEXT_COLOR,
+                        DARKRED_TEXT_COLOR,
                         21,
                     ) {
                         *editing_settings = self.default_settings.clone();

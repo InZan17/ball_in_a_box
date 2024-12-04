@@ -26,6 +26,8 @@ pub mod ui;
 
 include!(concat!(env!("OUT_DIR"), "/icon_data.rs"));
 
+const FPS_LIMIT: u32 = 500;
+
 pub fn window_conf() -> Conf {
     let settings = read_settings_file().unwrap_or_default();
 
@@ -587,19 +589,23 @@ async fn main() {
             }
         }
 
-        let min_fps_delta = 1. / settings.max_fps as f64;
+        if settings.max_fps < FPS_LIMIT {
+            let min_fps_delta = 1. / settings.max_fps as f64;
 
-        let time_now = get_time();
+            let time_now = get_time();
 
-        let time_difference = time_now - prev_render_time;
+            let time_difference = time_now - prev_render_time;
 
-        if time_difference < min_fps_delta {
-            let duration = min_fps_delta - time_difference;
-            thread::sleep(Duration::from_secs_f64(duration));
-            prev_render_time = time_now + duration;
+            if time_difference < min_fps_delta {
+                let duration = min_fps_delta - time_difference;
+                thread::sleep(Duration::from_secs_f64(duration));
+                prev_render_time = time_now + duration;
+            } else {
+                let offset = (time_difference - min_fps_delta) % min_fps_delta;
+                prev_render_time = time_now - offset;
+            }
         } else {
-            let offset = (time_difference - min_fps_delta) % min_fps_delta;
-            prev_render_time = time_now - offset;
+            prev_render_time = get_time();
         }
 
         next_frame().await

@@ -225,9 +225,10 @@ impl Default for Settings {
             shadow_strength: 1.1,
 
             delay_frames: 0,
-            max_fps: 500,
+            max_fps: 60,
+            vsync: false,
+
             speed_mul: 1.0,
-            vsync: true,
             last_ball: "grinning".to_string(),
             last_sounds: "thud".to_string(),
         }

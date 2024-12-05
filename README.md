@@ -19,3 +19,11 @@ To add custom sounds, open the `sounds` folder and make a new folder with the na
 - The font used is called "Fredericka The Great".
 - The balls comes from a toy called "Emoji Splat Ball".
 - The rest of the assets and programming was done by me. (Zan)
+
+## Ball is lagging/not synced?
+
+The ball might not smoothly follow the  window. I haven't found a solid way to solve this, but what you could do is to open the menu and click `Settings`. You can then try to set `Max FPS` to the highest and then enable VSync (VSync will automatically cap the frame-rate) and then adjust `Delay frames` to make the window movement synced with the ball. Usually its between 0 and 2.
+
+Or if your monitor is higher than 60fps, you can try only setting `Max FPS` to your monitors frame-rate.
+
+These aren't guaranteed to fix it, so just do whichever one is the least laggy.

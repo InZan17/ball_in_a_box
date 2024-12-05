@@ -70,18 +70,30 @@ pub async fn load_sounds(path: PathBuf) -> Vec<Sound> {
     sounds
 }
 
+/// Returns info for a folder with sounds in which the input ends with the folders name.
+///
+/// Picks the folder with the longer name.
 pub async fn find_sounds(current_string: &str) -> Option<(String, Vec<Sound>)> {
     if current_string.is_empty() {
         return None;
     }
 
+    let mut selected_sounds: Option<(String, PathBuf)> = None;
+
     for (sounds_name, sounds_path) in list_available_sounds() {
         if current_string.ends_with(&sounds_name) {
-            return Some((sounds_name, load_sounds(sounds_path).await));
+            if let Some((selected_sounds_name, _)) = &selected_sounds {
+                if selected_sounds_name.len() > sounds_name.len() {
+                    continue;
+                }
+            }
+            selected_sounds = Some((sounds_name, sounds_path));
         }
     }
 
-    None
+    let (sounds_name, sounds_path) = selected_sounds?;
+
+    return Some((sounds_name, load_sounds(sounds_path).await));
 }
 
 pub async fn get_random_sounds() -> (String, Vec<Sound>) {

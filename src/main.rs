@@ -75,16 +75,6 @@ impl FromTuple for Vec2 {
 
 #[macroquad::main(window_conf)]
 async fn main() {
-    let mut settings = read_settings_file().unwrap_or_else(|| {
-        let settings = Settings::default();
-        write_settings_file(&settings);
-        settings
-    });
-
-    let mut box_size = vec2(settings.box_width as f32, settings.box_height as f32);
-
-    let mut editing_settings = settings.clone();
-
     panic::set_hook(Box::new(|info| {
         let Ok(mut log_file) = OpenOptions::new()
             .create(true)
@@ -113,6 +103,12 @@ async fn main() {
 
         rand::srand(since_the_epoch.as_nanos() as u64);
     }
+
+    let mut settings = read_settings_file().unwrap_or_else(|| {
+        let settings = Settings::default();
+        write_settings_file(&settings);
+        settings
+    });
 
     let background_texture = Texture2D::from_file_with_format(
         &load_file("./assets/background.png")
@@ -193,23 +189,6 @@ async fn main() {
 
     drop(default_vert);
 
-    let max_string_len = 100;
-
-    let mut text_input = String::new();
-
-    let mut ui_renderer = UiRenderer::new().await;
-
-    let mut is_in_settings = false;
-    let mut settings_state = SettingsState::Closed;
-    let mut interacting_with_ui = false;
-
-    let mut last_mouse_position = Vec2::from_i32_tuple(window::get_screen_mouse_position());
-
-    let mut mouse_offset: Option<Vec2> = None;
-
-    let mut smoothed_delta = Vec2::ZERO;
-    let mut smoothed_magnitude = 0.;
-
     let mut ball = {
         let option_sounds = find_sounds(&settings.last_sounds).await;
 
@@ -230,21 +209,36 @@ async fn main() {
         )
     };
 
+    let mut box_size = vec2(settings.box_width as f32, settings.box_height as f32);
+
     set_camera(&Camera2D {
         zoom: vec2(1. / box_size.x, 1. / box_size.y),
         ..Default::default()
     });
 
-    let mut box_deltas: CircularBuffer<10, (f32, Vec2)> = CircularBuffer::new();
+    const MAX_INPUT_LEN: usize = 100;
+    let mut text_input = String::with_capacity(MAX_INPUT_LEN);
 
+    let mut ui_renderer = UiRenderer::new().await;
+
+    let mut moved_since_right_click = false;
+    let mut interacting_with_ui = false;
+    let mut is_in_settings = false;
+    let mut settings_state = SettingsState::Closed;
+
+    let mut smoothed_delta = Vec2::ZERO;
+    let mut smoothed_magnitude = 0.;
+
+    let mut editing_settings = settings.clone();
+
+    let mut mouse_offset: Option<Vec2> = None;
+    let mut last_mouse_position = Vec2::from_i32_tuple(window::get_screen_mouse_position());
     let mut mouse_deltas: CircularBuffer<10, Vec2> = CircularBuffer::new();
 
     let mut last_recorded_window_pos = Vec2::ZERO;
+    let mut box_deltas: CircularBuffer<10, (f32, Vec2)> = CircularBuffer::new();
 
     let mut frames_after_start: u8 = 0;
-
-    let mut moved_since_right_click = false;
-
     let mut prev_render_time = get_time();
 
     loop {
@@ -304,7 +298,8 @@ async fn main() {
         let local_mouse_pos = if let Some(mouse_pos) = mouse_offset {
             -mouse_pos
         } else {
-            current_mouse_position - Vec2::from_u32_tuple(get_window_position())
+            (current_mouse_position - Vec2::from_u32_tuple(get_window_position()))
+                .clamp(Vec2::ZERO, box_size - 1.0)
         };
 
         while let Some(character) = get_char_pressed() {
@@ -312,6 +307,11 @@ async fn main() {
                 continue;
             }
             ui_renderer.user_input.push(character);
+
+            if text_input.len() >= MAX_INPUT_LEN {
+                text_input.remove(0);
+            }
+
             text_input.push(character.to_ascii_lowercase());
 
             if let Some((ball_name, texture)) = find_texture(&text_input) {
@@ -329,14 +329,10 @@ async fn main() {
             }
         }
         if is_key_pressed(KeyCode::Backspace) {
+            text_input.clear();
             if ui_renderer.user_input.pop().is_none() {
                 ui_renderer.reset_field = true;
             }
-        }
-
-        if text_input.len() > max_string_len {
-            let remove = text_input.len() - max_string_len;
-            text_input = text_input[remove..].to_string();
         }
 
         if (is_mouse_button_pressed(MouseButton::Left)

@@ -31,21 +31,34 @@ pub fn list_available_balls() -> Vec<(String, PathBuf)> {
         .collect()
 }
 
+/// Returns info for a ball texture in which the input ends with its name.
+///
+/// Picks the texture with the longer name.
 pub fn find_texture(current_string: &str) -> Option<(String, Texture2D)> {
     if current_string.is_empty() {
         return None;
     }
 
+    let mut selected_ball: Option<(String, PathBuf)> = None;
+
     for (ball_name, ball_path) in list_available_balls() {
         if current_string.ends_with(&ball_name) {
-            let Ok(bytes) = fs::read(&ball_path) else {
-                panic!("Failed to read bytes from {}", ball_path.to_string_lossy())
-            };
-            return Some((ball_name, Texture2D::from_file_with_format(&bytes, None)));
+            if let Some((selected_ball_name, _)) = &selected_ball {
+                if selected_ball_name.len() > ball_name.len() {
+                    continue;
+                }
+            }
+            selected_ball = Some((ball_name, ball_path));
         }
     }
 
-    None
+    let (ball_name, ball_path) = selected_ball?;
+
+    let Ok(bytes) = fs::read(&ball_path) else {
+        panic!("Failed to read bytes from {}", ball_path.to_string_lossy())
+    };
+
+    return Some((ball_name, Texture2D::from_file_with_format(&bytes, None)));
 }
 
 pub fn get_random_texture() -> (String, Texture2D) {

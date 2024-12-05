@@ -57,6 +57,7 @@ impl Ball {
         settings: &Settings,
         wall_velocity: Vec2,
         smoothed_wall_velocity: Vec2,
+        maxed_smoothed_wall_velocity: Vec2,
         wall_hits: &mut [u8; 2],
         box_size: Vec2,
     ) -> f32 {
@@ -176,8 +177,8 @@ impl Ball {
         let distance_to_right_wall = box_size.x - wall_and_ball_offset - self.position.x;
         let distance_to_left_wall = self.position.x + box_size.x - wall_and_ball_offset;
 
-        // Putting this to 0 seems to work fine. But just in case, I will put a small number abocve 0.
-        const SMALL_NUMBER: f32 = 0.01;
+        // Putting this to 0 seems to work fine. But just in case, I will put a small number above 0.
+        const SMALL_NUMBER: f32 = 0.0001;
 
         let mut new_last_hit_wall = wall_hits[0];
 
@@ -188,13 +189,15 @@ impl Ball {
 
             if !wall_hits.contains(&1) {
                 new_last_hit_wall = 1;
-                self.velocity.y =
-                    -self.velocity.y * settings.ball_bounciness - smoothed_wall_velocity.y;
+                self.velocity.y = self
+                    .velocity
+                    .y
+                    .min(-self.velocity.y * settings.ball_bounciness - smoothed_wall_velocity.y);
             }
 
             (self.rotation_velocity, self.velocity.x) = calculate_bounce_spin(
                 self.velocity.x,
-                smoothed_wall_velocity.x,
+                maxed_smoothed_wall_velocity.x,
                 self.rotation_velocity,
                 self.radius,
                 settings.ball_weight,
@@ -209,13 +212,15 @@ impl Ball {
 
             if !wall_hits.contains(&2) {
                 new_last_hit_wall = 2;
-                self.velocity.y =
-                    -self.velocity.y * settings.ball_bounciness - smoothed_wall_velocity.y;
+                self.velocity.y = self
+                    .velocity
+                    .y
+                    .max(-self.velocity.y * settings.ball_bounciness - smoothed_wall_velocity.y);
             }
 
             (self.rotation_velocity, self.velocity.x) = calculate_bounce_spin(
                 self.velocity.x,
-                smoothed_wall_velocity.x,
+                maxed_smoothed_wall_velocity.x,
                 self.rotation_velocity,
                 self.radius,
                 settings.ball_weight,
@@ -230,13 +235,15 @@ impl Ball {
 
             if !wall_hits.contains(&3) {
                 new_last_hit_wall = 3;
-                self.velocity.x =
-                    -self.velocity.x * settings.ball_bounciness - smoothed_wall_velocity.x;
+                self.velocity.x = self
+                    .velocity
+                    .x
+                    .min(-self.velocity.x * settings.ball_bounciness - smoothed_wall_velocity.x);
             }
 
             (self.rotation_velocity, self.velocity.y) = calculate_bounce_spin(
                 self.velocity.y,
-                smoothed_wall_velocity.y,
+                maxed_smoothed_wall_velocity.y,
                 self.rotation_velocity,
                 self.radius,
                 settings.ball_weight,
@@ -252,13 +259,15 @@ impl Ball {
 
             if !wall_hits.contains(&4) {
                 new_last_hit_wall = 4;
-                self.velocity.x =
-                    -self.velocity.x * settings.ball_bounciness - smoothed_wall_velocity.x;
+                self.velocity.x = self
+                    .velocity
+                    .x
+                    .max(-self.velocity.x * settings.ball_bounciness - smoothed_wall_velocity.x);
             }
 
             (self.rotation_velocity, self.velocity.y) = calculate_bounce_spin(
                 self.velocity.y,
-                smoothed_wall_velocity.y,
+                maxed_smoothed_wall_velocity.y,
                 self.rotation_velocity,
                 self.radius,
                 settings.ball_weight,

@@ -53,10 +53,20 @@ pub fn window_conf() -> Conf {
     }
 }
 
+pub fn smooth_vec2(current: Vec2, new: Vec2, factor: f32, delta_time: f32) -> Vec2 {
+    let alpha = 1.0 - (-factor * delta_time).exp();
+    return current.lerp(new, alpha);
+}
+
+pub fn smooth_float(current: f32, new: f32, factor: f32, delta_time: f32) -> f32 {
+    let alpha = 1.0 - (-factor * delta_time).exp();
+    return current.lerp(new, alpha);
+}
+
 // Whenever the delta time is less than this, it will try to smooth out the window position over the duration of MIN_DELTA_TIME.
 const MIN_DELTA_TIME: f32 = 1.0 / 60.0;
 
-const DAMPEN_POWER: f32 = 0.05;
+const DAMPEN_POWER: f32 = 0.005;
 
 pub trait FromTuple {
     fn from_u32_tuple(tuple: (u32, u32)) -> Self;
@@ -226,7 +236,7 @@ async fn main() {
     let mut is_in_settings = false;
     let mut settings_state = SettingsState::Closed;
 
-    let mut smoothed_delta = Vec2::ZERO;
+    let mut smoothed_velocity = Vec2::ZERO;
     let mut smoothed_magnitude = 0.;
 
     let mut editing_settings = settings.clone();
@@ -433,31 +443,51 @@ async fn main() {
             box_deltas.pop_front();
         }
 
-        smoothed_delta = smoothed_delta.lerp(restricted_delta_pos, 0.5);
-        smoothed_magnitude = smoothed_magnitude
-            .lerp(smoothed_delta.length(), 0.15)
-            .min(smoothed_delta.length());
-
-        let smoothed_delta = if smoothed_delta.length() != 0. {
-            smoothed_delta.normalize() * smoothed_magnitude
+        let window_velocity = if delta_time == 0.0 {
+            Vec2::ZERO
         } else {
-            smoothed_delta
+            restricted_delta_pos / delta_time
         };
 
-        let maxed_delta = vec2(
-            if smoothed_delta.x.abs() > restricted_delta_pos.x.abs() {
-                smoothed_delta.x
+        if window_velocity.x > 0.0 {
+            smoothed_velocity.x = smoothed_velocity.x.max(0.0)
+        } else if window_velocity.x < 0.0 {
+            smoothed_velocity.x = smoothed_velocity.x.min(0.0)
+        }
+
+        if window_velocity.y > 0.0 {
+            smoothed_velocity.y = smoothed_velocity.y.max(0.0)
+        } else if window_velocity.y < 0.0 {
+            smoothed_velocity.y = smoothed_velocity.y.min(0.0)
+        }
+
+        smoothed_velocity = smooth_vec2(smoothed_velocity, window_velocity, 120., delta_time);
+        smoothed_magnitude = smooth_float(
+            smoothed_magnitude,
+            window_velocity.length(),
+            20.0,
+            delta_time,
+        )
+        .min(smoothed_velocity.length());
+
+        let new_smoothed_velocity = if smoothed_velocity.length() != 0. {
+            smoothed_velocity.normalize() * smoothed_magnitude
+        } else {
+            smoothed_velocity
+        };
+
+        let maxed_smoothed_velocity = vec2(
+            if new_smoothed_velocity.x.abs() > window_velocity.x.abs() {
+                new_smoothed_velocity.x
             } else {
-                restricted_delta_pos.x
+                window_velocity.x
             },
-            if smoothed_delta.y.abs() > restricted_delta_pos.y.abs() {
-                smoothed_delta.y
+            if new_smoothed_velocity.y.abs() > window_velocity.y.abs() {
+                new_smoothed_velocity.y
             } else {
-                restricted_delta_pos.y
+                window_velocity.y
             },
         );
-
-        let smoothed_wall_velocity = maxed_delta / delta_time * 2.;
 
         draw_texture_ex(
             &background_texture,
@@ -540,7 +570,8 @@ async fn main() {
                 remaining_dt,
                 &settings,
                 wall_velocity,
-                smoothed_wall_velocity,
+                smoothed_velocity,
+                maxed_smoothed_velocity,
                 &mut wall_hits,
                 box_size,
             );

@@ -18,7 +18,6 @@ pub struct Ball {
     rotation_velocity: f32,
     vertical_sound_timer: f32,
     horizontal_sound_timer: f32,
-    last_sound_timer: f32,
     pub radius: f32,
     pub texture: Texture2D,
     pub ball_material: Material,
@@ -41,7 +40,6 @@ impl Ball {
             rotation_velocity: 0.,
             vertical_sound_timer: 0.,
             horizontal_sound_timer: 0.,
-            last_sound_timer: 0.,
             radius,
             texture,
             ball_material,
@@ -283,15 +281,10 @@ impl Ball {
 
         let horizontal_sound = self.horizontal_sound_timer <= 0.;
         let vertical_sound = self.vertical_sound_timer <= 0.;
-        let any_sound = self.last_sound_timer <= 0.;
 
-        self.last_sound_timer -= new_dt;
-
-        if any_sound
-            && ((horizontal_sound && hit_wall_speed.x > SPEED_LIMIT)
-                || (vertical_sound && hit_wall_speed.y > SPEED_LIMIT))
+        if (horizontal_sound && hit_wall_speed.x > SPEED_LIMIT)
+            || (vertical_sound && hit_wall_speed.y > SPEED_LIMIT)
         {
-            self.last_sound_timer = MIN_DELTA_TIME;
             let inverted_distances_from_corners =
                 self.position.abs() + vec2(0., box_size.x - box_size.y);
 

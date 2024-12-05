@@ -267,6 +267,8 @@ async fn main() {
 
         let box_thickness = settings.box_thickness as f32;
 
+        // Handle controls
+
         if is_mouse_button_pressed(MouseButton::Right) {
             moved_since_right_click = false;
         }
@@ -312,6 +314,8 @@ async fn main() {
                 .clamp(Vec2::ZERO, box_size - 1.0)
         };
 
+        // Handle typing
+
         while let Some(character) = get_char_pressed() {
             if character.is_control() {
                 continue;
@@ -345,6 +349,7 @@ async fn main() {
             }
         }
 
+        // Don't move window is overlapping with menu.
         if (is_mouse_button_pressed(MouseButton::Left)
             || is_mouse_button_pressed(MouseButton::Right))
             && is_menu_open
@@ -364,6 +369,7 @@ async fn main() {
             interacting_with_ui = false
         }
 
+        // Change window position and get delta position of mouse.
         let delta_pos = if !interacting_with_ui && button_is_down {
             let (mouse_offset, delta_pos) = match mouse_offset {
                 Some(mouse_offset) => (mouse_offset, delta_mouse_position),
@@ -417,6 +423,7 @@ async fn main() {
 
         last_mouse_position = current_mouse_position;
 
+        // Smooth out the mouse position.
         let mut restricted_delta_pos = if delta_time < MIN_DELTA_TIME && delta_pos != Vec2::ZERO {
             let dampen = (delta_time / MIN_DELTA_TIME).powf(DAMPEN_POWER);
             box_deltas.push_front((MIN_DELTA_TIME, delta_pos * dampen));
@@ -489,6 +496,33 @@ async fn main() {
             },
         );
 
+        // Ball physics
+
+        // Do not use restricted_delta_pos here.
+        // This is just to make the ball align to the screen.
+        let wall_velocity = delta_pos / delta_time;
+
+        let mut remaining_dt = delta_time;
+
+        let mut steps = 0;
+        let mut wall_hits = [0, 0];
+
+        while remaining_dt > 0.00001 && steps < 10 {
+            steps += 1;
+            remaining_dt = ball.step(
+                remaining_dt,
+                &settings,
+                wall_velocity,
+                smoothed_velocity,
+                maxed_smoothed_velocity,
+                &mut wall_hits,
+                box_size,
+            );
+        }
+
+        // Render
+
+        // Background
         draw_texture_ex(
             &background_texture,
             -box_size.x + box_thickness,
@@ -557,28 +591,10 @@ async fn main() {
             },
         );
 
-        let wall_velocity = delta_pos / delta_time;
-
-        let mut remaining_dt = delta_time;
-
-        let mut steps = 0;
-        let mut wall_hits = [0, 0];
-
-        while remaining_dt > 0.00001 && steps < 10 {
-            steps += 1;
-            remaining_dt = ball.step(
-                remaining_dt,
-                &settings,
-                wall_velocity,
-                smoothed_velocity,
-                maxed_smoothed_velocity,
-                &mut wall_hits,
-                box_size,
-            );
-        }
-
+        // Ball
         ball.render(&settings, box_size);
 
+        // Settings
         let save = ui_renderer.render_ui(
             &mut editing_settings,
             &settings,

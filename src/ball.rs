@@ -74,6 +74,8 @@ impl Ball {
 
         let wall_and_ball_offset = self.radius + box_offset;
 
+        // Do physics calculations
+
         self.velocity += Vec2::new(0., settings.gravity_strength * 1000. * dt);
 
         self.velocity *= 1. - (settings.air_friction * dt.clamp(0., 1.));
@@ -95,6 +97,10 @@ impl Ball {
         let distance_to_ceiling = self.position.y + box_size.y - wall_and_ball_offset;
         let distance_to_right_wall = box_size.x - wall_and_ball_offset - self.position.x;
         let distance_to_left_wall = self.position.x + box_size.x - wall_and_ball_offset;
+
+        // Check how far the ball got into any walls and save the amount it needs to travel back to unintersect.
+        // The highest back travel will be used, unless the ball hit a wall the previous step, and hit the same wall again.
+        // That wall will not be counted.
 
         if distance_to_floor <= 0. {
             // Floor
@@ -154,6 +160,8 @@ impl Ball {
             }
         }
 
+        // Move the ball back and get new delta time.
+
         let new_dt = dt * (1.0 - back_amount);
 
         back_vec = back_vec.max(vec2(back_amount, back_amount));
@@ -179,6 +187,10 @@ impl Ball {
         const SMALL_NUMBER: f32 = 0.0001;
 
         let mut new_last_hit_wall = wall_hits[0];
+
+        // Calculate and apply wall interactions.
+        // If it hit the wall the previous step, it will not calculate bounce, but still calculate spin.
+        // (I don't remember why I did that but it's probably for a reason.)
 
         if distance_to_floor <= SMALL_NUMBER {
             // Floor
@@ -282,6 +294,8 @@ impl Ball {
         let horizontal_sound = self.horizontal_sound_timer <= 0.;
         let vertical_sound = self.vertical_sound_timer <= 0.;
 
+        // Play sound
+
         if (horizontal_sound && hit_wall_speed.x > SPEED_LIMIT)
             || (vertical_sound && hit_wall_speed.y > SPEED_LIMIT)
         {
@@ -330,6 +344,8 @@ impl Ball {
         let distance_to_left_wall = self.position.x + box_size.x - wall_and_ball_offset;
 
         gl_use_material(&self.shadow_material);
+
+        // Draw shadows on box
 
         self.shadow_material
             .set_uniform("shadow_strength", settings.shadow_strength);
@@ -381,6 +397,8 @@ impl Ball {
             self.radius * settings.shadow_size * 2.,
             WHITE,
         );
+
+        // Draw ball
 
         gl_use_material(&self.ball_material);
 

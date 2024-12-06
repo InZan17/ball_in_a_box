@@ -468,11 +468,11 @@ async fn main() {
             smoothed_velocity.y = smoothed_velocity.y.min(0.0)
         }
 
-        smoothed_velocity = smooth_vec2(smoothed_velocity, window_velocity, 120., delta_time);
+        smoothed_velocity = smooth_vec2(smoothed_velocity, window_velocity, 96., delta_time);
         smoothed_magnitude = smooth_float(
             smoothed_magnitude,
             window_velocity.length(),
-            20.0,
+            16.0,
             delta_time,
         )
         .min(smoothed_velocity.length());
@@ -513,8 +513,8 @@ async fn main() {
                 remaining_dt,
                 &settings,
                 wall_velocity,
-                smoothed_velocity,
-                maxed_smoothed_velocity,
+                new_smoothed_velocity * 2.,
+                maxed_smoothed_velocity * 2.,
                 &mut wall_hits,
                 box_size,
             );

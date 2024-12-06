@@ -947,7 +947,8 @@ impl UiRenderer {
             &format!("{}", *value)
         };
 
-        let zero_to_one = (*value - range.start) as f32 / (range.end - range.start) as f32;
+        let zero_to_one =
+            (*value as f32 - range.start as f32) / (range.end as f32 - range.start as f32);
         let zero_to_width = zero_to_one * slider_rect.w * (1. - bar_width_pct);
 
         let bar_rect = Rect::new(

@@ -66,8 +66,6 @@ pub fn smooth_float(current: f32, new: f32, factor: f32, delta_time: f32) -> f32
 // Whenever the delta time is less than this, it will try to smooth out the window position over the duration of MIN_DELTA_TIME.
 const MIN_DELTA_TIME: f32 = 1.0 / 60.0;
 
-const DAMPEN_POWER: f32 = 0.005;
-
 pub trait FromTuple {
     fn from_u32_tuple(tuple: (u32, u32)) -> Self;
     fn from_i32_tuple(tuple: (i32, i32)) -> Self;
@@ -236,17 +234,11 @@ async fn main() {
     let mut is_in_settings = false;
     let mut settings_state = SettingsState::Closed;
 
-    let mut smoothed_velocity = Vec2::ZERO;
-    let mut smoothed_magnitude = 0.;
-
     let mut editing_settings = settings.clone();
 
     let mut mouse_offset: Option<Vec2> = None;
     let mut last_mouse_position = Vec2::from_i32_tuple(window::get_screen_mouse_position());
     let mut mouse_deltas: CircularBuffer<10, Vec2> = CircularBuffer::new();
-
-    let mut last_recorded_window_pos = Vec2::ZERO;
-    let mut box_deltas: CircularBuffer<10, (f32, Vec2)> = CircularBuffer::new();
 
     let mut frames_after_start: u8 = 0;
     let mut prev_render_time = get_time();
@@ -383,118 +375,23 @@ async fn main() {
                 moved_since_right_click = true
             }
 
-            let mut new_pos = current_mouse_position + mouse_offset;
-
-            last_recorded_window_pos = new_pos;
-
-            let mut delayed_delta_pos = Vec2::ZERO;
-
-            for delta in mouse_deltas.iter() {
-                delayed_delta_pos += *delta;
-            }
-            new_pos -= delayed_delta_pos;
+            let new_pos = current_mouse_position + mouse_offset;
 
             set_window_position(new_pos.x as u32, new_pos.y as u32);
 
             -delta_pos
         } else {
             mouse_offset = None;
-            if mouse_deltas.len() > 0 {
-                mouse_deltas.push_back(Vec2::ZERO);
-                let mut new_pos = last_recorded_window_pos;
-
-                let mut delayed_delta_pos = Vec2::ZERO;
-
-                for delta in mouse_deltas.iter() {
-                    delayed_delta_pos += *delta;
-                }
-
-                if delayed_delta_pos == Vec2::ZERO {
-                    mouse_deltas.clear();
-                } else {
-                }
-
-                new_pos -= delayed_delta_pos;
-
-                set_window_position(new_pos.x as u32, new_pos.y as u32);
-            };
             Vec2::ZERO
         };
 
         last_mouse_position = current_mouse_position;
 
-        // Smooth out the mouse position.
-        let mut restricted_delta_pos = if delta_time < MIN_DELTA_TIME && delta_pos != Vec2::ZERO {
-            let dampen = (delta_time / MIN_DELTA_TIME).powf(DAMPEN_POWER);
-            box_deltas.push_front((MIN_DELTA_TIME, delta_pos * dampen));
-            Vec2::ZERO
-        } else {
-            delta_pos
-        };
-
-        let mut discard_amount = 0;
-
-        for (time_left, smear_delta_pos) in box_deltas.iter_mut() {
-            if *time_left <= delta_time {
-                let pct = *time_left / MIN_DELTA_TIME;
-                restricted_delta_pos += *smear_delta_pos * pct;
-                discard_amount += 1;
-            } else {
-                let pct = delta_time / MIN_DELTA_TIME;
-                restricted_delta_pos += *smear_delta_pos * pct;
-                *time_left -= delta_time;
-            }
-        }
-
-        for _ in 0..discard_amount {
-            box_deltas.pop_front();
-        }
-
         let window_velocity = if delta_time == 0.0 {
             Vec2::ZERO
         } else {
-            restricted_delta_pos / delta_time
+            delta_pos / delta_time
         };
-
-        if window_velocity.x > 0.0 {
-            smoothed_velocity.x = smoothed_velocity.x.max(0.0)
-        } else if window_velocity.x < 0.0 {
-            smoothed_velocity.x = smoothed_velocity.x.min(0.0)
-        }
-
-        if window_velocity.y > 0.0 {
-            smoothed_velocity.y = smoothed_velocity.y.max(0.0)
-        } else if window_velocity.y < 0.0 {
-            smoothed_velocity.y = smoothed_velocity.y.min(0.0)
-        }
-
-        smoothed_velocity = smooth_vec2(smoothed_velocity, window_velocity, 96., delta_time);
-        smoothed_magnitude = smooth_float(
-            smoothed_magnitude,
-            window_velocity.length(),
-            16.0,
-            delta_time,
-        )
-        .min(smoothed_velocity.length());
-
-        let new_smoothed_velocity = if smoothed_velocity.length() != 0. {
-            smoothed_velocity.normalize() * smoothed_magnitude
-        } else {
-            smoothed_velocity
-        };
-
-        let maxed_smoothed_velocity = vec2(
-            if new_smoothed_velocity.x.abs() > window_velocity.x.abs() {
-                new_smoothed_velocity.x
-            } else {
-                window_velocity.x
-            },
-            if new_smoothed_velocity.y.abs() > window_velocity.y.abs() {
-                new_smoothed_velocity.y
-            } else {
-                window_velocity.y
-            },
-        );
 
         // Ball physics
 
@@ -513,8 +410,8 @@ async fn main() {
                 remaining_dt,
                 &settings,
                 wall_velocity,
-                new_smoothed_velocity * 2.,
-                maxed_smoothed_velocity * 2.,
+                window_velocity * 2.,
+                window_velocity * 2.,
                 &mut wall_hits,
                 box_size,
             );

@@ -16,7 +16,7 @@ const MENU_PADDING: f32 = 10.;
 const SMALL_BUTTON_DIV: f32 = 1.5;
 const SMALLER_BUTTON_DIV: f32 = 1.75;
 
-const LAST_PAGE_INDEX: u8 = 5;
+const LAST_PAGE_INDEX: u8 = 6;
 
 const DEFAULT_TEXT_COLOR: Color = Color::new(0.05, 0., 0.1, 1.);
 const ACTIVE_TEXT_COLOR: Color = Color::new(0.3, 0., 0.6, 1.);
@@ -253,6 +253,46 @@ impl UiRenderer {
                         mouse_pos,
                         vec2(0., start + lower_down * 0.),
                         vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                        "Box weight",
+                        TITLE_SIZE,
+                        0.0..1.0,
+                        self.default_settings.box_weight,
+                        current_settings.box_weight,
+                        &mut editing_settings.box_weight,
+                    );
+
+                    let hide_smoothing_text_color =
+                        if editing_settings.hide_smoothing != current_settings.hide_smoothing {
+                            CHANGED_TEXT_COLOR
+                        } else {
+                            BLACK
+                        };
+
+                    if self.render_button(
+                        hash!(),
+                        mouse_pos,
+                        vec2(0., 0. + lower_down * -0.6),
+                        BUTTON_SIZE * vec2(1.2, 0.8),
+                        &format!(
+                            "Hide weight: {}",
+                            if editing_settings.hide_smoothing {
+                                "On"
+                            } else {
+                                "Off"
+                            }
+                        ),
+                        hide_smoothing_text_color,
+                        20,
+                    ) {
+                        editing_settings.hide_smoothing = !editing_settings.hide_smoothing;
+                    }
+                }
+                2 => {
+                    self.render_slider(
+                        hash!(),
+                        mouse_pos,
+                        vec2(0., start + lower_down * 0.),
+                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
                         "Audio volume",
                         TITLE_SIZE,
                         0.0..1.0,
@@ -300,7 +340,7 @@ impl UiRenderer {
                         &mut editing_settings.max_velocity,
                     );
                 }
-                2 => {
+                3 => {
                     self.render_slider(
                         hash!(),
                         mouse_pos,
@@ -353,7 +393,7 @@ impl UiRenderer {
                         &mut editing_settings.ball_friction,
                     );
                 }
-                3 => {
+                4 => {
                     self.render_slider_uint(
                         hash!(),
                         mouse_pos,
@@ -406,7 +446,7 @@ impl UiRenderer {
                         &mut editing_settings.box_depth,
                     );
                 }
-                4 => {
+                5 => {
                     self.render_slider(
                         hash!(),
                         mouse_pos,
@@ -459,7 +499,7 @@ impl UiRenderer {
                         &mut editing_settings.specular_strength,
                     );
                 }
-                5 => {
+                6 => {
                     self.render_slider(
                         hash!(),
                         mouse_pos,

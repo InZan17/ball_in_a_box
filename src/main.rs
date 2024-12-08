@@ -53,10 +53,6 @@ pub fn window_conf() -> Conf {
     }
 }
 
-pub fn smooth_vec2(current: Vec2, new: Vec2, factor: f32, delta_time: f32) -> Vec2 {
-    let alpha = 1.0 - (-factor * delta_time).exp();
-    return current.lerp(new, alpha);
-}
 // https://theswissbay.ch/pdf/Gentoomen%20Library/Game%20Development/Programming/Game%20Programming%20Gems%204.pdf
 // 1.10
 pub fn smooth_vec2_critically_damped(
@@ -67,6 +63,9 @@ pub fn smooth_vec2_critically_damped(
     delta_time: f32,
 ) -> Vec2 {
     if smoothness == 0.0 {
+        if delta_time != 0.0 {
+            *velocity = (new - current) / delta_time;
+        }
         return new;
     }
 
@@ -255,7 +254,8 @@ async fn main() {
     let mut mouse_offset: Option<Vec2> = None;
     let mut mouse_deltas: CircularBuffer<10, Vec2> = CircularBuffer::new();
 
-    let mut old_window_position = Vec2::ZERO;
+    let mut old_visual_window_position = Vec2::ZERO;
+    let mut old_internal_window_position = Vec2::ZERO;
     let mut window_velocity = Vec2::ZERO;
 
     let mut frames_after_start: u8 = 0;
@@ -368,45 +368,57 @@ async fn main() {
         }
 
         // Change window position and get delta position of mouse.
-        let delta_pos = if !interacting_with_ui && button_is_down {
+        let visual_delta_pos = if !interacting_with_ui && button_is_down {
             let mouse_offset = match mouse_offset {
                 Some(mouse_offset) => mouse_offset,
                 None => {
                     mouse_offset = Some(-local_mouse_pos);
                     window_velocity = Vec2::ZERO;
-                    old_window_position = current_mouse_position - local_mouse_pos;
+                    old_internal_window_position = current_mouse_position - local_mouse_pos;
+                    old_visual_window_position = old_internal_window_position;
                     -local_mouse_pos
                 }
             };
 
             let new_pos = current_mouse_position + mouse_offset;
-            let new_window_pos = smooth_vec2_critically_damped(
-                old_window_position,
+            let new_internal_window_pos = smooth_vec2_critically_damped(
+                old_internal_window_position,
                 new_pos,
                 &mut window_velocity,
-                0.1,
+                settings.box_weight,
                 delta_time,
             );
 
-            let delta_pos = new_window_pos - old_window_position;
+            let new_visual_window_pos = if settings.hide_smoothing {
+                new_pos
+            } else {
+                new_internal_window_pos
+            };
 
-            if delta_pos != Vec2::ZERO {
+            let visual_delta_pos = new_visual_window_pos - old_visual_window_position;
+
+            if visual_delta_pos != Vec2::ZERO {
                 moved_since_right_click = true
             }
 
-            set_window_position(new_window_pos.x as u32, new_window_pos.y as u32);
+            set_window_position(
+                new_visual_window_pos.x as u32,
+                new_visual_window_pos.y as u32,
+            );
 
-            old_window_position = new_window_pos;
-            -delta_pos
+            old_internal_window_position = new_internal_window_pos;
+            old_visual_window_position = new_visual_window_pos;
+            -visual_delta_pos
         } else {
+            window_velocity = Vec2::ZERO;
             mouse_offset = None;
             Vec2::ZERO
         };
 
-        let window_velocity = if delta_time == 0.0 {
+        let visual_window_velocity = if delta_time == 0.0 {
             Vec2::ZERO
         } else {
-            delta_pos / delta_time
+            visual_delta_pos / delta_time
         };
 
         // Ball physics
@@ -421,9 +433,8 @@ async fn main() {
             remaining_dt = ball.step(
                 remaining_dt,
                 &settings,
-                window_velocity,
-                window_velocity * 2.,
-                window_velocity * 2.,
+                visual_window_velocity * 2.,
+                -window_velocity * 2.,
                 &mut wall_hits,
                 box_size,
             );

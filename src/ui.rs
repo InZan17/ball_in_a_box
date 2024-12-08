@@ -272,7 +272,7 @@ impl UiRenderer {
                         hash!(),
                         mouse_pos,
                         vec2(0., 0. + lower_down * -0.6),
-                        BUTTON_SIZE * vec2(1.2, 0.8),
+                        BUTTON_SIZE * vec2(1.2, 0.75),
                         &format!(
                             "Hide weight: {}",
                             if editing_settings.hide_smoothing {
@@ -285,6 +285,32 @@ impl UiRenderer {
                         20,
                     ) {
                         editing_settings.hide_smoothing = !editing_settings.hide_smoothing;
+                    }
+
+                    let quick_turn_text_color =
+                        if editing_settings.quick_turn != current_settings.quick_turn {
+                            CHANGED_TEXT_COLOR
+                        } else {
+                            BLACK
+                        };
+
+                    if self.render_button(
+                        hash!(),
+                        mouse_pos,
+                        vec2(0., 0. + lower_down * 0.4),
+                        BUTTON_SIZE * vec2(1.1, 0.75),
+                        &format!(
+                            "Quick turn: {}",
+                            if editing_settings.quick_turn {
+                                "On"
+                            } else {
+                                "Off"
+                            }
+                        ),
+                        quick_turn_text_color,
+                        20,
+                    ) {
+                        editing_settings.quick_turn = !editing_settings.quick_turn;
                     }
                 }
                 2 => {

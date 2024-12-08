@@ -33,6 +33,7 @@ pub struct DeserializeSettings {
     vsync: Option<bool>,
     box_weight: Option<f32>,
     hide_smoothing: Option<bool>,
+    quick_turn: Option<bool>,
     last_ball: Option<String>,
     last_sounds: Option<String>,
 }
@@ -62,6 +63,8 @@ impl DeserializeSettings {
             || self.max_fps.is_none()
             || self.speed_mul.is_none()
             || self.vsync.is_none()
+            || self.hide_smoothing.is_none()
+            || self.quick_turn.is_none()
             || self.last_ball.is_none()
             || self.last_sounds.is_none()
     }
@@ -159,6 +162,7 @@ impl DeserializeSettings {
             hide_smoothing: self
                 .hide_smoothing
                 .unwrap_or(default_settings.hide_smoothing),
+            quick_turn: self.quick_turn.unwrap_or(default_settings.quick_turn),
             last_ball: self.last_ball.unwrap_or(default_settings.last_ball),
             last_sounds: self.last_sounds.unwrap_or(default_settings.last_sounds),
         };
@@ -201,6 +205,7 @@ pub struct Settings {
 
     pub box_weight: f32,
     pub hide_smoothing: bool,
+    pub quick_turn: bool,
 
     pub last_ball: String,
     pub last_sounds: String,
@@ -241,6 +246,7 @@ impl Default for Settings {
 
             box_weight: 0.04,
             hide_smoothing: false,
+            quick_turn: false,
 
             last_ball: "grinning".to_string(),
             last_sounds: "thud".to_string(),

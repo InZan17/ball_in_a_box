@@ -415,6 +415,22 @@ async fn main() {
             Vec2::ZERO
         };
 
+        if settings.quick_turn {
+            let offset_mouse_pos = current_mouse_position + mouse_offset.unwrap_or(Vec2::ZERO);
+
+            if offset_mouse_pos.x > old_visual_window_position.x {
+                window_velocity.x = window_velocity.x.max(0.0)
+            } else if offset_mouse_pos.x < old_visual_window_position.x {
+                window_velocity.x = window_velocity.x.min(0.0)
+            }
+
+            if offset_mouse_pos.y > old_visual_window_position.y {
+                window_velocity.y = window_velocity.y.max(0.0)
+            } else if offset_mouse_pos.y < old_visual_window_position.y {
+                window_velocity.y = window_velocity.y.min(0.0)
+            }
+        }
+
         let visual_window_velocity = if delta_time == 0.0 {
             Vec2::ZERO
         } else {

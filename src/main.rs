@@ -57,10 +57,26 @@ pub fn smooth_vec2(current: Vec2, new: Vec2, factor: f32, delta_time: f32) -> Ve
     let alpha = 1.0 - (-factor * delta_time).exp();
     return current.lerp(new, alpha);
 }
+// https://theswissbay.ch/pdf/Gentoomen%20Library/Game%20Development/Programming/Game%20Programming%20Gems%204.pdf
+// 1.10
+pub fn smooth_vec2_critically_damped(
+    current: Vec2,
+    new: Vec2,
+    velocity: &mut Vec2,
+    smoothness: f32,
+    delta_time: f32,
+) -> Vec2 {
+    if smoothness == 0.0 {
+        return new;
+    }
 
-pub fn smooth_float(current: f32, new: f32, factor: f32, delta_time: f32) -> f32 {
-    let alpha = 1.0 - (-factor * delta_time).exp();
-    return current.lerp(new, alpha);
+    let omega = 2.0 / smoothness;
+    let x = omega * delta_time;
+    let exp = 1.0 / (1.0 + x + 0.48 * x * x + 0.235 * x * x * x);
+    let delta_pos = current - new;
+    let temp = (*velocity + omega * delta_pos) * delta_time;
+    *velocity = (*velocity - omega * temp) * exp;
+    return new + (delta_pos + temp) * exp;
 }
 
 // Whenever the delta time is less than this, it will try to smooth out the window position over the duration of MIN_DELTA_TIME.
@@ -237,8 +253,10 @@ async fn main() {
     let mut editing_settings = settings.clone();
 
     let mut mouse_offset: Option<Vec2> = None;
-    let mut last_mouse_position = Vec2::from_i32_tuple(window::get_screen_mouse_position());
     let mut mouse_deltas: CircularBuffer<10, Vec2> = CircularBuffer::new();
+
+    let mut old_window_position = Vec2::ZERO;
+    let mut window_velocity = Vec2::ZERO;
 
     let mut frames_after_start: u8 = 0;
     let mut prev_render_time = get_time();
@@ -287,17 +305,6 @@ async fn main() {
         let is_menu_open = settings_state.is_open();
 
         let current_mouse_position = Vec2::from_i32_tuple(window::get_screen_mouse_position());
-        let delta_mouse_position = current_mouse_position - last_mouse_position;
-
-        let delay_frames = settings.delay_frames as usize;
-        if delay_frames != 0 {
-            while mouse_deltas.len() >= delay_frames {
-                mouse_deltas.pop_front();
-            }
-            if mouse_offset.is_some() && !is_mouse_button_released(MouseButton::Left) {
-                mouse_deltas.push_back(delta_mouse_position);
-            }
-        }
 
         let local_mouse_pos = if let Some(mouse_pos) = mouse_offset {
             -mouse_pos
@@ -307,7 +314,6 @@ async fn main() {
         };
 
         // Handle typing
-
         while let Some(character) = get_char_pressed() {
             if character.is_control() {
                 continue;
@@ -363,29 +369,39 @@ async fn main() {
 
         // Change window position and get delta position of mouse.
         let delta_pos = if !interacting_with_ui && button_is_down {
-            let (mouse_offset, delta_pos) = match mouse_offset {
-                Some(mouse_offset) => (mouse_offset, delta_mouse_position),
+            let mouse_offset = match mouse_offset {
+                Some(mouse_offset) => mouse_offset,
                 None => {
                     mouse_offset = Some(-local_mouse_pos);
-                    (-local_mouse_pos, Vec2::ZERO)
+                    window_velocity = Vec2::ZERO;
+                    old_window_position = current_mouse_position - local_mouse_pos;
+                    -local_mouse_pos
                 }
             };
+
+            let new_pos = current_mouse_position + mouse_offset;
+            let new_window_pos = smooth_vec2_critically_damped(
+                old_window_position,
+                new_pos,
+                &mut window_velocity,
+                0.1,
+                delta_time,
+            );
+
+            let delta_pos = new_window_pos - old_window_position;
 
             if delta_pos != Vec2::ZERO {
                 moved_since_right_click = true
             }
 
-            let new_pos = current_mouse_position + mouse_offset;
+            set_window_position(new_window_pos.x as u32, new_window_pos.y as u32);
 
-            set_window_position(new_pos.x as u32, new_pos.y as u32);
-
+            old_window_position = new_window_pos;
             -delta_pos
         } else {
             mouse_offset = None;
             Vec2::ZERO
         };
-
-        last_mouse_position = current_mouse_position;
 
         let window_velocity = if delta_time == 0.0 {
             Vec2::ZERO
@@ -394,10 +410,6 @@ async fn main() {
         };
 
         // Ball physics
-
-        // Do not use restricted_delta_pos here.
-        // This is just to make the ball align to the screen.
-        let wall_velocity = delta_pos / delta_time;
 
         let mut remaining_dt = delta_time;
 
@@ -409,7 +421,7 @@ async fn main() {
             remaining_dt = ball.step(
                 remaining_dt,
                 &settings,
-                wall_velocity,
+                window_velocity,
                 window_velocity * 2.,
                 window_velocity * 2.,
                 &mut wall_hits,

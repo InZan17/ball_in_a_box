@@ -9,7 +9,9 @@ use macroquad::{
     texture::{draw_texture_ex, DrawTextureParams, Texture2D},
 };
 
-use crate::{Settings, MIN_DELTA_TIME};
+use crate::Settings;
+
+const MIN_SOUND_TIME: f32 = 1.0 / 60.0;
 
 pub struct Ball {
     position: Vec2,
@@ -322,10 +324,10 @@ impl Ball {
         self.vertical_sound_timer -= new_dt;
 
         if hit_wall_speed.x != 0. {
-            self.horizontal_sound_timer = MIN_DELTA_TIME;
+            self.horizontal_sound_timer = MIN_SOUND_TIME;
         }
         if hit_wall_speed.y != 0. {
-            self.vertical_sound_timer = MIN_DELTA_TIME;
+            self.vertical_sound_timer = MIN_SOUND_TIME;
         }
 
         return dt - new_dt;

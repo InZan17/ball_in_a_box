@@ -78,9 +78,6 @@ pub fn smooth_vec2_critically_damped(
     return new + (delta_pos + temp) * exp;
 }
 
-// Whenever the delta time is less than this, it will try to smooth out the window position over the duration of MIN_DELTA_TIME.
-const MIN_DELTA_TIME: f32 = 1.0 / 60.0;
-
 pub trait FromTuple {
     fn from_u32_tuple(tuple: (u32, u32)) -> Self;
     fn from_i32_tuple(tuple: (i32, i32)) -> Self;

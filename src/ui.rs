@@ -271,8 +271,8 @@ impl UiRenderer {
                     if self.render_button(
                         hash!(),
                         mouse_pos,
-                        vec2(0., 0. + lower_down * -0.6),
-                        BUTTON_SIZE * vec2(1.2, 0.75),
+                        vec2(0., 0. + lower_down * -0.4),
+                        BUTTON_SIZE * vec2(1.2, 0.9),
                         &format!(
                             "Hide weight: {}",
                             if editing_settings.hide_smoothing {
@@ -297,8 +297,8 @@ impl UiRenderer {
                     if self.render_button(
                         hash!(),
                         mouse_pos,
-                        vec2(0., 0. + lower_down * 0.4),
-                        BUTTON_SIZE * vec2(1.1, 0.75),
+                        vec2(0., 0. + lower_down * 0.9),
+                        BUTTON_SIZE * vec2(1.1, 0.9),
                         &format!(
                             "Quick turn: {}",
                             if editing_settings.quick_turn {

@@ -347,7 +347,7 @@ async fn main() {
             }
         }
 
-        // Don't move window is overlapping with menu.
+        // Don't move window if overlapping with menu.
         if (is_mouse_button_pressed(MouseButton::Left)
             || is_mouse_button_pressed(MouseButton::Right))
             && is_menu_open
@@ -367,7 +367,9 @@ async fn main() {
             interacting_with_ui = false
         }
 
-        // Change window position and get delta position of mouse.
+        let mouse_offset_was_some = mouse_offset.is_some();
+
+        // Update internal / visual window position and get delta position of window.
         let visual_delta_pos = if !interacting_with_ui && button_is_down {
             let mouse_offset = match mouse_offset {
                 Some(mouse_offset) => mouse_offset,
@@ -401,11 +403,6 @@ async fn main() {
                 moved_since_right_click = true
             }
 
-            set_window_position(
-                new_visual_window_pos.x as u32,
-                new_visual_window_pos.y as u32,
-            );
-
             old_internal_window_position = new_internal_window_pos;
             old_visual_window_position = new_visual_window_pos;
             -visual_delta_pos
@@ -415,6 +412,46 @@ async fn main() {
             Vec2::ZERO
         };
 
+        // Position window and handle delay frames
+        let delay_frames = settings.delay_frames as usize;
+        if delay_frames != 0 {
+            while mouse_deltas.len() >= delay_frames {
+                mouse_deltas.pop_front();
+            }
+            if mouse_offset_was_some && button_is_down {
+                mouse_deltas.push_back(visual_delta_pos);
+            }
+        }
+
+        if !interacting_with_ui && button_is_down {
+            let mut new_pos = old_visual_window_position;
+
+            for delta in mouse_deltas.iter() {
+                new_pos += *delta;
+            }
+            set_window_position(new_pos.x as u32, new_pos.y as u32);
+        } else {
+            if mouse_deltas.len() > 0 {
+                mouse_deltas.push_back(Vec2::ZERO);
+                let mut new_pos = old_visual_window_position;
+
+                let mut delayed_delta_pos = Vec2::ZERO;
+
+                for delta in mouse_deltas.iter() {
+                    delayed_delta_pos += *delta;
+                }
+
+                if delayed_delta_pos == Vec2::ZERO {
+                    mouse_deltas.clear();
+                }
+
+                new_pos += delayed_delta_pos;
+
+                set_window_position(new_pos.x as u32, new_pos.y as u32);
+            };
+        }
+
+        // Adjust velocity
         if settings.quick_turn {
             let offset_mouse_pos = current_mouse_position + mouse_offset.unwrap_or(Vec2::ZERO);
 
@@ -438,7 +475,6 @@ async fn main() {
         };
 
         // Ball physics
-
         let mut remaining_dt = delta_time;
 
         let mut steps = 0;

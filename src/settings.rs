@@ -245,8 +245,8 @@ impl Default for Settings {
             speed_mul: 1.0,
 
             box_weight: 0.04,
-            hide_smoothing: false,
-            quick_turn: false,
+            hide_smoothing: true,
+            quick_turn: true,
 
             last_ball: "grinning".to_string(),
             last_sounds: "thud".to_string(),

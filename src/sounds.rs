@@ -4,6 +4,8 @@ use std::{fs, path::PathBuf};
 
 use macroquad::rand;
 
+use crate::log_panic;
+
 pub fn list_available_sounds() -> Vec<(String, PathBuf)> {
     let Ok(read_dir) = fs::read_dir("./sounds") else {
         return Vec::new();
@@ -11,9 +13,15 @@ pub fn list_available_sounds() -> Vec<(String, PathBuf)> {
 
     read_dir
         .map(|entry| {
-            let entry = entry
-                .ok()
-                .expect("Failed to get DirEntry looking for available sounds");
+            let entry = match entry {
+                Ok(entry) => entry,
+                Err(err) => {
+                    log_panic(&format!(
+                        "Failed to get DirEntry looking for available sounds. {err}"
+                    ));
+                    unreachable!()
+                }
+            };
 
             let path = entry.path();
 
@@ -33,12 +41,27 @@ pub fn list_available_sounds() -> Vec<(String, PathBuf)> {
 
 pub async fn load_sounds(path: PathBuf) -> Vec<Sound> {
     let lossy_path = path.to_string_lossy();
-    let read_dir =
-        fs::read_dir(&path).expect(&format!("Failed to read directory: \"{lossy_path}\"",));
+    let read_dir = match fs::read_dir(&path) {
+        Ok(read_dir) => read_dir,
+        Err(err) => {
+            log_panic(&format!(
+                "Failed to read directory: \"{lossy_path}\" when loading sounds. {err}"
+            ));
+            unreachable!()
+        }
+    };
 
     let sounds_bytes = read_dir
         .map(|entry| {
-            let entry = entry.expect("Failed to get DirEntry when loading sounds");
+            let entry = match entry {
+                Ok(entry) => entry,
+                Err(err) => {
+                    log_panic(&format!(
+                        "Failed to get DirEntry when loading sounds. {err}"
+                    ));
+                    unreachable!()
+                }
+            };
 
             let path = entry.path();
 
@@ -52,7 +75,15 @@ pub async fn load_sounds(path: PathBuf) -> Vec<Sound> {
                 return None;
             }
 
-            let bytes = fs::read(&path).expect(&format!("Failed to read bytes from {lossy_path}"));
+            let bytes = match fs::read(&path) {
+                Ok(bytes) => bytes,
+                Err(err) => {
+                    log_panic(&format!(
+                        "Failed to read bytes from: \"{lossy_path}\" when loading sounds. {err}"
+                    ));
+                    unreachable!()
+                }
+            };
 
             Some(bytes)
         })
@@ -62,9 +93,15 @@ pub async fn load_sounds(path: PathBuf) -> Vec<Sound> {
     let mut sounds = Vec::with_capacity(sounds_bytes.len());
 
     for bytes in sounds_bytes {
-        let sound = load_sound_from_bytes(&bytes)
-            .await
-            .expect("Couldn't read bytes from a sound");
+        let sound = match load_sound_from_bytes(&bytes).await {
+            Ok(sound) => sound,
+            Err(err) => {
+                log_panic(&format!(
+                    "Couldn't create a sound from bytes from one of the sounds in: \"{lossy_path}\". {err}"
+                ));
+                unreachable!()
+            }
+        };
 
         sounds.push(sound);
     }

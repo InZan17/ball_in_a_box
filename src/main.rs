@@ -97,35 +97,28 @@ impl FromTuple for Vec2 {
     }
 }
 
+pub fn log_panic(message: &str) {
+    if let Ok(mut log_file) = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .open("crash_info.txt")
+    {
+        println!("aw");
+        let _ = log_file.write(message.as_bytes());
+    };
+    panic!("{}", message)
+}
+
 #[macroquad::main(window_conf)]
 async fn main() {
-    panic::set_hook(Box::new(|info| {
-        let Ok(mut log_file) = OpenOptions::new()
-            .create(true)
-            .write(true)
-            .open("crash_info.txt")
-        else {
-            return;
-        };
-
-        let panic_message = if let Some(s) = info.payload().downcast_ref::<&str>() {
-            s.to_string()
-        } else if let Some(s) = info.payload().downcast_ref::<String>() {
-            s.to_string()
-        } else {
-            "Unknown crash.".to_string()
-        };
-
-        let _ = log_file.write(panic_message.as_bytes());
-    }));
-
     {
         let start = SystemTime::now();
-        let since_the_epoch = start
+        let seed = start
             .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards");
+            .and_then(|duration| Ok(duration.as_nanos() as u64))
+            .unwrap_or(0);
 
-        rand::srand(since_the_epoch.as_nanos() as u64);
+        rand::srand(seed);
     }
 
     let mut settings = read_settings_file().unwrap_or_else(|| {

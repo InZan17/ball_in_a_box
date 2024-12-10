@@ -2,6 +2,8 @@ use std::{fs, path::PathBuf};
 
 use macroquad::{rand, texture::Texture2D};
 
+use crate::log_panic;
+
 pub fn list_available_balls() -> Vec<(String, PathBuf)> {
     let Ok(read_dir) = fs::read_dir("./balls") else {
         return Vec::new();
@@ -9,9 +11,15 @@ pub fn list_available_balls() -> Vec<(String, PathBuf)> {
 
     read_dir
         .map(|entry| {
-            let entry = entry
-                .ok()
-                .expect("Failed to get DirEntry looking for available balls");
+            let entry = match entry {
+                Ok(entry) => entry,
+                Err(err) => {
+                    log_panic(&format!(
+                        "Failed to get DirEntry looking for available balls. {err}"
+                    ));
+                    unreachable!()
+                }
+            };
 
             let path = entry.path();
 
@@ -57,7 +65,11 @@ pub fn find_texture(current_string: &str) -> Option<(String, Texture2D)> {
     let (ball_name, ball_path) = selected_ball?;
 
     let Ok(bytes) = fs::read(&ball_path) else {
-        panic!("Failed to read bytes from {}", ball_path.to_string_lossy())
+        log_panic(&format!(
+            "Failed to read bytes from {}",
+            ball_path.to_string_lossy()
+        ));
+        unreachable!()
     };
 
     return Some((ball_name, Texture2D::from_file_with_format(&bytes, None)));
@@ -79,7 +91,11 @@ pub fn get_random_texture() -> Option<(String, Texture2D)> {
     };
 
     let Ok(bytes) = fs::read(&ball_path) else {
-        panic!("Failed to read bytes from {}", ball_path.to_string_lossy())
+        log_panic(&format!(
+            "Failed to read bytes from {}",
+            ball_path.to_string_lossy(),
+        ));
+        unreachable!()
     };
 
     return Some((ball_name, Texture2D::from_file_with_format(&bytes, None)));

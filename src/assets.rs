@@ -3,6 +3,8 @@ use std::fs;
 use macroquad::{prelude::*, texture::Texture2D};
 use miniquad::{BlendFactor, BlendState, BlendValue, Equation};
 
+use crate::log_panic;
+
 const VERTEX: &str = r#"#version 100
 attribute vec3 position;
 attribute vec2 texcoord;
@@ -84,18 +86,28 @@ pub fn load_assets_font(
 ) -> Option<Font> {
     if let Some(pack_path) = pack_path {
         if let Ok(bytes) = fs::read(format!("{pack_path}/{asset_name}")) {
-            return Some(
-                load_ttf_font_from_bytes(&bytes)
-                    .expect(&format!("Failed to load {pack_path}/{asset_name} font")),
-            );
+            return Some(match load_ttf_font_from_bytes(&bytes) {
+                Ok(font) => font,
+                Err(err) => {
+                    log_panic(&format!(
+                        "Failed to load {pack_path}/{asset_name} font. {err}"
+                    ));
+                    unreachable!()
+                }
+            });
         }
     }
 
     if let Ok(bytes) = fs::read(format!("{assets_path}/{asset_name}")) {
-        return Some(
-            load_ttf_font_from_bytes(&bytes)
-                .expect(&format!("Failed to load {assets_path}/{asset_name} font")),
-        );
+        return Some(match load_ttf_font_from_bytes(&bytes) {
+            Ok(font) => font,
+            Err(err) => {
+                log_panic(&format!(
+                    "Failed to load {assets_path}/{asset_name} font. {err}"
+                ));
+                unreachable!()
+            }
+        });
     }
 
     None
@@ -132,7 +144,7 @@ impl GameAssets {
                 &missing_texture,
             ),
             slider_bar: load_texture("slider_bar.png", assets_path, &pack_path, &missing_texture),
-            ball_material: load_material(
+            ball_material: match load_material(
                 ShaderSource::Glsl {
                     vertex: VERTEX,
                     fragment: &load_assets_string("ball.frag", &assets_path, &pack_path, FRAGMENT),
@@ -161,9 +173,14 @@ impl GameAssets {
                     },
                     ..Default::default()
                 },
-            )
-            .expect("Failed to create ball material"),
-            shadow_material: load_material(
+            ) {
+                Ok(material) => material,
+                Err(err) => {
+                    log_panic(&format!("Failed to create ball material. {err}"));
+                    unreachable!()
+                }
+            },
+            shadow_material: match load_material(
                 ShaderSource::Glsl {
                     vertex: VERTEX,
                     fragment: &&load_assets_string(
@@ -188,8 +205,13 @@ impl GameAssets {
                     },
                     ..Default::default()
                 },
-            )
-            .expect("Failed to create shadow material"),
+            ) {
+                Ok(material) => material,
+                Err(err) => {
+                    log_panic(&format!("Failed to create shadow material. {err}"));
+                    unreachable!()
+                }
+            },
             font: load_assets_font("font.ttf", assets_path, &pack_path),
             missing_texture,
         }

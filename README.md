@@ -27,3 +27,7 @@ The ball might not smoothly follow the  window. I haven't found a solid way to s
 Or if your monitor is higher than 60fps, you can try only setting `Max FPS` to your monitors frame-rate.
 
 These aren't guaranteed to fix it, so just do whichever one is the least laggy.
+
+## Compiling
+
+When compiling for release I use this command: `RUSTFLAGS="-Zlocation-detail=none -Zfmt-debug=none" cargo +nightly build -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort --target x86_64-pc-windows-gnu --release`.

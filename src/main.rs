@@ -7,6 +7,7 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
+use assets::GameAssets;
 use ball::Ball;
 use circular_buffer::CircularBuffer;
 use conf::{Icon, Platform};
@@ -18,6 +19,7 @@ use textures::{find_texture, get_random_texture};
 use ui::{SettingsState, UiRenderer, MENU_SIZE};
 use window::{get_window_position, set_swap_interval, set_window_position, set_window_size};
 
+pub mod assets;
 pub mod ball;
 pub mod settings;
 pub mod sounds;
@@ -28,7 +30,7 @@ include!(concat!(env!("OUT_DIR"), "/icon_data.rs"));
 
 const FPS_LIMIT: u32 = 500;
 
-const BACKSPACES_BEFORE_MISSING: u8 = 10;
+const BACKSPACES_BEFORE_MISSING: u8 = 7;
 
 pub fn window_conf() -> Conf {
     let settings = read_settings_file().unwrap_or_default();
@@ -141,84 +143,7 @@ async fn main() {
     );
     missing_texture.set_filter(macroquad::texture::FilterMode::Nearest);
 
-    let background_texture = Texture2D::from_file_with_format(
-        &load_file("./assets/background.png")
-            .await
-            .expect("Couldn't find the assets/background.png file"),
-        None,
-    );
-
-    let side_texture = Texture2D::from_file_with_format(
-        &load_file("./assets/cardboardside.png")
-            .await
-            .expect("Couldn't find the assets/cardboardside.png file"),
-        None,
-    );
-
-    let default_vert = load_string("assets/default.vert")
-        .await
-        .expect("Couldn't find the assets/default.vert file");
-
-    let ball_material = load_material(
-        ShaderSource::Glsl {
-            vertex: &default_vert,
-            fragment: &load_string("assets/ball.frag")
-                .await
-                .expect("Couldn't find the assets/ball.frag file"),
-        },
-        MaterialParams {
-            uniforms: vec![
-                UniformDesc::new("rotation", UniformType::Float1),
-                UniformDesc::new("ceil_distance", UniformType::Float1),
-                UniformDesc::new("floor_distance", UniformType::Float1),
-                UniformDesc::new("left_distance", UniformType::Float1),
-                UniformDesc::new("right_distance", UniformType::Float1),
-                UniformDesc::new("ball_radius", UniformType::Float1),
-                UniformDesc::new("ambient_occlusion_focus", UniformType::Float1),
-                UniformDesc::new("ambient_occlusion_strength", UniformType::Float1),
-                UniformDesc::new("ambient_light", UniformType::Float1),
-                UniformDesc::new("specular_focus", UniformType::Float1),
-                UniformDesc::new("specular_strength", UniformType::Float1),
-            ],
-            pipeline_params: PipelineParams {
-                color_blend: Some(BlendState::new(
-                    Equation::Add,
-                    BlendFactor::Value(BlendValue::SourceAlpha),
-                    BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
-                )),
-                ..Default::default()
-            },
-            ..Default::default()
-        },
-    )
-    .expect("Failed to load ball material");
-
-    let shadow_material = load_material(
-        ShaderSource::Glsl {
-            vertex: &default_vert,
-            fragment: &load_string("assets/shadow.frag")
-                .await
-                .expect("Couldn't find the assets/shadow.frag file"),
-        },
-        MaterialParams {
-            uniforms: vec![
-                UniformDesc::new("in_shadow", UniformType::Float1),
-                UniformDesc::new("shadow_strength", UniformType::Float1),
-            ],
-            pipeline_params: PipelineParams {
-                color_blend: Some(BlendState::new(
-                    Equation::Add,
-                    BlendFactor::Value(BlendValue::SourceAlpha),
-                    BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
-                )),
-                ..Default::default()
-            },
-            ..Default::default()
-        },
-    )
-    .expect("Failed to load shadow material");
-
-    drop(default_vert);
+    let game_assets = GameAssets::new(None, missing_texture);
 
     let mut ball = {
         let option_sounds = find_sounds(&settings.last_sounds).await;
@@ -226,18 +151,22 @@ async fn main() {
         let sounds = if let Some(sounds) = option_sounds {
             sounds
         } else {
-            get_random_sounds().await
+            get_random_sounds()
+                .await
+                .unwrap_or_else(|| (settings.last_sounds.clone(), Vec::new()))
         };
 
         Ball::new(
             find_texture(&settings.last_ball)
                 .unwrap_or_else(|| {
-                    get_random_texture()
-                        .unwrap_or_else(|| (settings.last_ball.clone(), missing_texture.clone()))
+                    get_random_texture().unwrap_or_else(|| {
+                        (
+                            settings.last_ball.clone(),
+                            game_assets.missing_texture.clone(),
+                        )
+                    })
                 })
                 .1,
-            ball_material,
-            shadow_material,
             settings.ball_radius as f32,
             sounds.1,
         )
@@ -387,7 +316,7 @@ async fn main() {
         }
 
         if times_clicked_backspace >= BACKSPACES_BEFORE_MISSING {
-            ball.texture = missing_texture.clone();
+            ball.texture = game_assets.missing_texture.clone();
         }
 
         let mouse_offset_was_some = mouse_offset.is_some();
@@ -519,7 +448,7 @@ async fn main() {
 
         // Background
         draw_texture_ex(
-            &background_texture,
+            &game_assets.box_background_texture,
             -box_size.x + box_thickness,
             -box_size.y + box_thickness,
             WHITE,
@@ -536,7 +465,7 @@ async fn main() {
 
         // Left
         draw_texture_ex(
-            &side_texture,
+            &game_assets.box_side_texture,
             -box_size.x - max_axis + box_thickness / 2.,
             0.,
             Color::from_hex(0x999999),
@@ -549,7 +478,7 @@ async fn main() {
 
         // Right
         draw_texture_ex(
-            &side_texture,
+            &game_assets.box_side_texture,
             -box_thickness / 2. - max_axis + box_size.x,
             0.,
             Color::from_hex(0xb0b0b0),
@@ -562,7 +491,7 @@ async fn main() {
 
         // Top
         draw_texture_ex(
-            &side_texture,
+            &game_assets.box_side_texture,
             -box_size.x,
             -box_size.y,
             Color::from_hex(0xbababa),
@@ -575,7 +504,7 @@ async fn main() {
 
         // Bottom
         draw_texture_ex(
-            &side_texture,
+            &game_assets.box_side_texture,
             -box_size.x,
             box_size.y - box_thickness,
             Color::from_hex(0xe0e0e0),
@@ -587,10 +516,11 @@ async fn main() {
         );
 
         // Ball
-        ball.render(&settings, box_size);
+        ball.render(&game_assets, &settings, box_size);
 
         // Settings
         let save = ui_renderer.render_ui(
+            &game_assets,
             &mut editing_settings,
             &settings,
             &mut settings_state,

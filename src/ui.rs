@@ -4,7 +4,7 @@ use macroquad::{prelude::*, ui::hash};
 use miniquad::*;
 use window::{order_quit, set_mouse_cursor};
 
-use crate::{Settings, FPS_LIMIT};
+use crate::{assets::GameAssets, Settings, FPS_LIMIT};
 
 const RELATIVE_BOX_SIZE: Vec2 = vec2(372., 480.);
 
@@ -40,11 +40,6 @@ impl SettingsState {
 }
 
 pub struct UiRenderer {
-    menu_background: Texture2D,
-    button: Texture2D,
-    slider_background: Texture2D,
-    slider_bar: Texture2D,
-    font: Font,
     pub user_input: String,
     pub mult: f32,
     pub reset_field: bool,
@@ -57,22 +52,6 @@ pub struct UiRenderer {
 impl UiRenderer {
     pub async fn new() -> Self {
         Self {
-            menu_background: load_texture("./assets/main_background.png")
-                .await
-                .expect("Failed to load assets/main_background.png file"),
-
-            button: load_texture("./assets/cardboard_button.png")
-                .await
-                .expect("Failed to load assets/cardboard_button.png file"),
-            slider_background: load_texture("./assets/slider_background.png")
-                .await
-                .expect("Failed to load assets/slider_background.png file"),
-            slider_bar: load_texture("./assets/slider_bar.png")
-                .await
-                .expect("Failed to load assets/slider_bar.png file"),
-            font: load_ttf_font("./assets/font.ttf")
-                .await
-                .expect("Failed to load assets/font.ttf file"),
             user_input: String::new(),
             mult: 1.,
             slider_follow: false,
@@ -85,6 +64,7 @@ impl UiRenderer {
 
     pub fn render_ui(
         &mut self,
+        game_assets: &GameAssets,
         editing_settings: &mut Settings,
         current_settings: &Settings,
         settings_state: &mut SettingsState,
@@ -121,7 +101,7 @@ impl UiRenderer {
         );
 
         draw_texture_ex(
-            &self.menu_background,
+            &game_assets.menu_background,
             menu_rect.x,
             menu_rect.y,
             WHITE,
@@ -141,6 +121,7 @@ impl UiRenderer {
                 + BUTTON_SIZE.y / SMALLER_BUTTON_DIV / 2.;
 
             self.render_text(
+                &game_assets,
                 vec2(0., y_offset - 4.),
                 vec2(10., 10.),
                 &format!("{}", self.last_page + 1),
@@ -149,6 +130,7 @@ impl UiRenderer {
 
             if self.last_page > 0 {
                 if self.render_button(
+                    game_assets,
                     hash!(),
                     mouse_pos,
                     vec2(center_offset_x, y_offset),
@@ -163,6 +145,7 @@ impl UiRenderer {
 
             if self.last_page < LAST_PAGE_INDEX {
                 if self.render_button(
+                    game_assets,
                     hash!(),
                     mouse_pos,
                     vec2(-center_offset_x, y_offset),
@@ -188,6 +171,7 @@ impl UiRenderer {
             match self.last_page {
                 0 => {
                     self.render_slider_uint(
+                        game_assets,
                         hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 0.),
@@ -201,6 +185,7 @@ impl UiRenderer {
                     );
 
                     self.render_maxed_slider_uint(
+                        game_assets,
                         hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 1.),
@@ -221,6 +206,7 @@ impl UiRenderer {
                     };
 
                     if self.render_button(
+                        game_assets,
                         hash!(),
                         mouse_pos,
                         vec2(0., 0. + lower_down * 0.4),
@@ -236,6 +222,7 @@ impl UiRenderer {
                     }
 
                     if self.render_button(
+                        game_assets,
                         hash!(),
                         mouse_pos,
                         vec2(0., 0. + lower_down * 1.4),
@@ -249,6 +236,7 @@ impl UiRenderer {
                 }
                 1 => {
                     self.render_slider(
+                        game_assets,
                         hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 0.),
@@ -269,6 +257,7 @@ impl UiRenderer {
                         };
 
                     if self.render_button(
+                        game_assets,
                         hash!(),
                         mouse_pos,
                         vec2(0., 0. + lower_down * -0.4),
@@ -295,6 +284,7 @@ impl UiRenderer {
                         };
 
                     if self.render_button(
+                        game_assets,
                         hash!(),
                         mouse_pos,
                         vec2(0., 0. + lower_down * 0.9),
@@ -315,6 +305,7 @@ impl UiRenderer {
                 }
                 2 => {
                     self.render_slider(
+                        game_assets,
                         hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 0.),
@@ -328,6 +319,7 @@ impl UiRenderer {
                     );
 
                     self.render_slider(
+                        game_assets,
                         hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 1.),
@@ -341,6 +333,7 @@ impl UiRenderer {
                     );
 
                     self.render_slider(
+                        game_assets,
                         hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 2.),
@@ -354,6 +347,7 @@ impl UiRenderer {
                     );
 
                     self.render_slider(
+                        game_assets,
                         hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 3.),
@@ -368,6 +362,7 @@ impl UiRenderer {
                 }
                 3 => {
                     self.render_slider(
+                        game_assets,
                         hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 0.),
@@ -381,6 +376,7 @@ impl UiRenderer {
                     );
 
                     self.render_slider_uint(
+                        game_assets,
                         hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 1.),
@@ -394,6 +390,7 @@ impl UiRenderer {
                     );
 
                     self.render_slider(
+                        game_assets,
                         hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 2.),
@@ -407,6 +404,7 @@ impl UiRenderer {
                     );
 
                     self.render_slider(
+                        game_assets,
                         hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 3.),
@@ -421,6 +419,7 @@ impl UiRenderer {
                 }
                 4 => {
                     self.render_slider_uint(
+                        game_assets,
                         hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 0.),
@@ -434,6 +433,7 @@ impl UiRenderer {
                     );
 
                     self.render_slider_uint(
+                        game_assets,
                         hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 1.),
@@ -447,6 +447,7 @@ impl UiRenderer {
                     );
 
                     self.render_slider_uint(
+                        game_assets,
                         hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 2.),
@@ -460,6 +461,7 @@ impl UiRenderer {
                     );
 
                     self.render_slider_uint(
+                        game_assets,
                         hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 3.),
@@ -474,6 +476,7 @@ impl UiRenderer {
                 }
                 5 => {
                     self.render_slider(
+                        game_assets,
                         hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 0.),
@@ -487,6 +490,7 @@ impl UiRenderer {
                     );
 
                     self.render_slider(
+                        game_assets,
                         hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 1.),
@@ -500,6 +504,7 @@ impl UiRenderer {
                     );
 
                     self.render_slider(
+                        game_assets,
                         hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 2.),
@@ -513,6 +518,7 @@ impl UiRenderer {
                     );
 
                     self.render_slider(
+                        game_assets,
                         hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 3.),
@@ -527,6 +533,7 @@ impl UiRenderer {
                 }
                 6 => {
                     self.render_slider(
+                        game_assets,
                         hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 0.),
@@ -540,6 +547,7 @@ impl UiRenderer {
                     );
 
                     self.render_slider(
+                        game_assets,
                         hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 1.),
@@ -553,6 +561,7 @@ impl UiRenderer {
                     );
 
                     self.render_slider(
+                        game_assets,
                         hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 2.),
@@ -566,6 +575,7 @@ impl UiRenderer {
                     );
 
                     self.render_slider(
+                        game_assets,
                         hash!(),
                         mouse_pos,
                         vec2(0., start + lower_down * 3.),
@@ -591,6 +601,7 @@ impl UiRenderer {
                 + BUTTON_SIZE.y / SMALL_BUTTON_DIV / 2.;
 
             if self.render_button(
+                game_assets,
                 hash!(),
                 mouse_pos,
                 vec2(center_offset_x, -y_offset),
@@ -609,6 +620,7 @@ impl UiRenderer {
             };
 
             if self.render_button(
+                game_assets,
                 hash!(),
                 mouse_pos,
                 vec2(-center_offset_x, -y_offset),
@@ -623,6 +635,7 @@ impl UiRenderer {
             let button_y_offsets = BUTTONS_MARGIN + BUTTON_SIZE.y;
 
             if self.render_button(
+                game_assets,
                 hash!(),
                 mouse_pos,
                 vec2(0., -button_y_offsets),
@@ -635,6 +648,7 @@ impl UiRenderer {
             }
 
             if self.render_button(
+                game_assets,
                 hash!(),
                 mouse_pos,
                 vec2(0., 0.),
@@ -647,6 +661,7 @@ impl UiRenderer {
             }
 
             if self.render_button(
+                game_assets,
                 hash!(),
                 mouse_pos,
                 vec2(0., button_y_offsets),
@@ -664,7 +679,14 @@ impl UiRenderer {
         return save;
     }
 
-    pub fn render_text(&mut self, center_pos: Vec2, size: Vec2, text: &str, font_size: u16) {
+    pub fn render_text(
+        &mut self,
+        game_assets: &GameAssets,
+        center_pos: Vec2,
+        size: Vec2,
+        text: &str,
+        font_size: u16,
+    ) {
         let rect = Rect::new(
             (center_pos.x * 2. - size.x) * self.mult,
             (center_pos.y * 2. - size.y) * self.mult,
@@ -672,7 +694,7 @@ impl UiRenderer {
             size.y * 2. * self.mult,
         );
 
-        let size = measure_text(text, Some(&self.font), font_size, 2.0 * self.mult);
+        let size = measure_text(text, game_assets.font.as_ref(), font_size, 2.0 * self.mult);
 
         draw_text_ex(
             text,
@@ -680,7 +702,7 @@ impl UiRenderer {
             rect.y + rect.h / 2. + font_size as f32 / 2. * self.mult,
             TextParams {
                 color: DEFAULT_TEXT_COLOR,
-                font: Some(&self.font),
+                font: game_assets.font.as_ref(),
                 font_size,
                 font_scale: 2.0 * self.mult,
                 ..Default::default()
@@ -690,6 +712,7 @@ impl UiRenderer {
 
     pub fn render_button(
         &mut self,
+        game_assets: &GameAssets,
         id: u64,
         mouse_pos: Vec2,
         center_pos: Vec2,
@@ -730,7 +753,7 @@ impl UiRenderer {
         };
 
         draw_texture_ex(
-            &self.button,
+            &game_assets.menu_button,
             rect.x,
             rect.y,
             color,
@@ -740,7 +763,7 @@ impl UiRenderer {
             },
         );
 
-        let size = measure_text(text, Some(&self.font), font_size, 2.0 * self.mult);
+        let size = measure_text(text, game_assets.font.as_ref(), font_size, 2.0 * self.mult);
 
         draw_text_ex(
             text,
@@ -748,7 +771,7 @@ impl UiRenderer {
             rect.y + rect.h / 2. + font_size as f32 / 2. * self.mult,
             TextParams {
                 color: text_color,
-                font: Some(&self.font),
+                font: game_assets.font.as_ref(),
                 font_size,
                 font_scale: 2.0 * self.mult,
                 ..Default::default()
@@ -760,6 +783,7 @@ impl UiRenderer {
 
     pub fn render_slider(
         &mut self,
+        game_assets: &GameAssets,
         id: u64,
         mouse_pos: Vec2,
         center_pos: Vec2,
@@ -855,7 +879,7 @@ impl UiRenderer {
         );
 
         draw_texture_ex(
-            &self.slider_background,
+            &game_assets.slider_background,
             slider_rect.x,
             slider_rect.y,
             Color::from_hex(0xCCCCCC),
@@ -866,7 +890,7 @@ impl UiRenderer {
         );
 
         draw_texture_ex(
-            &self.slider_bar,
+            &game_assets.slider_bar,
             bar_rect.x,
             bar_rect.y,
             WHITE,
@@ -887,7 +911,7 @@ impl UiRenderer {
 
         let size = measure_text(
             &value_string,
-            Some(&self.font),
+            game_assets.font.as_ref(),
             value_font_size,
             2.0 * self.mult,
         );
@@ -904,7 +928,7 @@ impl UiRenderer {
                 } else {
                     BLACK
                 },
-                font: Some(&self.font),
+                font: game_assets.font.as_ref(),
                 font_size: value_font_size,
                 font_scale: 2.0 * self.mult,
                 ..Default::default()
@@ -917,7 +941,7 @@ impl UiRenderer {
             full_rect.y - font_size as f32 * 0.65 * self.mult,
             TextParams {
                 color: DEFAULT_TEXT_COLOR,
-                font: Some(&self.font),
+                font: game_assets.font.as_ref(),
                 font_size,
                 font_scale: 2.0 * self.mult,
                 ..Default::default()
@@ -929,6 +953,7 @@ impl UiRenderer {
 
     pub fn render_slider_uint(
         &mut self,
+        game_assets: &GameAssets,
         id: u64,
         mouse_pos: Vec2,
         center_pos: Vec2,
@@ -1025,7 +1050,7 @@ impl UiRenderer {
         );
 
         draw_texture_ex(
-            &self.slider_background,
+            &game_assets.slider_background,
             slider_rect.x,
             slider_rect.y,
             Color::from_hex(0xCCCCCC),
@@ -1036,7 +1061,7 @@ impl UiRenderer {
         );
 
         draw_texture_ex(
-            &self.slider_bar,
+            &game_assets.slider_bar,
             bar_rect.x,
             bar_rect.y,
             WHITE,
@@ -1057,7 +1082,7 @@ impl UiRenderer {
 
         let size = measure_text(
             &value_string,
-            Some(&self.font),
+            game_assets.font.as_ref(),
             value_font_size,
             2.0 * self.mult,
         );
@@ -1074,7 +1099,7 @@ impl UiRenderer {
                 } else {
                     BLACK
                 },
-                font: Some(&self.font),
+                font: game_assets.font.as_ref(),
                 font_size: value_font_size,
                 font_scale: 2.0 * self.mult,
                 ..Default::default()
@@ -1087,7 +1112,7 @@ impl UiRenderer {
             full_rect.y - font_size as f32 * 0.65 * self.mult,
             TextParams {
                 color: DEFAULT_TEXT_COLOR,
-                font: Some(&self.font),
+                font: game_assets.font.as_ref(),
                 font_size,
                 font_scale: 2.0 * self.mult,
                 ..Default::default()
@@ -1099,6 +1124,7 @@ impl UiRenderer {
 
     pub fn render_maxed_slider_uint(
         &mut self,
+        game_assets: &GameAssets,
         id: u64,
         mouse_pos: Vec2,
         center_pos: Vec2,
@@ -1208,7 +1234,7 @@ impl UiRenderer {
         );
 
         draw_texture_ex(
-            &self.slider_background,
+            &game_assets.slider_background,
             slider_rect.x,
             slider_rect.y,
             Color::from_hex(0xCCCCCC),
@@ -1219,7 +1245,7 @@ impl UiRenderer {
         );
 
         draw_texture_ex(
-            &self.slider_bar,
+            &game_assets.slider_bar,
             bar_rect.x,
             bar_rect.y,
             WHITE,
@@ -1240,7 +1266,7 @@ impl UiRenderer {
 
         let size = measure_text(
             &value_string,
-            Some(&self.font),
+            game_assets.font.as_ref(),
             value_font_size,
             2.0 * self.mult,
         );
@@ -1257,7 +1283,7 @@ impl UiRenderer {
                 } else {
                     BLACK
                 },
-                font: Some(&self.font),
+                font: game_assets.font.as_ref(),
                 font_size: value_font_size,
                 font_scale: 2.0 * self.mult,
                 ..Default::default()
@@ -1270,7 +1296,7 @@ impl UiRenderer {
             full_rect.y - font_size as f32 * 0.65 * self.mult,
             TextParams {
                 color: DEFAULT_TEXT_COLOR,
-                font: Some(&self.font),
+                font: game_assets.font.as_ref(),
                 font_size,
                 font_scale: 2.0 * self.mult,
                 ..Default::default()

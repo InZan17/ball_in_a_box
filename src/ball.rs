@@ -4,12 +4,11 @@ use macroquad::{
     audio::{play_sound, PlaySoundParams, Sound},
     color::WHITE,
     math::{vec2, FloatExt, Vec2},
-    prelude::{gl_use_default_material, gl_use_material, Material},
-    shapes::draw_rectangle,
+    prelude::{gl_use_default_material, gl_use_material},
     texture::{draw_texture_ex, DrawTextureParams, Texture2D},
 };
 
-use crate::Settings;
+use crate::{assets::GameAssets, Settings};
 
 const MIN_SOUND_TIME: f32 = 1.0 / 60.0;
 
@@ -22,19 +21,11 @@ pub struct Ball {
     horizontal_sound_timer: f32,
     pub radius: f32,
     pub texture: Texture2D,
-    pub ball_material: Material,
-    pub shadow_material: Material,
     pub sounds: Vec<Sound>,
 }
 
 impl Ball {
-    pub fn new(
-        texture: Texture2D,
-        ball_material: Material,
-        shadow_material: Material,
-        radius: f32,
-        sounds: Vec<Sound>,
-    ) -> Ball {
+    pub fn new(texture: Texture2D, radius: f32, sounds: Vec<Sound>) -> Ball {
         Ball {
             position: Vec2::new(0., 0.),
             velocity: Vec2::ZERO,
@@ -44,8 +35,6 @@ impl Ball {
             horizontal_sound_timer: 0.,
             radius,
             texture,
-            ball_material,
-            shadow_material,
             sounds,
         }
     }
@@ -333,7 +322,7 @@ impl Ball {
         return dt - new_dt;
     }
 
-    pub fn render(&mut self, settings: &Settings, box_size: Vec2) {
+    pub fn render(&mut self, game_assets: &GameAssets, settings: &Settings, box_size: Vec2) {
         let box_thickness = settings.box_thickness as f32;
         let box_depth = settings.box_depth as f32;
         let box_offset = box_thickness + box_depth;
@@ -344,94 +333,131 @@ impl Ball {
         let distance_to_right_wall = box_size.x - wall_and_ball_offset - self.position.x;
         let distance_to_left_wall = self.position.x + box_size.x - wall_and_ball_offset;
 
-        gl_use_material(&self.shadow_material);
+        gl_use_material(&game_assets.shadow_material);
 
         // Draw shadows on box
 
-        self.shadow_material
+        game_assets
+            .shadow_material
             .set_uniform("shadow_strength", settings.shadow_strength);
 
-        self.shadow_material.set_uniform(
+        game_assets.shadow_material.set_uniform(
             "in_shadow",
             distance_to_floor / self.radius / settings.shadow_distance_strength,
         );
-        draw_rectangle(
+
+        draw_texture_ex(
+            &game_assets.missing_texture,
             self.position.x - self.radius * settings.shadow_size,
             box_size.y - box_offset - box_depth,
-            self.radius * settings.shadow_size * 2.,
-            box_depth * 2.,
             WHITE,
+            DrawTextureParams {
+                dest_size: Some(vec2(
+                    self.radius * settings.shadow_size * 2.,
+                    box_depth * 2.,
+                )),
+                ..Default::default()
+            },
         );
 
-        self.shadow_material.set_uniform(
+        game_assets.shadow_material.set_uniform(
             "in_shadow",
             distance_to_ceiling / self.radius / settings.shadow_distance_strength,
         );
-        draw_rectangle(
+
+        draw_texture_ex(
+            &game_assets.missing_texture,
             self.position.x - self.radius * settings.shadow_size,
             -box_size.y + box_thickness,
-            self.radius * settings.shadow_size * 2.,
-            box_depth * 2.,
             WHITE,
+            DrawTextureParams {
+                dest_size: Some(vec2(
+                    self.radius * settings.shadow_size * 2.,
+                    box_depth * 2.,
+                )),
+                ..Default::default()
+            },
         );
 
-        self.shadow_material.set_uniform(
+        game_assets.shadow_material.set_uniform(
             "in_shadow",
             distance_to_right_wall / self.radius / settings.shadow_distance_strength,
         );
-        draw_rectangle(
+
+        draw_texture_ex(
+            &game_assets.missing_texture,
             box_size.x - box_offset - box_depth,
             self.position.y - self.radius * settings.shadow_size,
-            box_depth * 2.,
-            self.radius * settings.shadow_size * 2.,
             WHITE,
+            DrawTextureParams {
+                dest_size: Some(vec2(
+                    box_depth * 2.,
+                    self.radius * settings.shadow_size * 2.,
+                )),
+                ..Default::default()
+            },
         );
 
-        self.shadow_material.set_uniform(
+        game_assets.shadow_material.set_uniform(
             "in_shadow",
             distance_to_left_wall / self.radius / settings.shadow_distance_strength,
         );
-        draw_rectangle(
+
+        draw_texture_ex(
+            &game_assets.missing_texture,
             -box_size.x + box_thickness,
             self.position.y - self.radius * settings.shadow_size,
-            box_depth * 2.,
-            self.radius * settings.shadow_size * 2.,
             WHITE,
+            DrawTextureParams {
+                dest_size: Some(vec2(
+                    box_depth * 2.,
+                    self.radius * settings.shadow_size * 2.,
+                )),
+                ..Default::default()
+            },
         );
 
         // Draw ball
 
-        gl_use_material(&self.ball_material);
+        gl_use_material(&game_assets.ball_material);
 
-        self.ball_material.set_uniform("rotation", self.rotation);
-        self.ball_material.set_uniform(
+        game_assets
+            .ball_material
+            .set_uniform("rotation", self.rotation);
+        game_assets.ball_material.set_uniform(
             "floor_distance",
             distance_to_floor / self.radius / settings.shadow_distance_strength,
         );
-        self.ball_material.set_uniform(
+        game_assets.ball_material.set_uniform(
             "ceil_distance",
             distance_to_ceiling / self.radius / settings.shadow_distance_strength,
         );
-        self.ball_material.set_uniform(
+        game_assets.ball_material.set_uniform(
             "left_distance",
             distance_to_left_wall / self.radius / settings.shadow_distance_strength,
         );
-        self.ball_material.set_uniform(
+        game_assets.ball_material.set_uniform(
             "right_distance",
             distance_to_right_wall / self.radius / settings.shadow_distance_strength,
         );
-        self.ball_material.set_uniform("ball_radius", self.radius);
-        self.ball_material
+        game_assets
+            .ball_material
+            .set_uniform("ball_radius", self.radius);
+        game_assets
+            .ball_material
             .set_uniform("ambient_occlusion_focus", settings.ambient_occlusion_focus);
-        self.ball_material.set_uniform(
+        game_assets.ball_material.set_uniform(
             "ambient_occlusion_strength",
             settings.ambient_occlusion_strength,
         );
-        self.ball_material
+        game_assets
+            .ball_material
             .set_uniform("ambient_light", settings.ambient_light);
-        self.ball_material
+        game_assets
+            .ball_material
             .set_uniform("specular_focus", settings.specular_focus);
-        self.ball_material
+        game_assets
+            .ball_material
             .set_uniform("specular_strength", settings.specular_strength);
 
         draw_texture_ex(

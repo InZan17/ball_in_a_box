@@ -5,7 +5,9 @@ use std::{fs, path::PathBuf};
 use macroquad::rand;
 
 pub fn list_available_sounds() -> Vec<(String, PathBuf)> {
-    let read_dir = fs::read_dir("./sounds").expect("Couldn't get the sounds directory");
+    let Ok(read_dir) = fs::read_dir("./sounds") else {
+        return Vec::new();
+    };
 
     read_dir
         .map(|entry| {
@@ -96,11 +98,11 @@ pub async fn find_sounds(current_string: &str) -> Option<(String, Vec<Sound>)> {
     return Some((sounds_name, load_sounds(sounds_path).await));
 }
 
-pub async fn get_random_sounds() -> (String, Vec<Sound>) {
+pub async fn get_random_sounds() -> Option<(String, Vec<Sound>)> {
     let available_sounds = list_available_sounds();
 
     if available_sounds.is_empty() {
-        panic!("There are no available sounds to use!");
+        return None;
     }
 
     let rand_index = rand::gen_range(0, available_sounds.len());
@@ -111,5 +113,5 @@ pub async fn get_random_sounds() -> (String, Vec<Sound>) {
             .unwrap_unchecked()
     };
 
-    return (sounds_name, load_sounds(sounds_path).await);
+    return Some((sounds_name, load_sounds(sounds_path).await));
 }

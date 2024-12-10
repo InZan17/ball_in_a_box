@@ -28,6 +28,8 @@ include!(concat!(env!("OUT_DIR"), "/icon_data.rs"));
 
 const FPS_LIMIT: u32 = 500;
 
+const BACKSPACES_BEFORE_MISSING: u8 = 10;
+
 pub fn window_conf() -> Conf {
     let settings = read_settings_file().unwrap_or_default();
 
@@ -130,6 +132,15 @@ async fn main() {
         settings
     });
 
+    let missing_texture = Texture2D::from_rgba8(
+        2,
+        2,
+        &[
+            255, 0, 220, 255, 1, 0, 1, 255, 1, 0, 1, 255, 255, 0, 220, 255,
+        ],
+    );
+    missing_texture.set_filter(macroquad::texture::FilterMode::Nearest);
+
     let background_texture = Texture2D::from_file_with_format(
         &load_file("./assets/background.png")
             .await
@@ -220,7 +231,10 @@ async fn main() {
 
         Ball::new(
             find_texture(&settings.last_ball)
-                .unwrap_or_else(|| get_random_texture())
+                .unwrap_or_else(|| {
+                    get_random_texture()
+                        .unwrap_or_else(|| (settings.last_ball.clone(), missing_texture.clone()))
+                })
                 .1,
             ball_material,
             shadow_material,
@@ -257,6 +271,8 @@ async fn main() {
 
     let mut frames_after_start: u8 = 0;
     let mut prev_render_time = get_time();
+
+    let mut times_clicked_backspace: u8 = 0;
 
     loop {
         clear_background(DARKGRAY);
@@ -338,6 +354,7 @@ async fn main() {
             }
         }
         if is_key_pressed(KeyCode::Backspace) {
+            times_clicked_backspace = times_clicked_backspace.saturating_add(1);
             text_input.clear();
             if ui_renderer.user_input.pop().is_none() {
                 ui_renderer.reset_field = true;
@@ -362,6 +379,15 @@ async fn main() {
 
         if !button_is_down {
             interacting_with_ui = false
+        }
+
+        if (!get_keys_pressed().is_empty() && !is_key_pressed(KeyCode::Backspace)) || button_is_down
+        {
+            times_clicked_backspace = 0
+        }
+
+        if times_clicked_backspace >= BACKSPACES_BEFORE_MISSING {
+            ball.texture = missing_texture.clone();
         }
 
         let mouse_offset_was_some = mouse_offset.is_some();

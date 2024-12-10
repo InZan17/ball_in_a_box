@@ -3,7 +3,9 @@ use std::{fs, path::PathBuf};
 use macroquad::{rand, texture::Texture2D};
 
 pub fn list_available_balls() -> Vec<(String, PathBuf)> {
-    let read_dir = fs::read_dir("./balls").expect("Couldn't get the balls directory");
+    let Ok(read_dir) = fs::read_dir("./balls") else {
+        return Vec::new();
+    };
 
     read_dir
         .map(|entry| {
@@ -61,11 +63,11 @@ pub fn find_texture(current_string: &str) -> Option<(String, Texture2D)> {
     return Some((ball_name, Texture2D::from_file_with_format(&bytes, None)));
 }
 
-pub fn get_random_texture() -> (String, Texture2D) {
+pub fn get_random_texture() -> Option<(String, Texture2D)> {
     let available_balls = list_available_balls();
 
     if available_balls.is_empty() {
-        panic!("available_balls is empty!");
+        return None;
     }
 
     let rand_index = rand::gen_range(0, available_balls.len());
@@ -80,5 +82,5 @@ pub fn get_random_texture() -> (String, Texture2D) {
         panic!("Failed to read bytes from {}", ball_path.to_string_lossy())
     };
 
-    return (ball_name, Texture2D::from_file_with_format(&bytes, None));
+    return Some((ball_name, Texture2D::from_file_with_format(&bytes, None)));
 }

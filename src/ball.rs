@@ -286,8 +286,9 @@ impl Ball {
 
         // Play sound
 
-        if (horizontal_sound && hit_wall_speed.x > SPEED_LIMIT)
-            || (vertical_sound && hit_wall_speed.y > SPEED_LIMIT)
+        if ((horizontal_sound && hit_wall_speed.x > SPEED_LIMIT)
+            || (vertical_sound && hit_wall_speed.y > SPEED_LIMIT))
+            && !self.sounds.is_empty()
         {
             let inverted_distances_from_corners =
                 self.position.abs() + vec2(0., box_size.x - box_size.y);

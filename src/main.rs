@@ -136,8 +136,8 @@ async fn main() {
     );
     missing_texture.set_filter(macroquad::texture::FilterMode::Nearest);
 
-    let pack_path = if let Some(last_pack) = &settings.last_pack {
-        if let Some((_, pack_path)) = find_pack(last_pack) {
+    let pack_path = if let Some(last_asset_pack) = &settings.last_asset_pack {
+        if let Some((_, pack_path)) = find_pack(last_asset_pack) {
             Some(pack_path)
         } else {
             None
@@ -286,13 +286,13 @@ async fn main() {
             }
 
             if let Some((pack_name, pack_path)) = find_pack(&text_input) {
-                settings.last_pack = Some(pack_name.clone());
-                editing_settings.last_pack = Some(pack_name);
+                settings.last_asset_pack = Some(pack_name.clone());
+                editing_settings.last_asset_pack = Some(pack_name);
                 write_settings_file(&settings);
                 game_assets = GameAssets::new(Some(pack_path), game_assets.missing_texture)
-            } else if text_input.ends_with("none") && settings.last_pack.is_some() {
-                settings.last_pack = None;
-                editing_settings.last_pack = None;
+            } else if text_input.ends_with("none") && settings.last_asset_pack.is_some() {
+                settings.last_asset_pack = None;
+                editing_settings.last_asset_pack = None;
                 write_settings_file(&settings);
                 game_assets = GameAssets::new(None, game_assets.missing_texture)
             }

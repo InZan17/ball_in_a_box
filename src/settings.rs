@@ -38,7 +38,7 @@ pub struct DeserializeSettings {
     quick_turn: Option<bool>,
     last_ball: Option<String>,
     last_sounds: Option<String>,
-    last_pack: Option<String>,
+    last_asset_pack: Option<String>,
 }
 
 impl DeserializeSettings {
@@ -72,7 +72,7 @@ impl DeserializeSettings {
             || self.quick_turn.is_none()
             || self.last_ball.is_none()
             || self.last_sounds.is_none()
-            || self.last_pack.is_none()
+            || self.last_asset_pack.is_none()
     }
 
     pub fn to_settings(self) -> (Settings, bool) {
@@ -173,7 +173,7 @@ impl DeserializeSettings {
             quick_turn: self.quick_turn.unwrap_or(default_settings.quick_turn),
             last_ball: self.last_ball.unwrap_or(default_settings.last_ball),
             last_sounds: self.last_sounds.unwrap_or(default_settings.last_sounds),
-            last_pack: self.last_pack,
+            last_asset_pack: self.last_asset_pack,
         };
         (settings, has_none)
     }
@@ -220,7 +220,7 @@ pub struct Settings {
 
     pub last_ball: String,
     pub last_sounds: String,
-    pub last_pack: Option<String>,
+    pub last_asset_pack: Option<String>,
 }
 
 impl Settings {
@@ -271,7 +271,7 @@ impl Settings {
             || self.speed_mul != compare.speed_mul
             || self.last_ball != compare.last_ball
             || self.last_sounds != compare.last_sounds
-            || self.last_pack != compare.last_pack
+            || self.last_asset_pack != compare.last_asset_pack
     }
 }
 
@@ -316,7 +316,7 @@ impl Default for Settings {
 
             last_ball: "grinning".to_string(),
             last_sounds: "thud".to_string(),
-            last_pack: None,
+            last_asset_pack: None,
         }
     }
 }

@@ -243,7 +243,7 @@ impl GameAssets {
 }
 
 pub fn list_available_packs() -> Vec<(String, PathBuf)> {
-    let Ok(read_dir) = fs::read_dir("./packs") else {
+    let Ok(read_dir) = fs::read_dir("./asset_packs") else {
         return Vec::new();
     };
 

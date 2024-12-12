@@ -66,19 +66,18 @@ impl Ball {
 
         // Do physics calculations
 
-        self.velocity += Vec2::new(0., settings.gravity_strength * 1000. * dt);
+        let velocity_acceleration = Vec2::new(0., settings.gravity_strength * 1000.) * dt
+            - self.velocity * (settings.air_friction * dt.clamp(0., 1.));
 
-        self.velocity *= 1. - (settings.air_friction * dt.clamp(0., 1.));
+        self.velocity += velocity_acceleration * 0.5;
+        self.position += (self.velocity + visual_box_velocity) * dt;
+        self.velocity += velocity_acceleration * 0.5;
 
         if self.velocity.length() > settings.max_velocity * 1000. {
             self.velocity = self.velocity.normalize() * settings.max_velocity * 1000.;
         }
 
-        let total_velocity = self.velocity + visual_box_velocity;
-
         let smoothed_total_velocity = self.velocity + smoothed_box_velocity;
-
-        self.position += total_velocity * dt;
 
         let mut back_amount = 0.0_f32;
         let mut back_vec = vec2(0., 0.);

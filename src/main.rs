@@ -7,7 +7,7 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use assets::GameAssets;
+use assets::{find_pack, GameAssets};
 use ball::Ball;
 use circular_buffer::CircularBuffer;
 use conf::{Icon, Platform};
@@ -136,7 +136,17 @@ async fn main() {
     );
     missing_texture.set_filter(macroquad::texture::FilterMode::Nearest);
 
-    let game_assets = GameAssets::new(None, missing_texture);
+    let pack_path = if let Some(last_pack) = &settings.last_pack {
+        if let Some((_, pack_path)) = find_pack(last_pack) {
+            Some(pack_path)
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    let mut game_assets = GameAssets::new(pack_path, missing_texture);
 
     let mut ball = {
         let option_sounds = find_sounds(&settings.last_sounds).await;
@@ -273,6 +283,18 @@ async fn main() {
                 settings.last_sounds = sounds_name.clone();
                 editing_settings.last_sounds = sounds_name;
                 write_settings_file(&settings);
+            }
+
+            if let Some((pack_name, pack_path)) = find_pack(&text_input) {
+                settings.last_pack = Some(pack_name.clone());
+                editing_settings.last_pack = Some(pack_name);
+                write_settings_file(&settings);
+                game_assets = GameAssets::new(Some(pack_path), game_assets.missing_texture)
+            } else if text_input.ends_with("none") && settings.last_pack.is_some() {
+                settings.last_pack = None;
+                editing_settings.last_pack = None;
+                write_settings_file(&settings);
+                game_assets = GameAssets::new(None, game_assets.missing_texture)
             }
         }
         if is_key_pressed(KeyCode::Backspace) {

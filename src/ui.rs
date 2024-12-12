@@ -4,7 +4,7 @@ use macroquad::{prelude::*, ui::hash};
 use miniquad::*;
 use window::{order_quit, set_mouse_cursor};
 
-use crate::{assets::GameAssets, settings, Settings, FPS_LIMIT};
+use crate::{assets::GameAssets, Settings, FPS_LIMIT};
 
 const RELATIVE_BOX_SIZE: Vec2 = vec2(372., 450.);
 
@@ -644,7 +644,7 @@ impl UiRenderer {
                                 game_assets,
                                 hash!(),
                                 mouse_pos,
-                                vec2(0., start + lower_down * 0.55),
+                                vec2(0., start + lower_down * 0.4),
                                 vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
                                 "Ball radius",
                                 TITLE_SIZE,
@@ -658,7 +658,7 @@ impl UiRenderer {
                                 game_assets,
                                 hash!(),
                                 mouse_pos,
-                                vec2(0., start + lower_down * 1.75),
+                                vec2(0., start + lower_down * 1.5),
                                 vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
                                 "Game speed",
                                 TITLE_SIZE,
@@ -666,6 +666,37 @@ impl UiRenderer {
                                 self.default_settings.speed_mul,
                                 current_settings.speed_mul,
                                 &mut editing_settings.speed_mul,
+                            );
+
+                            self.render_text(
+                                game_assets,
+                                vec2(0., start + lower_down * 2.15),
+                                vec2(10., 10.),
+                                &format!("Current ball: {}", editing_settings.last_ball),
+                                18,
+                            );
+
+                            self.render_text(
+                                game_assets,
+                                vec2(0., start + lower_down * 2.55),
+                                vec2(10., 10.),
+                                &format!("Current sounds: {}", editing_settings.last_sounds),
+                                18,
+                            );
+
+                            self.render_text(
+                                game_assets,
+                                vec2(0., start + lower_down * 2.95),
+                                vec2(10., 10.),
+                                &format!(
+                                    "Current pack: {}",
+                                    if let Some(pack_name) = &editing_settings.last_pack {
+                                        pack_name.as_str()
+                                    } else {
+                                        "None"
+                                    }
+                                ),
+                                18,
                             );
                         }
                         _ => unreachable!(),

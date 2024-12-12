@@ -69,7 +69,11 @@ pub async fn load_sounds(path: PathBuf) -> Vec<Sound> {
                 return None;
             }
 
-            let is_ogg = entry.file_name().to_string_lossy().ends_with(".ogg");
+            let is_ogg = entry
+                .file_name()
+                .to_string_lossy()
+                .to_ascii_lowercase()
+                .ends_with(".ogg");
 
             if !is_ogg {
                 return None;
@@ -120,7 +124,7 @@ pub async fn find_sounds(current_string: &str) -> Option<(String, Vec<Sound>)> {
     let mut selected_sounds: Option<(String, PathBuf)> = None;
 
     for (sounds_name, sounds_path) in list_available_sounds() {
-        if current_string.ends_with(&sounds_name) {
+        if current_string.ends_with(&sounds_name.to_ascii_lowercase()) {
             if let Some((selected_sounds_name, _)) = &selected_sounds {
                 if selected_sounds_name.len() > sounds_name.len() {
                     continue;

@@ -27,7 +27,7 @@ pub fn list_available_balls() -> Vec<(String, PathBuf)> {
 
             let filename_str = filename.to_string_lossy();
 
-            if !filename_str.ends_with(".png") {
+            if !filename_str.to_ascii_lowercase().ends_with(".png") {
                 return None;
             }
 
@@ -52,7 +52,7 @@ pub fn find_texture(current_string: &str) -> Option<(String, Texture2D)> {
     let mut selected_ball: Option<(String, PathBuf)> = None;
 
     for (ball_name, ball_path) in list_available_balls() {
-        if current_string.ends_with(&ball_name) {
+        if current_string.ends_with(&ball_name.to_ascii_lowercase()) {
             if let Some((selected_ball_name, _)) = &selected_ball {
                 if selected_ball_name.len() > ball_name.len() {
                     continue;

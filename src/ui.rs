@@ -28,6 +28,12 @@ pub enum SettingsState {
     Closed,
     Open,
     Settings,
+    Audio(u8),
+    Visuals(u8),
+    Box(u8),
+    Physics(u8),
+    FpsDelay(u8),
+    Misc(u8),
 }
 
 impl SettingsState {
@@ -37,13 +43,39 @@ impl SettingsState {
             _ => true,
         }
     }
+    pub fn is_settings(&self) -> bool {
+        match self {
+            SettingsState::Closed | SettingsState::Open => false,
+            _ => true,
+        }
+    }
+    // Returns the current page and the last available page index.
+    pub fn get_page_info_mut(&mut self) -> Option<(&mut u8, u8)> {
+        match self {
+            SettingsState::Audio(page) => Some((page, 0)),
+            SettingsState::Visuals(page) => Some((page, 1)),
+            SettingsState::Box(page) => Some((page, 1)),
+            SettingsState::Physics(page) => Some((page, 1)),
+            SettingsState::FpsDelay(page) => Some((page, 0)),
+            SettingsState::Misc(page) => Some((page, 0)),
+            _ => None,
+        }
+    }
+
+    // Returns the current page and the last available page index.
+    pub fn back(&mut self) {
+        match self {
+            SettingsState::Settings => *self = SettingsState::Open,
+            SettingsState::Open | SettingsState::Closed => *self = SettingsState::Closed,
+            _ => *self = SettingsState::Settings,
+        }
+    }
 }
 
 pub struct UiRenderer {
     pub user_input: String,
     pub mult: f32,
     pub reset_field: bool,
-    last_page: u8,
     default_settings: Settings,
     slider_follow: bool,
     active_id: u64,
@@ -56,7 +88,6 @@ impl UiRenderer {
             mult: 1.,
             slider_follow: false,
             reset_field: false,
-            last_page: 0,
             default_settings: Settings::default(),
             active_id: 0,
         }
@@ -111,7 +142,14 @@ impl UiRenderer {
             },
         );
 
-        if *settings_state == SettingsState::Settings {
+        if settings_state.is_settings() {
+            const SLIDER_HEIGHT: f32 = 24.;
+            const SLIDER_WIDTH: f32 = MENU_SIZE.x * 0.65;
+            const TITLE_SIZE: u16 = 24;
+            const OPTIONS_SPACING: f32 = 13.;
+
+            let lower_down = SLIDER_HEIGHT + TITLE_SIZE as f32 + OPTIONS_SPACING;
+
             let center_offset_x =
                 -MENU_SIZE.x / 2. + BUTTON_SIZE.x / SMALLER_BUTTON_DIV + BUTTONS_MARGIN / 2. - 4.;
 
@@ -120,476 +158,573 @@ impl UiRenderer {
                 + BUTTONS_MARGIN
                 + BUTTON_SIZE.y / SMALLER_BUTTON_DIV / 2.;
 
-            self.render_text(
-                &game_assets,
-                vec2(0., y_offset - 4.),
-                vec2(10., 10.),
-                &format!("{}", self.last_page + 1),
-                28,
-            );
-
-            if self.last_page > 0 {
-                if self.render_button(
-                    game_assets,
-                    hash!(),
-                    mouse_pos,
-                    vec2(center_offset_x, y_offset),
-                    BUTTON_SIZE / SMALLER_BUTTON_DIV,
-                    "Prev",
-                    DEFAULT_TEXT_COLOR,
-                    28,
-                ) {
-                    self.last_page -= 1;
-                }
-            }
-
-            if self.last_page < LAST_PAGE_INDEX {
-                if self.render_button(
-                    game_assets,
-                    hash!(),
-                    mouse_pos,
-                    vec2(-center_offset_x, y_offset),
-                    BUTTON_SIZE / SMALLER_BUTTON_DIV,
-                    "Next",
-                    DEFAULT_TEXT_COLOR,
-                    28,
-                ) {
-                    self.last_page += 1;
-                }
-            }
-
-            const SLIDER_HEIGHT: f32 = 24.;
-            const SLIDER_WIDTH: f32 = MENU_SIZE.x * 0.65;
-            const TITLE_SIZE: u16 = 24;
-            const OPTIONS_SPACING: f32 = 13.;
-
             let start =
                 -MENU_SIZE.y / 2. + 5. + BUTTON_SIZE.y / SMALLER_BUTTON_DIV * 2. + SLIDER_HEIGHT;
 
-            let lower_down = SLIDER_HEIGHT + TITLE_SIZE as f32 + OPTIONS_SPACING;
-
-            match self.last_page {
-                0 => {
-                    self.render_slider_uint(
-                        game_assets,
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., start + lower_down * 0.),
-                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
-                        "Delay frames",
-                        TITLE_SIZE,
-                        0..10,
-                        self.default_settings.delay_frames,
-                        current_settings.delay_frames,
-                        &mut editing_settings.delay_frames,
+            if let Some((page, last_page)) = settings_state.get_page_info_mut() {
+                if last_page != 0 {
+                    self.render_text(
+                        &game_assets,
+                        vec2(0., y_offset - 4.),
+                        vec2(10., 10.),
+                        &format!("{}", *page + 1),
+                        28,
                     );
 
-                    self.render_maxed_slider_uint(
-                        game_assets,
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., start + lower_down * 1.),
-                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
-                        "Max FPS",
-                        "None",
-                        TITLE_SIZE,
-                        0..FPS_LIMIT,
-                        self.default_settings.max_fps,
-                        current_settings.max_fps,
-                        &mut editing_settings.max_fps,
-                    );
-
-                    let vsync_text_color = if editing_settings.vsync != current_settings.vsync {
-                        CHANGED_TEXT_COLOR
-                    } else {
-                        BLACK
-                    };
-
-                    if self.render_button(
-                        game_assets,
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., 0. + lower_down * 0.4),
-                        BUTTON_SIZE * vec2(0.8, 0.75),
-                        &format!(
-                            "VSync: {}",
-                            if editing_settings.vsync { "On" } else { "Off" }
-                        ),
-                        vsync_text_color,
-                        21,
-                    ) {
-                        editing_settings.vsync = !editing_settings.vsync;
+                    if *page > 0 {
+                        if self.render_button(
+                            game_assets,
+                            hash!(),
+                            mouse_pos,
+                            vec2(center_offset_x, y_offset),
+                            BUTTON_SIZE / SMALLER_BUTTON_DIV,
+                            "Prev",
+                            DEFAULT_TEXT_COLOR,
+                            28,
+                        ) {
+                            *page -= 1;
+                        }
                     }
 
-                    if self.render_button(
-                        game_assets,
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., 0. + lower_down * 1.4),
-                        BUTTON_SIZE * vec2(1.1, 0.75),
-                        "Reset settings",
-                        DARKRED_TEXT_COLOR,
-                        21,
-                    ) {
-                        *editing_settings = self.default_settings.clone();
+                    if *page < last_page {
+                        if self.render_button(
+                            game_assets,
+                            hash!(),
+                            mouse_pos,
+                            vec2(-center_offset_x, y_offset),
+                            BUTTON_SIZE / SMALLER_BUTTON_DIV,
+                            "Next",
+                            DEFAULT_TEXT_COLOR,
+                            28,
+                        ) {
+                            *page += 1;
+                        }
                     }
                 }
-                1 => {
-                    self.render_slider(
-                        game_assets,
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., start + lower_down * 0.),
-                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
-                        "Box weight",
-                        TITLE_SIZE,
-                        0.0..1.0,
-                        self.default_settings.box_weight,
-                        current_settings.box_weight,
-                        &mut editing_settings.box_weight,
-                    );
 
-                    let hide_smoothing_text_color =
-                        if editing_settings.hide_smoothing != current_settings.hide_smoothing {
-                            CHANGED_TEXT_COLOR
-                        } else {
-                            BLACK
-                        };
+                match settings_state {
+                    SettingsState::Audio(page) => match *page {
+                        0 => {
+                            self.render_slider(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., start + lower_down * 1.1),
+                                vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                                "Audio volume",
+                                TITLE_SIZE,
+                                0.0..1.0,
+                                self.default_settings.audio_volume,
+                                current_settings.audio_volume,
+                                &mut editing_settings.audio_volume,
+                            );
+                        }
+                        _ => unreachable!(),
+                    },
+                    SettingsState::Visuals(page) => match *page {
+                        0 => {
+                            self.render_slider(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., start + lower_down * 0.),
+                                vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                                "AO focus",
+                                TITLE_SIZE,
+                                0.0..5.0,
+                                self.default_settings.ambient_occlusion_focus,
+                                current_settings.ambient_occlusion_focus,
+                                &mut editing_settings.ambient_occlusion_focus,
+                            );
 
-                    if self.render_button(
-                        game_assets,
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., 0. + lower_down * -0.4),
-                        BUTTON_SIZE * vec2(1.2, 0.9),
-                        &format!(
-                            "Hide weight: {}",
-                            if editing_settings.hide_smoothing {
-                                "On"
+                            self.render_slider(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., start + lower_down * 1.),
+                                vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                                "AO strength",
+                                TITLE_SIZE,
+                                0.0..5.0,
+                                self.default_settings.ambient_occlusion_strength,
+                                current_settings.ambient_occlusion_strength,
+                                &mut editing_settings.ambient_occlusion_strength,
+                            );
+
+                            self.render_slider(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., start + lower_down * 2.),
+                                vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                                "Specular focus",
+                                TITLE_SIZE,
+                                0.0..100.0,
+                                self.default_settings.specular_focus,
+                                current_settings.specular_focus,
+                                &mut editing_settings.specular_focus,
+                            );
+
+                            self.render_slider(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., start + lower_down * 3.),
+                                vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                                "Specular strength",
+                                TITLE_SIZE,
+                                0.0..10.0,
+                                self.default_settings.specular_strength,
+                                current_settings.specular_strength,
+                                &mut editing_settings.specular_strength,
+                            );
+                        }
+                        1 => {
+                            self.render_slider(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., start + lower_down * 0.),
+                                vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                                "Ambient light",
+                                TITLE_SIZE,
+                                0.0..1.0,
+                                self.default_settings.ambient_light,
+                                current_settings.ambient_light,
+                                &mut editing_settings.ambient_light,
+                            );
+
+                            self.render_slider(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., start + lower_down * 1.),
+                                vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                                "Shadow size",
+                                TITLE_SIZE,
+                                0.0..10.0,
+                                self.default_settings.shadow_size,
+                                current_settings.shadow_size,
+                                &mut editing_settings.shadow_size,
+                            );
+
+                            self.render_slider(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., start + lower_down * 2.),
+                                vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                                "Shadow dist strength",
+                                TITLE_SIZE - 2,
+                                0.0..10.0,
+                                self.default_settings.shadow_distance_strength,
+                                current_settings.shadow_distance_strength,
+                                &mut editing_settings.shadow_distance_strength,
+                            );
+
+                            self.render_slider(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., start + lower_down * 3.),
+                                vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                                "Shadow strength",
+                                TITLE_SIZE,
+                                0.0..10.0,
+                                self.default_settings.shadow_strength,
+                                current_settings.shadow_strength,
+                                &mut editing_settings.shadow_strength,
+                            );
+                        }
+                        _ => unreachable!(),
+                    },
+                    SettingsState::Box(page) => match *page {
+                        0 => {
+                            self.render_slider(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., start + lower_down * 0.1),
+                                vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                                "Box weight",
+                                TITLE_SIZE,
+                                0.0..1.0,
+                                self.default_settings.box_weight,
+                                current_settings.box_weight,
+                                &mut editing_settings.box_weight,
+                            );
+
+                            let hide_smoothing_text_color = if editing_settings.hide_smoothing
+                                != current_settings.hide_smoothing
+                            {
+                                CHANGED_TEXT_COLOR
                             } else {
-                                "Off"
+                                BLACK
+                            };
+
+                            if self.render_button(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., 0. + lower_down * -0.3),
+                                BUTTON_SIZE * vec2(1.2, 0.9),
+                                &format!(
+                                    "Hide weight: {}",
+                                    if editing_settings.hide_smoothing {
+                                        "On"
+                                    } else {
+                                        "Off"
+                                    }
+                                ),
+                                hide_smoothing_text_color,
+                                20,
+                            ) {
+                                editing_settings.hide_smoothing = !editing_settings.hide_smoothing;
                             }
-                        ),
-                        hide_smoothing_text_color,
-                        20,
-                    ) {
-                        editing_settings.hide_smoothing = !editing_settings.hide_smoothing;
-                    }
 
-                    let quick_turn_text_color =
-                        if editing_settings.quick_turn != current_settings.quick_turn {
-                            CHANGED_TEXT_COLOR
-                        } else {
-                            BLACK
-                        };
+                            let quick_turn_text_color =
+                                if editing_settings.quick_turn != current_settings.quick_turn {
+                                    CHANGED_TEXT_COLOR
+                                } else {
+                                    BLACK
+                                };
 
-                    if self.render_button(
-                        game_assets,
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., 0. + lower_down * 0.9),
-                        BUTTON_SIZE * vec2(1.1, 0.9),
-                        &format!(
-                            "Quick turn: {}",
-                            if editing_settings.quick_turn {
-                                "On"
-                            } else {
-                                "Off"
+                            if self.render_button(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., 0. + lower_down * 1.0),
+                                BUTTON_SIZE * vec2(1.1, 0.9),
+                                &format!(
+                                    "Quick turn: {}",
+                                    if editing_settings.quick_turn {
+                                        "On"
+                                    } else {
+                                        "Off"
+                                    }
+                                ),
+                                quick_turn_text_color,
+                                20,
+                            ) {
+                                editing_settings.quick_turn = !editing_settings.quick_turn;
                             }
-                        ),
-                        quick_turn_text_color,
-                        20,
-                    ) {
-                        editing_settings.quick_turn = !editing_settings.quick_turn;
-                    }
+                        }
+                        1 => {
+                            self.render_slider_uint(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., start + lower_down * 0.),
+                                vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                                "Box width",
+                                TITLE_SIZE,
+                                300..1000,
+                                self.default_settings.box_width,
+                                current_settings.box_width,
+                                &mut editing_settings.box_width,
+                            );
+
+                            self.render_slider_uint(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., start + lower_down * 1.),
+                                vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                                "Box height",
+                                TITLE_SIZE,
+                                400..1000,
+                                self.default_settings.box_height,
+                                current_settings.box_height,
+                                &mut editing_settings.box_height,
+                            );
+
+                            self.render_slider_uint(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., start + lower_down * 2.),
+                                vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                                "Box thickness",
+                                TITLE_SIZE,
+                                0..100,
+                                self.default_settings.box_thickness,
+                                current_settings.box_thickness,
+                                &mut editing_settings.box_thickness,
+                            );
+
+                            self.render_slider_uint(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., start + lower_down * 3.),
+                                vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                                "Box depth",
+                                TITLE_SIZE,
+                                1..100,
+                                self.default_settings.box_depth,
+                                current_settings.box_depth,
+                                &mut editing_settings.box_depth,
+                            );
+                        }
+                        _ => unreachable!(),
+                    },
+                    SettingsState::Physics(page) => match *page {
+                        0 => {
+                            self.render_slider(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., start + lower_down * 0.3),
+                                vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                                "Gravity strength",
+                                TITLE_SIZE,
+                                -30.0..30.0,
+                                self.default_settings.gravity_strength,
+                                current_settings.gravity_strength,
+                                &mut editing_settings.gravity_strength,
+                            );
+
+                            self.render_slider(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., start + lower_down * 1.5),
+                                vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                                "Air friction",
+                                TITLE_SIZE,
+                                0.0..1.0,
+                                self.default_settings.air_friction,
+                                current_settings.air_friction,
+                                &mut editing_settings.air_friction,
+                            );
+
+                            self.render_slider(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., start + lower_down * 2.7),
+                                vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                                "Max velocity",
+                                TITLE_SIZE,
+                                0.0..500.0,
+                                self.default_settings.max_velocity,
+                                current_settings.max_velocity,
+                                &mut editing_settings.max_velocity,
+                            );
+                        }
+                        1 => {
+                            self.render_slider(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., start + lower_down * 0.3),
+                                vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                                "Ball bounciness",
+                                TITLE_SIZE,
+                                0.0..1.0,
+                                self.default_settings.ball_bounciness,
+                                current_settings.ball_bounciness,
+                                &mut editing_settings.ball_bounciness,
+                            );
+
+                            self.render_slider(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., start + lower_down * 1.5),
+                                vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                                "Ball weight",
+                                TITLE_SIZE,
+                                0.0..1.0,
+                                self.default_settings.ball_weight,
+                                current_settings.ball_weight,
+                                &mut editing_settings.ball_weight,
+                            );
+
+                            self.render_slider(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., start + lower_down * 2.7),
+                                vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                                "Ball friction",
+                                TITLE_SIZE,
+                                0.0..1.0,
+                                self.default_settings.ball_friction,
+                                current_settings.ball_friction,
+                                &mut editing_settings.ball_friction,
+                            );
+                        }
+                        _ => unreachable!(),
+                    },
+                    SettingsState::FpsDelay(page) => match *page {
+                        0 => {
+                            self.render_slider_uint(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., start + lower_down * 0.1),
+                                vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                                "Delay frames",
+                                TITLE_SIZE,
+                                0..10,
+                                self.default_settings.delay_frames,
+                                current_settings.delay_frames,
+                                &mut editing_settings.delay_frames,
+                            );
+
+                            self.render_maxed_slider_uint(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., start + lower_down * 1.2),
+                                vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                                "Max FPS",
+                                "None",
+                                TITLE_SIZE,
+                                0..FPS_LIMIT,
+                                self.default_settings.max_fps,
+                                current_settings.max_fps,
+                                &mut editing_settings.max_fps,
+                            );
+
+                            let vsync_text_color =
+                                if editing_settings.vsync != current_settings.vsync {
+                                    CHANGED_TEXT_COLOR
+                                } else {
+                                    BLACK
+                                };
+
+                            if self.render_button(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., 0. + lower_down * 0.8),
+                                BUTTON_SIZE * vec2(0.8, 0.75),
+                                &format!(
+                                    "VSync: {}",
+                                    if editing_settings.vsync { "On" } else { "Off" }
+                                ),
+                                vsync_text_color,
+                                21,
+                            ) {
+                                editing_settings.vsync = !editing_settings.vsync;
+                            }
+                        }
+                        _ => unreachable!(),
+                    },
+                    SettingsState::Misc(page) => match *page {
+                        0 => {
+                            self.render_slider_uint(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., start + lower_down * 1.1),
+                                vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                                "Ball radius",
+                                TITLE_SIZE,
+                                1..400,
+                                self.default_settings.ball_radius,
+                                current_settings.ball_radius,
+                                &mut editing_settings.ball_radius,
+                            );
+                        }
+                        _ => unreachable!(),
+                    },
+                    _ => unreachable!(),
                 }
-                2 => {
-                    self.render_slider(
-                        game_assets,
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., start + lower_down * 0.),
-                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
-                        "Audio volume",
-                        TITLE_SIZE,
-                        0.0..1.0,
-                        self.default_settings.audio_volume,
-                        current_settings.audio_volume,
-                        &mut editing_settings.audio_volume,
-                    );
-
-                    self.render_slider(
-                        game_assets,
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., start + lower_down * 1.),
-                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
-                        "Gravity strength",
-                        TITLE_SIZE,
-                        -30.0..30.0,
-                        self.default_settings.gravity_strength,
-                        current_settings.gravity_strength,
-                        &mut editing_settings.gravity_strength,
-                    );
-
-                    self.render_slider(
-                        game_assets,
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., start + lower_down * 2.),
-                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
-                        "Air friction",
-                        TITLE_SIZE,
-                        0.0..1.0,
-                        self.default_settings.air_friction,
-                        current_settings.air_friction,
-                        &mut editing_settings.air_friction,
-                    );
-
-                    self.render_slider(
-                        game_assets,
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., start + lower_down * 3.),
-                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
-                        "Max velocity",
-                        TITLE_SIZE,
-                        0.0..500.0,
-                        self.default_settings.max_velocity,
-                        current_settings.max_velocity,
-                        &mut editing_settings.max_velocity,
-                    );
+            } else {
+                let section_button_size = BUTTON_SIZE * vec2(0.725, 0.8);
+                let seperate = section_button_size.x / 1.95;
+                if self.render_button(
+                    game_assets,
+                    hash!(),
+                    mouse_pos,
+                    vec2(-seperate, lower_down * -2.),
+                    section_button_size,
+                    "Audio",
+                    DEFAULT_TEXT_COLOR,
+                    22,
+                ) {
+                    *settings_state = SettingsState::Audio(0);
                 }
-                3 => {
-                    self.render_slider(
-                        game_assets,
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., start + lower_down * 0.),
-                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
-                        "Ball bounciness",
-                        TITLE_SIZE,
-                        0.0..1.0,
-                        self.default_settings.ball_bounciness,
-                        current_settings.ball_bounciness,
-                        &mut editing_settings.ball_bounciness,
-                    );
 
-                    self.render_slider_uint(
-                        game_assets,
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., start + lower_down * 1.),
-                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
-                        "Ball radius",
-                        TITLE_SIZE,
-                        1..400,
-                        self.default_settings.ball_radius,
-                        current_settings.ball_radius,
-                        &mut editing_settings.ball_radius,
-                    );
-
-                    self.render_slider(
-                        game_assets,
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., start + lower_down * 2.),
-                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
-                        "Ball weight",
-                        TITLE_SIZE,
-                        0.0..1.0,
-                        self.default_settings.ball_weight,
-                        current_settings.ball_weight,
-                        &mut editing_settings.ball_weight,
-                    );
-
-                    self.render_slider(
-                        game_assets,
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., start + lower_down * 3.),
-                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
-                        "Ball friction",
-                        TITLE_SIZE,
-                        0.0..1.0,
-                        self.default_settings.ball_friction,
-                        current_settings.ball_friction,
-                        &mut editing_settings.ball_friction,
-                    );
+                if self.render_button(
+                    game_assets,
+                    hash!(),
+                    mouse_pos,
+                    vec2(seperate, lower_down * -2.),
+                    section_button_size,
+                    "Visuals",
+                    DEFAULT_TEXT_COLOR,
+                    22,
+                ) {
+                    *settings_state = SettingsState::Visuals(0);
                 }
-                4 => {
-                    self.render_slider_uint(
-                        game_assets,
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., start + lower_down * 0.),
-                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
-                        "Box width",
-                        TITLE_SIZE,
-                        300..1000,
-                        self.default_settings.box_width,
-                        current_settings.box_width,
-                        &mut editing_settings.box_width,
-                    );
 
-                    self.render_slider_uint(
-                        game_assets,
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., start + lower_down * 1.),
-                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
-                        "Box height",
-                        TITLE_SIZE,
-                        400..1000,
-                        self.default_settings.box_height,
-                        current_settings.box_height,
-                        &mut editing_settings.box_height,
-                    );
-
-                    self.render_slider_uint(
-                        game_assets,
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., start + lower_down * 2.),
-                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
-                        "Box thickness",
-                        TITLE_SIZE,
-                        0..100,
-                        self.default_settings.box_thickness,
-                        current_settings.box_thickness,
-                        &mut editing_settings.box_thickness,
-                    );
-
-                    self.render_slider_uint(
-                        game_assets,
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., start + lower_down * 3.),
-                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
-                        "Box depth",
-                        TITLE_SIZE,
-                        1..100,
-                        self.default_settings.box_depth,
-                        current_settings.box_depth,
-                        &mut editing_settings.box_depth,
-                    );
+                if self.render_button(
+                    game_assets,
+                    hash!(),
+                    mouse_pos,
+                    vec2(-seperate, lower_down * -0.9),
+                    section_button_size,
+                    "Box",
+                    DEFAULT_TEXT_COLOR,
+                    22,
+                ) {
+                    *settings_state = SettingsState::Box(0);
                 }
-                5 => {
-                    self.render_slider(
-                        game_assets,
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., start + lower_down * 0.),
-                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
-                        "AO focus",
-                        TITLE_SIZE,
-                        0.0..5.0,
-                        self.default_settings.ambient_occlusion_focus,
-                        current_settings.ambient_occlusion_focus,
-                        &mut editing_settings.ambient_occlusion_focus,
-                    );
 
-                    self.render_slider(
-                        game_assets,
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., start + lower_down * 1.),
-                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
-                        "AO strength",
-                        TITLE_SIZE,
-                        0.0..5.0,
-                        self.default_settings.ambient_occlusion_strength,
-                        current_settings.ambient_occlusion_strength,
-                        &mut editing_settings.ambient_occlusion_strength,
-                    );
-
-                    self.render_slider(
-                        game_assets,
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., start + lower_down * 2.),
-                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
-                        "Specular focus",
-                        TITLE_SIZE,
-                        0.0..100.0,
-                        self.default_settings.specular_focus,
-                        current_settings.specular_focus,
-                        &mut editing_settings.specular_focus,
-                    );
-
-                    self.render_slider(
-                        game_assets,
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., start + lower_down * 3.),
-                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
-                        "Specular strength",
-                        TITLE_SIZE,
-                        0.0..10.0,
-                        self.default_settings.specular_strength,
-                        current_settings.specular_strength,
-                        &mut editing_settings.specular_strength,
-                    );
+                if self.render_button(
+                    game_assets,
+                    hash!(),
+                    mouse_pos,
+                    vec2(seperate, lower_down * -0.9),
+                    section_button_size,
+                    "Physics",
+                    DEFAULT_TEXT_COLOR,
+                    22,
+                ) {
+                    *settings_state = SettingsState::Physics(0);
                 }
-                6 => {
-                    self.render_slider(
-                        game_assets,
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., start + lower_down * 0.),
-                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
-                        "Ambient light",
-                        TITLE_SIZE,
-                        0.0..1.0,
-                        self.default_settings.ambient_light,
-                        current_settings.ambient_light,
-                        &mut editing_settings.ambient_light,
-                    );
 
-                    self.render_slider(
-                        game_assets,
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., start + lower_down * 1.),
-                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
-                        "Shadow size",
-                        TITLE_SIZE,
-                        0.0..10.0,
-                        self.default_settings.shadow_size,
-                        current_settings.shadow_size,
-                        &mut editing_settings.shadow_size,
-                    );
-
-                    self.render_slider(
-                        game_assets,
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., start + lower_down * 2.),
-                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
-                        "Shadow dist strength",
-                        TITLE_SIZE - 2,
-                        0.0..10.0,
-                        self.default_settings.shadow_distance_strength,
-                        current_settings.shadow_distance_strength,
-                        &mut editing_settings.shadow_distance_strength,
-                    );
-
-                    self.render_slider(
-                        game_assets,
-                        hash!(),
-                        mouse_pos,
-                        vec2(0., start + lower_down * 3.),
-                        vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
-                        "Shadow strength",
-                        TITLE_SIZE,
-                        0.0..10.0,
-                        self.default_settings.shadow_strength,
-                        current_settings.shadow_strength,
-                        &mut editing_settings.shadow_strength,
-                    );
+                if self.render_button(
+                    game_assets,
+                    hash!(),
+                    mouse_pos,
+                    vec2(-seperate, lower_down * 0.2),
+                    section_button_size,
+                    "FPS/delay",
+                    DEFAULT_TEXT_COLOR,
+                    20,
+                ) {
+                    *settings_state = SettingsState::FpsDelay(0);
                 }
-                _ => {
-                    unimplemented!()
+
+                if self.render_button(
+                    game_assets,
+                    hash!(),
+                    mouse_pos,
+                    vec2(seperate, lower_down * 0.2),
+                    section_button_size,
+                    "Misc",
+                    DEFAULT_TEXT_COLOR,
+                    22,
+                ) {
+                    *settings_state = SettingsState::Misc(0);
+                }
+
+                if self.render_button(
+                    game_assets,
+                    hash!(),
+                    mouse_pos,
+                    vec2(0., 0. + lower_down * 1.4),
+                    BUTTON_SIZE * vec2(1.05, 0.8),
+                    "Reset settings",
+                    DARKRED_TEXT_COLOR,
+                    20,
+                ) {
+                    *editing_settings = self.default_settings.clone();
                 }
             }
 
@@ -610,7 +745,7 @@ impl UiRenderer {
                 DEFAULT_TEXT_COLOR,
                 28,
             ) {
-                *settings_state = SettingsState::Open;
+                settings_state.back();
             }
 
             let apply_color = if editing_settings != current_settings {

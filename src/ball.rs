@@ -278,16 +278,16 @@ impl Ball {
 
         wall_hits[0] = new_last_hit_wall;
 
-        const DENSITY: f32 = 0.32;
-        const SPEED_LIMIT: f32 = 120.;
+        let density = settings.hit_density;
+        let speed_limit = settings.min_hit_speed;
 
         let horizontal_sound = self.horizontal_sound_timer <= 0.;
         let vertical_sound = self.vertical_sound_timer <= 0.;
 
         // Play sound
 
-        if ((horizontal_sound && hit_wall_speed.x > SPEED_LIMIT)
-            || (vertical_sound && hit_wall_speed.y > SPEED_LIMIT))
+        if ((horizontal_sound && hit_wall_speed.x > speed_limit)
+            || (vertical_sound && hit_wall_speed.y > speed_limit))
             && !self.sounds.is_empty()
         {
             let inverted_distances_from_corners =
@@ -297,10 +297,10 @@ impl Ball {
 
             // The closer to the center it is, the louder the sound.
             let distance_from_corner = box_size.x - inverted_distances_from_corners.min_element();
-            sound_volume -= SPEED_LIMIT;
+            sound_volume -= speed_limit;
             sound_volume /= 450.;
             sound_volume *= 1. + distance_from_corner / 200.;
-            let volume = 1. - 1. / E.powf(sound_volume * sound_volume * DENSITY * DENSITY);
+            let volume = 1. - 1. / E.powf(sound_volume * sound_volume * density * density);
             play_sound(
                 &self.sounds[quad_rand::gen_range(0, self.sounds.len())],
                 PlaySoundParams {

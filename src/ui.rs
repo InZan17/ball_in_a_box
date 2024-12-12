@@ -6,7 +6,7 @@ use window::{order_quit, set_mouse_cursor};
 
 use crate::{assets::GameAssets, Settings, FPS_LIMIT};
 
-const RELATIVE_BOX_SIZE: Vec2 = vec2(372., 480.);
+const RELATIVE_BOX_SIZE: Vec2 = vec2(372., 450.);
 
 pub const MENU_SIZE: Vec2 = vec2(310., 400.);
 const BUTTON_SIZE: Vec2 = vec2(160., 75.);
@@ -15,8 +15,6 @@ const BUTTONS_MARGIN: f32 = 20.;
 const MENU_PADDING: f32 = 10.;
 const SMALL_BUTTON_DIV: f32 = 1.5;
 const SMALLER_BUTTON_DIV: f32 = 1.75;
-
-const LAST_PAGE_INDEX: u8 = 6;
 
 const DEFAULT_TEXT_COLOR: Color = Color::new(0.05, 0., 0.1, 1.);
 const ACTIVE_TEXT_COLOR: Color = Color::new(0.3, 0., 0.6, 1.);
@@ -209,7 +207,7 @@ impl UiRenderer {
                                 game_assets,
                                 hash!(),
                                 mouse_pos,
-                                vec2(0., start + lower_down * 1.1),
+                                vec2(0., start + lower_down * 0.3),
                                 vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
                                 "Audio volume",
                                 TITLE_SIZE,
@@ -217,6 +215,34 @@ impl UiRenderer {
                                 self.default_settings.audio_volume,
                                 current_settings.audio_volume,
                                 &mut editing_settings.audio_volume,
+                            );
+
+                            self.render_slider(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., start + lower_down * 1.5),
+                                vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                                "Hit density",
+                                TITLE_SIZE,
+                                0.0..1.0,
+                                self.default_settings.hit_density,
+                                current_settings.hit_density,
+                                &mut editing_settings.hit_density,
+                            );
+
+                            self.render_slider(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., start + lower_down * 2.7),
+                                vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                                "Minimum hit speed",
+                                TITLE_SIZE,
+                                0.0..500.0,
+                                self.default_settings.min_hit_speed,
+                                current_settings.min_hit_speed,
+                                &mut editing_settings.min_hit_speed,
                             );
                         }
                         _ => unreachable!(),
@@ -619,7 +645,7 @@ impl UiRenderer {
                                 game_assets,
                                 hash!(),
                                 mouse_pos,
-                                vec2(0., start + lower_down * 1.1),
+                                vec2(0., start + lower_down * 0.55),
                                 vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
                                 "Ball radius",
                                 TITLE_SIZE,
@@ -627,6 +653,20 @@ impl UiRenderer {
                                 self.default_settings.ball_radius,
                                 current_settings.ball_radius,
                                 &mut editing_settings.ball_radius,
+                            );
+
+                            self.render_slider(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., start + lower_down * 1.75),
+                                vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
+                                "Game speed",
+                                TITLE_SIZE,
+                                0.1..3.0,
+                                self.default_settings.speed_mul,
+                                current_settings.speed_mul,
+                                &mut editing_settings.speed_mul,
                             );
                         }
                         _ => unreachable!(),
@@ -718,7 +758,7 @@ impl UiRenderer {
                     game_assets,
                     hash!(),
                     mouse_pos,
-                    vec2(0., 0. + lower_down * 1.4),
+                    vec2(0., 0. + lower_down * 1.35),
                     BUTTON_SIZE * vec2(1.05, 0.8),
                     "Reset settings",
                     DARKRED_TEXT_COLOR,

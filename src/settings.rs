@@ -8,6 +8,8 @@ use nanoserde::{DeJson, SerJson};
 #[nserde(serialize_none_as_null)]
 pub struct DeserializeSettings {
     audio_volume: Option<f32>,
+    hit_density: Option<f32>,
+    min_hit_speed: Option<f32>,
     gravity_strength: Option<f32>,
     air_friction: Option<f32>,
     max_velocity: Option<f32>,
@@ -41,6 +43,8 @@ pub struct DeserializeSettings {
 impl DeserializeSettings {
     pub fn contains_none(&self) -> bool {
         self.audio_volume.is_none()
+            || self.hit_density.is_none()
+            || self.min_hit_speed.is_none()
             || self.gravity_strength.is_none()
             || self.air_friction.is_none()
             || self.max_velocity.is_none()
@@ -74,6 +78,8 @@ impl DeserializeSettings {
         let has_none = self.contains_none();
         let settings = Settings {
             audio_volume: self.audio_volume.unwrap_or(default_settings.audio_volume),
+            hit_density: self.hit_density.unwrap_or(default_settings.hit_density),
+            min_hit_speed: self.min_hit_speed.unwrap_or(default_settings.min_hit_speed),
             gravity_strength: self
                 .gravity_strength
                 .unwrap_or(default_settings.gravity_strength),
@@ -174,38 +180,40 @@ impl DeserializeSettings {
 #[nserde(serialize_none_as_null)]
 pub struct Settings {
     pub audio_volume: f32,
-    pub gravity_strength: f32,
-    pub air_friction: f32,
-    pub max_velocity: f32,
+    pub hit_density: f32,
+    pub min_hit_speed: f32,
 
-    pub ball_bounciness: f32,
-    pub ball_radius: u32,
-    pub ball_weight: f32,
-    pub ball_friction: f32,
+    pub ambient_occlusion_focus: f32,
+    pub ambient_occlusion_strength: f32,
+    pub specular_focus: f32,
+    pub specular_strength: f32,
+    pub ambient_light: f32,
+    pub shadow_size: f32,
+    pub shadow_distance_strength: f32,
+    pub shadow_strength: f32,
+
+    pub box_weight: f32,
+    pub hide_smoothing: bool,
+    pub quick_turn: bool,
 
     pub box_width: u32,
     pub box_height: u32,
     pub box_thickness: u32,
     pub box_depth: u32,
 
-    pub ambient_occlusion_focus: f32,
-    pub ambient_occlusion_strength: f32,
-    pub specular_focus: f32,
-    pub specular_strength: f32,
-
-    pub ambient_light: f32,
-    pub shadow_size: f32,
-    pub shadow_distance_strength: f32,
-    pub shadow_strength: f32,
+    pub gravity_strength: f32,
+    pub air_friction: f32,
+    pub max_velocity: f32,
+    pub ball_bounciness: f32,
+    pub ball_weight: f32,
+    pub ball_friction: f32,
 
     pub delay_frames: u32,
     pub max_fps: u32,
-    pub speed_mul: f32,
     pub vsync: bool,
 
-    pub box_weight: f32,
-    pub hide_smoothing: bool,
-    pub quick_turn: bool,
+    pub ball_radius: u32,
+    pub speed_mul: f32,
 
     pub last_ball: String,
     pub last_sounds: String,
@@ -215,6 +223,8 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             audio_volume: 0.6,
+            hit_density: 0.32,
+            min_hit_speed: 120.,
             gravity_strength: 3.,
             air_friction: 0.17,
             max_velocity: 100.,

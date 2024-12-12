@@ -546,6 +546,7 @@ async fn main() {
         if save {
             let change_ball = editing_settings.last_ball != settings.last_ball;
             let change_sounds = editing_settings.last_sounds != settings.last_sounds;
+            let change_assets = editing_settings.last_asset_pack != settings.last_asset_pack;
             settings = editing_settings.clone();
             write_settings_file(&settings);
             for sound in ball.sounds.iter() {
@@ -569,6 +570,20 @@ async fn main() {
                 if let Some((_, sounds)) = find_sounds(&settings.last_sounds).await {
                     ball.sounds = sounds;
                 }
+            }
+
+            if change_assets {
+                let pack_path = if let Some(last_asset_pack) = &settings.last_asset_pack {
+                    if let Some((_, pack_path)) = find_pack(last_asset_pack) {
+                        Some(pack_path)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+
+                game_assets = GameAssets::new(pack_path, game_assets.missing_texture)
             }
         }
 

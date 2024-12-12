@@ -219,6 +219,54 @@ pub struct Settings {
     pub last_sounds: String,
 }
 
+impl Settings {
+    pub fn audio_changed(&self, compare: &Settings) -> bool {
+        self.audio_volume != compare.audio_volume
+            || self.hit_density != compare.hit_density
+            || self.min_hit_speed != compare.min_hit_speed
+    }
+
+    pub fn visual_changed(&self, compare: &Settings) -> bool {
+        self.ambient_occlusion_focus != compare.ambient_occlusion_focus
+            || self.ambient_occlusion_strength != compare.ambient_occlusion_strength
+            || self.specular_focus != compare.specular_focus
+            || self.specular_strength != compare.specular_strength
+            || self.ambient_light != compare.ambient_light
+            || self.shadow_size != compare.shadow_size
+            || self.shadow_distance_strength != compare.shadow_distance_strength
+            || self.shadow_strength != compare.shadow_strength
+    }
+
+    pub fn box_changed(&self, compare: &Settings) -> bool {
+        self.box_weight != compare.box_weight
+            || self.hide_smoothing != compare.hide_smoothing
+            || self.quick_turn != compare.quick_turn
+            || self.box_width != compare.box_width
+            || self.box_height != compare.box_height
+            || self.box_thickness != compare.box_thickness
+            || self.box_depth != compare.box_depth
+    }
+
+    pub fn physics_changed(&self, compare: &Settings) -> bool {
+        self.gravity_strength != compare.gravity_strength
+            || self.air_friction != compare.air_friction
+            || self.max_velocity != compare.max_velocity
+            || self.ball_bounciness != compare.ball_bounciness
+            || self.ball_weight != compare.ball_weight
+            || self.ball_friction != compare.ball_friction
+    }
+
+    pub fn fps_delay_changed(&self, compare: &Settings) -> bool {
+        self.delay_frames != compare.delay_frames
+            || self.max_fps != compare.max_fps
+            || self.vsync != compare.vsync
+    }
+
+    pub fn misc_changed(&self, compare: &Settings) -> bool {
+        self.ball_radius != compare.ball_radius || self.speed_mul != compare.speed_mul
+    }
+}
+
 impl Default for Settings {
     fn default() -> Self {
         Self {

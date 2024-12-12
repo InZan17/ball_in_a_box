@@ -4,7 +4,7 @@ use macroquad::{prelude::*, ui::hash};
 use miniquad::*;
 use window::{order_quit, set_mouse_cursor};
 
-use crate::{assets::GameAssets, Settings, FPS_LIMIT};
+use crate::{assets::GameAssets, settings, Settings, FPS_LIMIT};
 
 const RELATIVE_BOX_SIZE: Vec2 = vec2(372., 450.);
 
@@ -77,6 +77,22 @@ pub struct UiRenderer {
     default_settings: Settings,
     slider_follow: bool,
     active_id: u64,
+}
+
+pub fn get_changed_color(changed: bool) -> Color {
+    if changed {
+        CHANGED_TEXT_COLOR
+    } else {
+        BLACK
+    }
+}
+
+pub fn get_changed_default_color(changed: bool) -> Color {
+    if changed {
+        CHANGED_TEXT_COLOR
+    } else {
+        DEFAULT_TEXT_COLOR
+    }
 }
 
 impl UiRenderer {
@@ -380,14 +396,6 @@ impl UiRenderer {
                                 &mut editing_settings.box_weight,
                             );
 
-                            let hide_smoothing_text_color = if editing_settings.hide_smoothing
-                                != current_settings.hide_smoothing
-                            {
-                                CHANGED_TEXT_COLOR
-                            } else {
-                                BLACK
-                            };
-
                             if self.render_button(
                                 game_assets,
                                 hash!(),
@@ -402,18 +410,14 @@ impl UiRenderer {
                                         "Off"
                                     }
                                 ),
-                                hide_smoothing_text_color,
+                                get_changed_color(
+                                    editing_settings.hide_smoothing
+                                        != current_settings.hide_smoothing,
+                                ),
                                 20,
                             ) {
                                 editing_settings.hide_smoothing = !editing_settings.hide_smoothing;
                             }
-
-                            let quick_turn_text_color =
-                                if editing_settings.quick_turn != current_settings.quick_turn {
-                                    CHANGED_TEXT_COLOR
-                                } else {
-                                    BLACK
-                                };
 
                             if self.render_button(
                                 game_assets,
@@ -429,7 +433,9 @@ impl UiRenderer {
                                         "Off"
                                     }
                                 ),
-                                quick_turn_text_color,
+                                get_changed_color(
+                                    editing_settings.quick_turn != current_settings.quick_turn,
+                                ),
                                 20,
                             ) {
                                 editing_settings.quick_turn = !editing_settings.quick_turn;
@@ -614,13 +620,6 @@ impl UiRenderer {
                                 &mut editing_settings.max_fps,
                             );
 
-                            let vsync_text_color =
-                                if editing_settings.vsync != current_settings.vsync {
-                                    CHANGED_TEXT_COLOR
-                                } else {
-                                    BLACK
-                                };
-
                             if self.render_button(
                                 game_assets,
                                 hash!(),
@@ -631,7 +630,7 @@ impl UiRenderer {
                                     "VSync: {}",
                                     if editing_settings.vsync { "On" } else { "Off" }
                                 ),
-                                vsync_text_color,
+                                get_changed_color(editing_settings.vsync != current_settings.vsync),
                                 21,
                             ) {
                                 editing_settings.vsync = !editing_settings.vsync;
@@ -683,7 +682,7 @@ impl UiRenderer {
                     vec2(-seperate, lower_down * -2.),
                     section_button_size,
                     "Audio",
-                    DEFAULT_TEXT_COLOR,
+                    get_changed_default_color(editing_settings.audio_changed(current_settings)),
                     22,
                 ) {
                     *settings_state = SettingsState::Audio(0);
@@ -696,7 +695,7 @@ impl UiRenderer {
                     vec2(seperate, lower_down * -2.),
                     section_button_size,
                     "Visuals",
-                    DEFAULT_TEXT_COLOR,
+                    get_changed_default_color(editing_settings.visual_changed(current_settings)),
                     22,
                 ) {
                     *settings_state = SettingsState::Visuals(0);
@@ -709,7 +708,7 @@ impl UiRenderer {
                     vec2(-seperate, lower_down * -0.9),
                     section_button_size,
                     "Box",
-                    DEFAULT_TEXT_COLOR,
+                    get_changed_default_color(editing_settings.box_changed(current_settings)),
                     22,
                 ) {
                     *settings_state = SettingsState::Box(0);
@@ -722,7 +721,7 @@ impl UiRenderer {
                     vec2(seperate, lower_down * -0.9),
                     section_button_size,
                     "Physics",
-                    DEFAULT_TEXT_COLOR,
+                    get_changed_default_color(editing_settings.physics_changed(current_settings)),
                     22,
                 ) {
                     *settings_state = SettingsState::Physics(0);
@@ -735,7 +734,7 @@ impl UiRenderer {
                     vec2(-seperate, lower_down * 0.2),
                     section_button_size,
                     "FPS/delay",
-                    DEFAULT_TEXT_COLOR,
+                    get_changed_default_color(editing_settings.fps_delay_changed(current_settings)),
                     20,
                 ) {
                     *settings_state = SettingsState::FpsDelay(0);
@@ -748,7 +747,7 @@ impl UiRenderer {
                     vec2(seperate, lower_down * 0.2),
                     section_button_size,
                     "Misc",
-                    DEFAULT_TEXT_COLOR,
+                    get_changed_default_color(editing_settings.misc_changed(current_settings)),
                     22,
                 ) {
                     *settings_state = SettingsState::Misc(0);
@@ -788,12 +787,6 @@ impl UiRenderer {
                 settings_state.back();
             }
 
-            let apply_color = if editing_settings != current_settings {
-                CHANGED_TEXT_COLOR
-            } else {
-                DEFAULT_TEXT_COLOR
-            };
-
             if self.render_button(
                 game_assets,
                 hash!(),
@@ -801,7 +794,7 @@ impl UiRenderer {
                 vec2(-center_offset_x, -y_offset),
                 BUTTON_SIZE / SMALL_BUTTON_DIV,
                 "Apply",
-                apply_color,
+                get_changed_default_color(current_settings != editing_settings),
                 28,
             ) {
                 save = true;

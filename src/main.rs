@@ -228,7 +228,7 @@ async fn main() {
             }
         }
 
-        if settings_state == SettingsState::Settings {
+        if settings_state.is_settings() {
             if !is_in_settings {
                 editing_settings = settings.clone();
                 is_in_settings = true

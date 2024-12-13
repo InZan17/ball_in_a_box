@@ -83,15 +83,10 @@ pub fn smooth_vec2_critically_damped(
 }
 
 pub trait FromTuple {
-    fn from_u32_tuple(tuple: (u32, u32)) -> Self;
     fn from_i32_tuple(tuple: (i32, i32)) -> Self;
 }
 
 impl FromTuple for Vec2 {
-    fn from_u32_tuple(tuple: (u32, u32)) -> Self {
-        Vec2::new(tuple.0 as f32, tuple.1 as f32)
-    }
-
     fn from_i32_tuple(tuple: (i32, i32)) -> Self {
         Vec2::new(tuple.0 as f32, tuple.1 as f32)
     }
@@ -103,7 +98,6 @@ pub fn log_panic(message: &str) {
         .write(true)
         .open("crash_info.txt")
     {
-        println!("aw");
         let _ = log_file.write(message.as_bytes());
     };
     panic!("{}", message)
@@ -254,7 +248,7 @@ async fn main() {
         let local_mouse_pos = if let Some(mouse_pos) = mouse_offset {
             -mouse_pos
         } else {
-            (current_mouse_position - Vec2::from_u32_tuple(get_window_position()))
+            (current_mouse_position - Vec2::from_i32_tuple(get_window_position()))
                 .clamp(Vec2::ZERO, box_size - 1.0)
         };
 
@@ -396,7 +390,7 @@ async fn main() {
             for delta in mouse_deltas.iter() {
                 new_pos += *delta;
             }
-            set_window_position(new_pos.x as u32, new_pos.y as u32);
+            set_window_position(new_pos.x as i32, new_pos.y as i32);
         } else {
             if mouse_deltas.len() > 0 {
                 mouse_deltas.push_back(Vec2::ZERO);
@@ -414,7 +408,7 @@ async fn main() {
 
                 new_pos += delayed_delta_pos;
 
-                set_window_position(new_pos.x as u32, new_pos.y as u32);
+                set_window_position(new_pos.x as i32, new_pos.y as i32);
             };
         }
 

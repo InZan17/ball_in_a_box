@@ -26,10 +26,6 @@ vec2 rotate(vec2 point, float r) {
     return new_point;
 }
 
-float circle_wave(float l) {
-    return sqrt(1.0 - l*l);
-}
-
 void main() {
     vec2 minus_one_to_one_uv = uv * 2.0 - 1.0;
     float center_length = length(minus_one_to_one_uv);
@@ -43,22 +39,14 @@ void main() {
 
     vec2 rotated_uv = rotate(minus_one_to_one_uv, rotation);
 
-    float z = circle_wave(center_length);
-
-    float minus_len_pow_2 = z*z - 1.0;
-
-    float len_pow_2 = max(-minus_len_pow_2, 0.0);
-
-    float len = sqrt(len_pow_2);
-
-    vec2 normal_xy = (rotated_uv / center_length) * len;
-
-    vec3 normal = vec3(normal_xy, z);
+    float z = sqrt(1.0 - minus_one_to_one_uv.x * minus_one_to_one_uv.x - minus_one_to_one_uv.y * minus_one_to_one_uv.y);
+    
+    vec3 normal = vec3(rotated_uv, z);
     
     vec3 light_dir = vec3(0.6, 0.8, -1.2);
     vec3 normalized_light_dir = normalize(light_dir);
 
-    vec4 cardboard_shadow_color = vec4(82, 43, 12, 255) / 255.;
+    vec4 cardboard_shadow_color = vec4(40, 20, 8, 255) / 255.;
     vec4 ambient_color = vec4(185, 159, 123, 255) / 255.;
 
 

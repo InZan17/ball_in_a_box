@@ -296,7 +296,7 @@ impl Default for Settings {
             box_depth: 20,
 
             ambient_occlusion_focus: 1.1,
-            ambient_occlusion_strength: 0.7,
+            ambient_occlusion_strength: 0.75,
             specular_focus: 32.0,
             specular_strength: 0.3,
 

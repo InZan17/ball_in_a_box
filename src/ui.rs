@@ -614,7 +614,7 @@ impl UiRenderer {
                                 "Max FPS",
                                 "None",
                                 TITLE_SIZE,
-                                0..FPS_LIMIT,
+                                10..FPS_LIMIT,
                                 self.default_settings.max_fps,
                                 current_settings.max_fps,
                                 &mut editing_settings.max_fps,

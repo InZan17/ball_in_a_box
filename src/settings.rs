@@ -310,8 +310,8 @@ impl Default for Settings {
             vsync: false,
             speed_mul: 1.0,
 
-            box_weight: 0.04,
-            hide_smoothing: true,
+            box_weight: 0.02,
+            hide_smoothing: false,
             quick_turn: true,
 
             last_ball: "grinning".to_string(),

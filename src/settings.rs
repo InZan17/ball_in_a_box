@@ -278,12 +278,12 @@ impl Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            audio_volume: 0.6,
-            hit_density: 0.32,
+            audio_volume: 0.5,
+            hit_density: 0.25,
             min_hit_speed: 120.,
-            gravity_strength: 3.,
-            air_friction: 0.17,
-            max_velocity: 100.,
+            gravity_strength: 3.5,
+            air_friction: 0.14,
+            max_velocity: 200.,
 
             ball_bounciness: 0.9,
             ball_radius: 90,

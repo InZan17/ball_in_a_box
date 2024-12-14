@@ -180,9 +180,8 @@ async fn main() {
     let mut text_input = String::with_capacity(MAX_INPUT_LEN);
 
     let mut ui_renderer = UiRenderer::new().await;
-
-    let mut moved_since_right_click = false;
-    let mut interacting_with_ui = false;
+    
+    let mut ignore_drag = false;
     let mut is_in_settings = false;
     let mut settings_state = SettingsState::Closed;
 
@@ -200,15 +199,19 @@ async fn main() {
 
     let mut times_clicked_backspace: u8 = 0;
 
+    let mut last_button_is_down = false;
+    let mut last_click = 0.0;
+
     loop {
         clear_background(DARKGRAY);
 
         let delta_time;
+        let real_delta_time = get_frame_time();
 
         // First frame loads everything, second frame will have a high delta time because of loading a lot the previous frame.
         // Delay the actual delta time until after that so the user can see the ball spawn in middle and bounce.
         if frames_after_start >= 2 {
-            delta_time = get_frame_time() * settings.speed_mul
+            delta_time = real_delta_time * settings.speed_mul
         } else {
             frames_after_start += 1;
             delta_time = 0.0
@@ -217,19 +220,19 @@ async fn main() {
         let box_thickness = settings.box_thickness as f32;
 
         // Handle controls
+        let button_is_down =
+            is_mouse_button_down(MouseButton::Left) || is_mouse_button_down(MouseButton::Right);
 
-        if is_mouse_button_pressed(MouseButton::Right) {
-            moved_since_right_click = false;
-        }
+        let button_pressed = !last_button_is_down && button_is_down;
 
-        if is_key_pressed(KeyCode::Escape)
-            || (is_mouse_button_released(MouseButton::Right) && !moved_since_right_click)
-        {
-            if settings_state != SettingsState::Closed {
-                settings_state = SettingsState::Closed
-            } else {
-                settings_state = SettingsState::Open
-            }
+        last_button_is_down = button_is_down;
+
+        let open_menu = button_pressed && last_click > 0.0 || is_key_pressed(KeyCode::Escape);
+
+        if button_pressed {
+            last_click = 0.4;
+        } else {
+            last_click -= real_delta_time;
         }
 
         if settings_state.is_settings() {
@@ -299,24 +302,19 @@ async fn main() {
             }
         }
 
-        // Don't move window if overlapping with menu.
-        if (is_mouse_button_pressed(MouseButton::Left)
-            || is_mouse_button_pressed(MouseButton::Right))
-            && is_menu_open
-        {
+        let hovering_menu = {
             let abs_mouse_pos_from_center = (local_mouse_pos - box_size / 2.).abs();
-            if abs_mouse_pos_from_center.x < MENU_SIZE.x / 2. * ui_renderer.mult
+            abs_mouse_pos_from_center.x < MENU_SIZE.x / 2. * ui_renderer.mult
                 && abs_mouse_pos_from_center.y < MENU_SIZE.y / 2. * ui_renderer.mult
-            {
-                interacting_with_ui = true
-            }
+        };
+
+        // Don't move window if overlapping with menu.
+        if button_pressed && is_menu_open && hovering_menu {
+                ignore_drag = true
         }
 
-        let button_is_down =
-            is_mouse_button_down(MouseButton::Left) || is_mouse_button_down(MouseButton::Right);
-
         if !button_is_down {
-            interacting_with_ui = false
+            ignore_drag = false
         }
 
         if (!get_keys_pressed().is_empty() && !is_key_pressed(KeyCode::Backspace)) || button_is_down
@@ -331,7 +329,7 @@ async fn main() {
         let mouse_offset_was_some = mouse_offset.is_some();
 
         // Update internal / visual window position and get delta position of window.
-        let visual_delta_pos = if !interacting_with_ui && button_is_down {
+        let visual_delta_pos = if !ignore_drag && button_is_down {
             let mouse_offset = match mouse_offset {
                 Some(mouse_offset) => mouse_offset,
                 None => {
@@ -360,10 +358,6 @@ async fn main() {
 
             let visual_delta_pos = new_visual_window_pos - old_visual_window_position;
 
-            if visual_delta_pos != Vec2::ZERO {
-                moved_since_right_click = true
-            }
-
             old_internal_window_position = new_internal_window_pos;
             old_visual_window_position = new_visual_window_pos;
             -visual_delta_pos
@@ -384,7 +378,7 @@ async fn main() {
             }
         }
 
-        if !interacting_with_ui && button_is_down {
+        if !ignore_drag && button_is_down {
             let mut new_pos = old_visual_window_position;
 
             for delta in mouse_deltas.iter() {
@@ -578,6 +572,26 @@ async fn main() {
                 };
 
                 game_assets = GameAssets::new(pack_path, game_assets.missing_texture)
+            }
+        }
+
+        let ui_interacted = ui_renderer.did_interact();
+
+        // The reason we open it at the end of everything is so that if someone double clicks to open the menu, they wont accidentally click a button.
+        if ui_interacted {
+            last_click = 0.0;
+        } else if open_menu {
+            last_click = 0.0;
+            if settings_state != SettingsState::Closed {
+                settings_state = SettingsState::Closed;
+                if button_pressed {
+                    ignore_drag = false;
+                }
+            } else {
+                settings_state = SettingsState::Open;
+                if hovering_menu {
+                    ignore_drag = true;
+                }
             }
         }
 

@@ -77,6 +77,7 @@ pub struct UiRenderer {
     default_settings: Settings,
     slider_follow: bool,
     active_id: u64,
+    interacted: bool,
 }
 
 pub fn get_changed_color(changed: bool) -> Color {
@@ -104,7 +105,12 @@ impl UiRenderer {
             reset_field: false,
             default_settings: Settings::default(),
             active_id: 0,
+            interacted: false,
         }
+    }
+
+    pub fn did_interact(&self) -> bool {
+        self.interacted
     }
 
     pub fn render_ui(
@@ -116,6 +122,7 @@ impl UiRenderer {
         mouse_pos: Vec2,
         box_size: Vec2,
     ) -> bool {
+        self.interacted = false;
         set_mouse_cursor(CursorIcon::Default);
         if *settings_state == SettingsState::Closed {
             return false;
@@ -977,6 +984,8 @@ impl UiRenderer {
             },
         );
 
+        self.interacted = self.interacted || button_is_active && mouse_is_released;
+
         return button_is_active && mouse_is_released;
     }
 
@@ -1031,9 +1040,11 @@ impl UiRenderer {
         } else if contains_mouse && mouse_is_pressed {
             self.active_id = id;
             self.slider_follow = slider_contains_mouse;
-            self.user_input = String::new()
+            self.user_input = String::new();
+            self.interacted = true;
         } else if contains_mouse && mouse_is_down && self.active_id == id {
             self.slider_follow = self.slider_follow || slider_contains_mouse;
+            self.interacted = true;
         } else if is_key_pressed(KeyCode::Enter) && self.active_id == id {
             self.active_id = 0;
             self.user_input = String::new()
@@ -1201,9 +1212,11 @@ impl UiRenderer {
         } else if contains_mouse && mouse_is_pressed {
             self.active_id = id;
             self.slider_follow = slider_contains_mouse;
-            self.user_input = String::new()
+            self.user_input = String::new();
+            self.interacted = true;
         } else if contains_mouse && mouse_is_down && self.active_id == id {
             self.slider_follow = self.slider_follow || slider_contains_mouse;
+            self.interacted = true;
         } else if is_key_pressed(KeyCode::Enter) && self.active_id == id {
             self.active_id = 0;
             self.user_input = String::new()
@@ -1373,9 +1386,11 @@ impl UiRenderer {
         } else if contains_mouse && mouse_is_pressed {
             self.active_id = id;
             self.slider_follow = slider_contains_mouse;
-            self.user_input = String::new()
+            self.user_input = String::new();
+            self.interacted = true;
         } else if contains_mouse && mouse_is_down && self.active_id == id {
             self.slider_follow = self.slider_follow || slider_contains_mouse;
+            self.interacted = true;
         } else if is_key_pressed(KeyCode::Enter) && self.active_id == id {
             self.active_id = 0;
             self.user_input = String::new()

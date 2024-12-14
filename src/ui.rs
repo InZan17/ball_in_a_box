@@ -975,6 +975,7 @@ impl UiRenderer {
         if contains_mouse {
             set_mouse_cursor(CursorIcon::Pointer);
             if mouse_is_pressed {
+                self.interacted = true;
                 self.active_id = id;
             }
         } else if self.active_id == id {

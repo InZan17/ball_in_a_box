@@ -199,7 +199,8 @@ async fn main() {
 
     let mut times_clicked_backspace: u8 = 0;
 
-    let mut last_button_is_down = false;
+    let mut last_left_button_is_down = false;
+    let mut last_right_button_is_down = false;
     let mut last_click = 0.0;
 
     loop {
@@ -220,13 +221,30 @@ async fn main() {
         let box_thickness = settings.box_thickness as f32;
 
         // Handle controls
-        let button_is_down =
-            is_mouse_button_down(MouseButton::Left) || is_mouse_button_down(MouseButton::Right);
+
+        let left_button_is_down = is_mouse_button_down(MouseButton::Left);
+        let right_button_is_down = is_mouse_button_down(MouseButton::Right);
+
+        // When the user clicks on the UI and makes the mouse exit the screen, it will still think its being presed.
+        // When the user clicks again on a valid spot, it still thinks it's from the click on the UI and doesn't move the window.
+        // This fixes that.
+        if last_left_button_is_down && is_mouse_button_pressed(MouseButton::Left) {
+            last_left_button_is_down = false;
+        }
+
+        if last_right_button_is_down && is_mouse_button_pressed(MouseButton::Right) {
+            last_right_button_is_down = false;
+        }
+
+        let last_button_is_down = last_left_button_is_down || last_right_button_is_down;
+
+        let button_is_down = left_button_is_down || right_button_is_down;
 
         let button_pressed = !last_button_is_down && button_is_down;
         let button_released = last_button_is_down && !button_is_down;
 
-        last_button_is_down = button_is_down;
+        last_left_button_is_down = left_button_is_down;
+        last_right_button_is_down = right_button_is_down;
 
         let open_menu = button_pressed && last_click > 0.0 || is_key_pressed(KeyCode::Escape);
 

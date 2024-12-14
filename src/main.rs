@@ -180,7 +180,7 @@ async fn main() {
     let mut text_input = String::with_capacity(MAX_INPUT_LEN);
 
     let mut ui_renderer = UiRenderer::new().await;
-    
+
     let mut ignore_drag = false;
     let mut is_in_settings = false;
     let mut settings_state = SettingsState::Closed;
@@ -310,7 +310,7 @@ async fn main() {
 
         // Don't move window if overlapping with menu.
         if button_pressed && is_menu_open && hovering_menu {
-                ignore_drag = true
+            ignore_drag = true
         }
 
         if !button_is_down {
@@ -589,6 +589,7 @@ async fn main() {
                 }
             } else {
                 settings_state = SettingsState::Open;
+                ui_renderer.reset_focused();
                 if hovering_menu {
                     ignore_drag = true;
                 }

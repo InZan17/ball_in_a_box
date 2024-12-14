@@ -109,6 +109,10 @@ impl UiRenderer {
         }
     }
 
+    pub fn reset_focused(&mut self) {
+        self.active_id = 0;
+    }
+
     pub fn did_interact(&self) -> bool {
         self.interacted
     }

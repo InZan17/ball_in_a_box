@@ -292,7 +292,7 @@ impl Default for Settings {
 
             box_width: 640,
             box_height: 480,
-            box_thickness: 20,
+            box_thickness: 25,
             box_depth: 20,
 
             ambient_occlusion_focus: 1.1,

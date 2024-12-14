@@ -22,10 +22,9 @@ To add custom balls, open the `balls` folder and put your image in there, and th
 To add custom sounds, open the `sounds` folder and make a new folder with the name of your sound pack. Then, add your sounds into the folder. (Name doesn't matter) Then type the name of your sound pack inside the game. (No need to restart the game) Just make sure it's an OGG as it will not work with any other format.
 
 ## Custom assets
-To add custom assets, open the `asset_packs` folder and make a new folder with the name of your asset pack. Then, add all of the assets you wanna override. (Look inside the `assets` folder) Then type the name of your asset pack inside the game. (No need to restart the game) Just make sure the file names and file formats match.
+To add custom assets, open the `asset_packs` folder and make a new folder with the name of your asset pack. Then, add all of your assets into the folder and rename them to the asset you wanna override. (Look inside the `assets` folder) Then type the name of your asset pack inside the game. (No need to restart the game) Just make sure the file names and file formats match.
 
 ## Ball is lagging/not synced?
-
 The ball might not smoothly follow the  window. I haven't found a solid way to solve this, but what you could do is to open the menu and click `Settings`. You can then try to set `Max FPS` to the highest and then enable VSync (VSync will automatically cap the frame-rate) and then adjust `Delay frames` to make the window movement synced with the ball. Usually its between 0 and 2.
 
 Or if your monitor is higher than 60fps, you can try only setting `Max FPS` to your monitors frame-rate.
@@ -33,5 +32,4 @@ Or if your monitor is higher than 60fps, you can try only setting `Max FPS` to y
 These aren't guaranteed to fix it, so just do whichever one is the least laggy.
 
 ## Compiling
-
 When compiling for release I use this command: `RUSTFLAGS="-Zlocation-detail=none -Zfmt-debug=none" cargo +nightly build -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort --target x86_64-pc-windows-gnu --release`.

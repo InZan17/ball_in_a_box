@@ -606,7 +606,7 @@ impl UiRenderer {
                                 game_assets,
                                 hash!(),
                                 mouse_pos,
-                                vec2(0., start + lower_down * 0.1),
+                                vec2(0., start + lower_down * -0.2),
                                 vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
                                 "Delay frames",
                                 TITLE_SIZE,
@@ -620,7 +620,7 @@ impl UiRenderer {
                                 game_assets,
                                 hash!(),
                                 mouse_pos,
-                                vec2(0., start + lower_down * 1.2),
+                                vec2(0., start + lower_down * 0.8),
                                 vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
                                 "Max FPS",
                                 "None",
@@ -635,7 +635,7 @@ impl UiRenderer {
                                 game_assets,
                                 hash!(),
                                 mouse_pos,
-                                vec2(0., 0. + lower_down * 0.8),
+                                vec2(0., 0. + lower_down * 0.25),
                                 BUTTON_SIZE * vec2(0.8, 0.75),
                                 &format!(
                                     "VSync: {}",
@@ -646,6 +646,35 @@ impl UiRenderer {
                             ) {
                                 editing_settings.vsync = !editing_settings.vsync;
                             }
+
+                            self.render_text(
+                                game_assets,
+                                vec2(0., 0. + lower_down * 0.9),
+                                vec2(10., 10.),
+                                "Note: When using VSync, it will",
+                                16,
+                            );
+                            self.render_text(
+                                game_assets,
+                                vec2(0., 0. + lower_down * 1.2),
+                                vec2(10., 10.),
+                                "automatically cap the FPS.",
+                                16,
+                            );
+                            self.render_text(
+                                game_assets,
+                                vec2(0., 0. + lower_down * 1.5),
+                                vec2(10., 10.),
+                                "If you're using VSync, consider",
+                                16,
+                            );
+                            self.render_text(
+                                game_assets,
+                                vec2(0., 0. + lower_down * 1.8),
+                                vec2(10., 10.),
+                                "setting Max FPS to the max.",
+                                16,
+                            );
                         }
                         _ => unreachable!(),
                     },

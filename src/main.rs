@@ -181,7 +181,7 @@ async fn main() {
 
     let mut ui_renderer = UiRenderer::new().await;
 
-    let mut ignore_drag = false;
+    let mut do_drag = false;
     let mut is_in_settings = false;
     let mut settings_state = SettingsState::Closed;
 
@@ -224,6 +224,7 @@ async fn main() {
             is_mouse_button_down(MouseButton::Left) || is_mouse_button_down(MouseButton::Right);
 
         let button_pressed = !last_button_is_down && button_is_down;
+        let button_released = last_button_is_down && !button_is_down;
 
         last_button_is_down = button_is_down;
 
@@ -309,16 +310,13 @@ async fn main() {
         };
 
         // Don't move window if overlapping with menu.
-        if button_pressed && is_menu_open && hovering_menu {
-            ignore_drag = true
+        if button_pressed && (!is_menu_open || !hovering_menu) {
+            do_drag = true
+        } else if button_released {
+            do_drag = false
         }
 
-        if !button_is_down {
-            ignore_drag = false
-        }
-
-        if (!get_keys_pressed().is_empty() && !is_key_pressed(KeyCode::Backspace)) || button_is_down
-        {
+        if (!get_keys_pressed().is_empty() && !is_key_pressed(KeyCode::Backspace)) || do_drag {
             times_clicked_backspace = 0
         }
 
@@ -329,7 +327,7 @@ async fn main() {
         let mouse_offset_was_some = mouse_offset.is_some();
 
         // Update internal / visual window position and get delta position of window.
-        let visual_delta_pos = if !ignore_drag && button_is_down {
+        let visual_delta_pos = if do_drag {
             let mouse_offset = match mouse_offset {
                 Some(mouse_offset) => mouse_offset,
                 None => {
@@ -373,12 +371,12 @@ async fn main() {
             while mouse_deltas.len() >= delay_frames {
                 mouse_deltas.pop_front();
             }
-            if mouse_offset_was_some && button_is_down {
+            if mouse_offset_was_some && do_drag {
                 mouse_deltas.push_back(visual_delta_pos);
             }
         }
 
-        if !ignore_drag && button_is_down {
+        if do_drag {
             let mut new_pos = old_visual_window_position;
 
             for delta in mouse_deltas.iter() {
@@ -585,13 +583,13 @@ async fn main() {
             if settings_state != SettingsState::Closed {
                 settings_state = SettingsState::Closed;
                 if button_pressed {
-                    ignore_drag = false;
+                    do_drag = true;
                 }
             } else {
                 settings_state = SettingsState::Open;
                 ui_renderer.reset_focused();
-                if hovering_menu {
-                    ignore_drag = true;
+                if hovering_menu && button_pressed {
+                    do_drag = false;
                 }
             }
         }

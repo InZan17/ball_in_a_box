@@ -684,7 +684,7 @@ impl UiRenderer {
                                 game_assets,
                                 hash!(),
                                 mouse_pos,
-                                vec2(0., start + lower_down * 0.4),
+                                vec2(0., start + lower_down * -0.2),
                                 vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
                                 "Ball radius",
                                 TITLE_SIZE,
@@ -698,7 +698,7 @@ impl UiRenderer {
                                 game_assets,
                                 hash!(),
                                 mouse_pos,
-                                vec2(0., start + lower_down * 1.5),
+                                vec2(0., start + lower_down * 0.8),
                                 vec2(SLIDER_WIDTH, SLIDER_HEIGHT),
                                 "Game speed",
                                 TITLE_SIZE,
@@ -708,9 +708,32 @@ impl UiRenderer {
                                 &mut editing_settings.speed_mul,
                             );
 
+                            if self.render_button(
+                                game_assets,
+                                hash!(),
+                                mouse_pos,
+                                vec2(0., start + lower_down * 1.675),
+                                BUTTON_SIZE * vec2(1.25, 0.8),
+                                &format!(
+                                    "Click to drag: {}",
+                                    if editing_settings.click_to_drag {
+                                        "On"
+                                    } else {
+                                        "Off"
+                                    }
+                                ),
+                                get_changed_color(
+                                    editing_settings.click_to_drag
+                                        != current_settings.click_to_drag,
+                                ),
+                                20,
+                            ) {
+                                editing_settings.click_to_drag = !editing_settings.click_to_drag;
+                            }
+
                             self.render_text(
                                 game_assets,
-                                vec2(0., start + lower_down * 2.15),
+                                vec2(0., start + lower_down * 2.45),
                                 vec2(10., 10.),
                                 &format!("Current ball: {}", editing_settings.last_ball),
                                 18,
@@ -718,7 +741,7 @@ impl UiRenderer {
 
                             self.render_text(
                                 game_assets,
-                                vec2(0., start + lower_down * 2.55),
+                                vec2(0., start + lower_down * 2.8),
                                 vec2(10., 10.),
                                 &format!("Current sounds: {}", editing_settings.last_sounds),
                                 18,
@@ -726,7 +749,7 @@ impl UiRenderer {
 
                             self.render_text(
                                 game_assets,
-                                vec2(0., start + lower_down * 2.95),
+                                vec2(0., start + lower_down * 3.15),
                                 vec2(10., 10.),
                                 &format!(
                                     "Current asset pack: {}",

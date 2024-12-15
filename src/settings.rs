@@ -273,6 +273,7 @@ impl Settings {
     pub fn misc_changed(&self, compare: &Settings) -> bool {
         self.ball_radius != compare.ball_radius
             || self.speed_mul != compare.speed_mul
+            || self.click_to_drag != compare.click_to_drag
             || self.last_ball != compare.last_ball
             || self.last_sounds != compare.last_sounds
             || self.last_asset_pack != compare.last_asset_pack

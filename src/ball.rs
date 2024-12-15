@@ -70,9 +70,13 @@ impl Ball {
             - self.velocity * (settings.air_friction * dt.clamp(0., 1.));
 
         self.velocity += velocity_acceleration * 0.5;
-        self.position += (self.velocity + visual_box_velocity) * dt;
-        self.velocity += velocity_acceleration * 0.5;
+        if self.velocity.length() > settings.max_velocity * 1000. {
+            self.velocity = self.velocity.normalize() * settings.max_velocity * 1000.;
+        }
 
+        self.position += (self.velocity + visual_box_velocity) * dt;
+
+        self.velocity += velocity_acceleration * 0.5;
         if self.velocity.length() > settings.max_velocity * 1000. {
             self.velocity = self.velocity.normalize() * settings.max_velocity * 1000.;
         }

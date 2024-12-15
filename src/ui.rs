@@ -127,7 +127,6 @@ impl UiRenderer {
         box_size: Vec2,
     ) -> bool {
         self.interacted = false;
-        set_mouse_cursor(CursorIcon::Default);
         if *settings_state == SettingsState::Closed {
             return false;
         }

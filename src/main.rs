@@ -17,7 +17,9 @@ use settings::{read_settings_file, write_settings_file, Settings};
 use sounds::{find_sounds, get_random_sounds};
 use textures::{find_texture, get_random_texture};
 use ui::{SettingsState, UiRenderer, MENU_SIZE};
-use window::{get_window_position, set_swap_interval, set_window_position, set_window_size};
+use window::{
+    get_window_position, set_mouse_cursor, set_swap_interval, set_window_position, set_window_size,
+};
 
 pub mod assets;
 pub mod ball;
@@ -557,6 +559,14 @@ async fn main() {
 
         // Ball
         ball.render(&game_assets, &settings, box_size);
+
+        if hovering_menu && settings_state.is_open() {
+            set_mouse_cursor(CursorIcon::Default);
+        } else if do_drag {
+            set_mouse_cursor(CursorIcon::Move);
+        } else {
+            set_mouse_cursor(CursorIcon::Pointer);
+        }
 
         // Settings
         let save = ui_renderer.render_ui(

@@ -203,6 +203,9 @@ async fn main() {
     let mut last_right_button_is_down = false;
     let mut last_click = 0.0;
 
+    let mut clicked_mouse_position = Vec2::ZERO;
+    let mut moved_during_hold = false;
+
     loop {
         clear_background(DARKGRAY);
 
@@ -248,10 +251,23 @@ async fn main() {
 
         let open_menu = button_pressed && last_click > 0.0 || is_key_pressed(KeyCode::Escape);
 
+        let current_mouse_position = Vec2::from_i32_tuple(window::get_screen_mouse_position());
+
         if button_pressed {
             last_click = 0.4;
+            clicked_mouse_position = current_mouse_position;
+            if !do_drag {
+                moved_during_hold = false;
+            } else {
+                moved_during_hold = true;
+            }
         } else {
             last_click -= real_delta_time;
+        }
+
+        if !settings.click_to_drag {
+            // Quick way to disable the click to drag feature, since click to drag only works when you click while not moving.
+            moved_during_hold = true;
         }
 
         if settings_state.is_settings() {
@@ -265,7 +281,12 @@ async fn main() {
 
         let is_menu_open = settings_state.is_open();
 
-        let current_mouse_position = Vec2::from_i32_tuple(window::get_screen_mouse_position());
+        let delta_clicked_mouse_pos = clicked_mouse_position - current_mouse_position;
+
+        const MOUSE_MOVEMENT_LEEWAY: f32 = 2.0;
+        if button_is_down && delta_clicked_mouse_pos.length() > MOUSE_MOVEMENT_LEEWAY {
+            moved_during_hold = true;
+        }
 
         let local_mouse_pos = if let Some(mouse_pos) = mouse_offset {
             -mouse_pos
@@ -330,7 +351,7 @@ async fn main() {
         // Don't move window if overlapping with menu.
         if button_pressed && (!is_menu_open || !hovering_menu) {
             do_drag = true
-        } else if button_released {
+        } else if button_released && moved_during_hold {
             do_drag = false
         }
 
@@ -597,15 +618,19 @@ async fn main() {
         if ui_interacted {
             last_click = 0.0;
         } else if open_menu {
+            let activated_with_double_click = button_pressed;
+
             last_click = 0.0;
             if settings_state != SettingsState::Closed {
                 settings_state = SettingsState::Closed;
-                if button_pressed {
+
+                if activated_with_double_click {
                     do_drag = true;
                 }
             } else {
                 settings_state = SettingsState::Open;
                 ui_renderer.reset_focused();
+
                 if hovering_menu && button_pressed {
                     do_drag = false;
                 }

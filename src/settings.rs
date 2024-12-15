@@ -37,6 +37,7 @@ pub struct DeserializeSettings {
     hide_smoothing: Option<bool>,
     quick_turn: Option<bool>,
     last_ball: Option<String>,
+    click_to_drag: Option<bool>,
     last_sounds: Option<String>,
     last_asset_pack: Option<String>,
 }
@@ -70,6 +71,7 @@ impl DeserializeSettings {
             || self.vsync.is_none()
             || self.hide_smoothing.is_none()
             || self.quick_turn.is_none()
+            || self.click_to_drag.is_none()
             || self.last_ball.is_none()
             || self.last_sounds.is_none()
             || self.last_asset_pack.is_none()
@@ -170,6 +172,7 @@ impl DeserializeSettings {
             hide_smoothing: self
                 .hide_smoothing
                 .unwrap_or(default_settings.hide_smoothing),
+            click_to_drag: self.click_to_drag.unwrap_or(default_settings.click_to_drag),
             quick_turn: self.quick_turn.unwrap_or(default_settings.quick_turn),
             last_ball: self.last_ball.unwrap_or(default_settings.last_ball),
             last_sounds: self.last_sounds.unwrap_or(default_settings.last_sounds),
@@ -217,6 +220,7 @@ pub struct Settings {
 
     pub ball_radius: u32,
     pub speed_mul: f32,
+    pub click_to_drag: bool,
 
     pub last_ball: String,
     pub last_sounds: String,
@@ -313,6 +317,7 @@ impl Default for Settings {
             box_weight: 0.02,
             hide_smoothing: false,
             quick_turn: true,
+            click_to_drag: true,
 
             last_ball: "grinning".to_string(),
             last_sounds: "thud".to_string(),

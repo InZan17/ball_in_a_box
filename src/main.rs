@@ -286,8 +286,11 @@ async fn main() {
         let delta_clicked_mouse_pos = clicked_mouse_position - current_mouse_position;
 
         const MOUSE_MOVEMENT_LEEWAY: f32 = 2.0;
-        if button_is_down && delta_clicked_mouse_pos.length() > MOUSE_MOVEMENT_LEEWAY {
-            moved_during_hold = true;
+        if delta_clicked_mouse_pos.length() > MOUSE_MOVEMENT_LEEWAY {
+            last_click = 0.0;
+            if button_is_down {
+                moved_during_hold = true;
+            }
         }
 
         let local_mouse_pos = if let Some(mouse_pos) = mouse_offset {
@@ -636,6 +639,11 @@ async fn main() {
 
                 if activated_with_double_click {
                     do_drag = true;
+                    if hovering_menu {
+                        // When double clicking on the menu, it will end up being in drag mode, which feels a bit weird.
+                        // This is to make sure it's not.
+                        moved_during_hold = true;
+                    }
                 }
             } else {
                 settings_state = SettingsState::Open;

@@ -168,8 +168,10 @@ impl UiRenderer {
 
         if settings_state.is_settings() {
             const SLIDER_HEIGHT: f32 = 24.;
+            const TOGGLE_HEIGHT: f32 = 34.;
             const SLIDER_WIDTH: f32 = MENU_SIZE.x * 0.65;
             const TITLE_SIZE: u16 = 24;
+            const TOGGLE_TEXT_SIZE: u16 = 22;
             const OPTIONS_SPACING: f32 = 13.;
 
             let lower_down = SLIDER_HEIGHT + TITLE_SIZE as f32 + OPTIONS_SPACING;
@@ -630,21 +632,16 @@ impl UiRenderer {
                                 &mut editing_settings.max_fps,
                             );
 
-                            if self.render_button(
+                            self.render_toggle(
                                 game_assets,
                                 hash!(),
                                 mouse_pos,
-                                vec2(0., 0. + lower_down * 0.25),
-                                BUTTON_SIZE * vec2(0.8, 0.75),
-                                &format!(
-                                    "VSync: {}",
-                                    if editing_settings.vsync { "On" } else { "Off" }
-                                ),
-                                get_changed_color(editing_settings.vsync != current_settings.vsync),
-                                21,
-                            ) {
-                                editing_settings.vsync = !editing_settings.vsync;
-                            }
+                                vec2(0., start + lower_down * 1.6),
+                                vec2(SLIDER_WIDTH, TOGGLE_HEIGHT),
+                                "VSync:",
+                                TITLE_SIZE,
+                                current_settings.vsync,
+                                &mut editing_settings.vsync);
 
                             self.render_text(
                                 game_assets,
@@ -1043,6 +1040,55 @@ impl UiRenderer {
         self.interacted = self.interacted || button_is_active && mouse_is_released;
 
         return button_is_active && mouse_is_released;
+    }
+
+    pub fn render_toggle(
+        &mut self,
+        game_assets: &GameAssets,
+        id: u64,
+        mouse_pos: Vec2,
+        center_pos: Vec2,
+        size: Vec2,
+        text: &str,
+        font_size: u16,
+        prev_value: bool,
+        value: &mut bool,
+    ) {
+        let rect = Rect::new(
+            (center_pos.x * 2. - size.x) * self.mult,
+            (center_pos.y * 2. - size.y) * self.mult,
+            size.x * 2. * self.mult,
+            size.y * 2. * self.mult,
+        );
+
+        const BUTTON_RATIO: f32 = BUTTON_SIZE.x / BUTTON_SIZE.y;
+
+        let button_size = vec2(size.y * BUTTON_RATIO, size.y);
+        let button_center_pos = center_pos + vec2(size.x - button_size.x, 0.0) / 2.;
+
+        self.render_button(
+            game_assets,
+            id,
+            mouse_pos,
+            button_center_pos,
+            button_size,
+            if *value { "On" } else { "Off" },
+            get_changed_color(*value != prev_value),
+            (button_size.y * 0.65) as u16,
+        );
+
+        draw_text_ex(
+            text,
+            rect.x,
+            rect.y + rect.h / 2. + font_size as f32 / 2. * self.mult,
+            TextParams {
+                color: DEFAULT_TEXT_COLOR,
+                font: game_assets.font.as_ref(),
+                font_size,
+                font_scale: 2.0 * self.mult,
+                ..Default::default()
+            },
+        );
     }
 
     pub fn render_slider(

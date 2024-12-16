@@ -170,7 +170,7 @@ impl UiRenderer {
             const SLIDER_HEIGHT: f32 = 24.;
             const TOGGLE_HEIGHT: f32 = 40.;
             const SLIDER_WIDTH: f32 = MENU_SIZE.x * 0.65;
-            const TOGGLE_WIDTH: f32 =MENU_SIZE.x * 0.7;
+            const TOGGLE_WIDTH: f32 = MENU_SIZE.x * 0.7;
             const TITLE_SIZE: u16 = 24;
             const TOGGLE_TEXT_SIZE: u16 = 22;
             const OPTIONS_SPACING: f32 = 13.;
@@ -1076,7 +1076,7 @@ impl UiRenderer {
         default_value: f32,
         prev_value: f32,
         value: &mut f32,
-    ) -> bool {
+    ) {
         let slider_size = 0.85;
 
         let full_rect = Rect::new(
@@ -1231,8 +1231,6 @@ impl UiRenderer {
                 ..Default::default()
             },
         );
-
-        return false;
     }
 
     pub fn render_slider_uint(
@@ -1248,7 +1246,7 @@ impl UiRenderer {
         default_value: u32,
         prev_value: u32,
         value: &mut u32,
-    ) -> bool {
+    ) {
         let slider_size = 0.85;
 
         let full_rect = Rect::new(
@@ -1404,8 +1402,6 @@ impl UiRenderer {
                 ..Default::default()
             },
         );
-
-        return false;
     }
 
     pub fn render_maxed_slider_uint(
@@ -1422,7 +1418,7 @@ impl UiRenderer {
         default_value: u32,
         prev_value: u32,
         value: &mut u32,
-    ) -> bool {
+    ) {
         let slider_size = 0.85;
 
         let full_rect = Rect::new(
@@ -1590,7 +1586,5 @@ impl UiRenderer {
                 ..Default::default()
             },
         );
-
-        return false;
     }
 }

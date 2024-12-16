@@ -649,7 +649,7 @@ async fn main() {
                 settings_state = SettingsState::Open;
                 ui_renderer.reset_focused();
 
-                if hovering_menu && button_pressed {
+                if hovering_menu {
                     do_drag = false;
                 }
             }

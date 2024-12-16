@@ -8,8 +8,8 @@ A game about a ball, in a box.
 - The rest of the assets and programming was done by me. (Zan)
 
 ## Controls
-- Use your mouse to hover over the screen, and then click and drag anywhere.
-- To open the menu, click `Esc` or right click on your mouse without moving it.
+- To move the box, use your mouse to hover over the box, and then hold left/right click and move your cursor. Alternatively, you can click once without moving your cursor, and now you can move your cursor without having to hold down the button.
+- To open the menu, click `Esc`, or double left/right click on your mouse without moving it.
 - To close the game, open the menu and then click `Quit`. Or you could just do Alt + F4.
 - To change ball, simply type in the name of the ball. When you first download the game you will have `grinning` and `distress`.
 - To change sounds, simply type in the name of the sound pack. When you first download the game you will have `thud` and `pop`.

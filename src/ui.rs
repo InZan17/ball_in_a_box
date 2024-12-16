@@ -168,8 +168,9 @@ impl UiRenderer {
 
         if settings_state.is_settings() {
             const SLIDER_HEIGHT: f32 = 24.;
-            const TOGGLE_HEIGHT: f32 = 34.;
+            const TOGGLE_HEIGHT: f32 = 40.;
             const SLIDER_WIDTH: f32 = MENU_SIZE.x * 0.65;
+            const TOGGLE_WIDTH: f32 =MENU_SIZE.x * 0.7;
             const TITLE_SIZE: u16 = 24;
             const TOGGLE_TEXT_SIZE: u16 = 22;
             const OPTIONS_SPACING: f32 = 13.;
@@ -408,50 +409,29 @@ impl UiRenderer {
                                 &mut editing_settings.box_weight,
                             );
 
-                            if self.render_button(
+                            self.render_toggle(
                                 game_assets,
                                 hash!(),
                                 mouse_pos,
-                                vec2(0., 0. + lower_down * -0.3),
-                                BUTTON_SIZE * vec2(1.2, 0.9),
-                                &format!(
-                                    "Hide weight: {}",
-                                    if editing_settings.hide_smoothing {
-                                        "On"
-                                    } else {
-                                        "Off"
-                                    }
-                                ),
-                                get_changed_color(
-                                    editing_settings.hide_smoothing
-                                        != current_settings.hide_smoothing,
-                                ),
-                                20,
-                            ) {
-                                editing_settings.hide_smoothing = !editing_settings.hide_smoothing;
-                            }
+                                vec2(0., lower_down * -0.3),
+                                vec2(TOGGLE_WIDTH, TOGGLE_HEIGHT),
+                                "Hide weight:",
+                                TOGGLE_TEXT_SIZE,
+                                current_settings.hide_smoothing,
+                                &mut editing_settings.hide_smoothing,
+                            );
 
-                            if self.render_button(
+                            self.render_toggle(
                                 game_assets,
                                 hash!(),
                                 mouse_pos,
-                                vec2(0., 0. + lower_down * 1.0),
-                                BUTTON_SIZE * vec2(1.1, 0.9),
-                                &format!(
-                                    "Quick turn: {}",
-                                    if editing_settings.quick_turn {
-                                        "On"
-                                    } else {
-                                        "Off"
-                                    }
-                                ),
-                                get_changed_color(
-                                    editing_settings.quick_turn != current_settings.quick_turn,
-                                ),
-                                20,
-                            ) {
-                                editing_settings.quick_turn = !editing_settings.quick_turn;
-                            }
+                                vec2(0., lower_down * 1.0),
+                                vec2(TOGGLE_WIDTH, TOGGLE_HEIGHT),
+                                "Quick turn:",
+                                TOGGLE_TEXT_SIZE,
+                                current_settings.quick_turn,
+                                &mut editing_settings.quick_turn,
+                            );
                         }
                         1 => {
                             self.render_slider_uint(
@@ -637,11 +617,12 @@ impl UiRenderer {
                                 hash!(),
                                 mouse_pos,
                                 vec2(0., start + lower_down * 1.6),
-                                vec2(SLIDER_WIDTH, TOGGLE_HEIGHT),
+                                vec2(TOGGLE_WIDTH, TOGGLE_HEIGHT),
                                 "VSync:",
-                                TITLE_SIZE,
+                                TOGGLE_TEXT_SIZE,
                                 current_settings.vsync,
-                                &mut editing_settings.vsync);
+                                &mut editing_settings.vsync,
+                            );
 
                             self.render_text(
                                 game_assets,
@@ -704,28 +685,17 @@ impl UiRenderer {
                                 &mut editing_settings.speed_mul,
                             );
 
-                            if self.render_button(
+                            self.render_toggle(
                                 game_assets,
                                 hash!(),
                                 mouse_pos,
-                                vec2(0., start + lower_down * 1.675),
-                                BUTTON_SIZE * vec2(1.25, 0.8),
-                                &format!(
-                                    "Click to drag: {}",
-                                    if editing_settings.click_to_drag {
-                                        "On"
-                                    } else {
-                                        "Off"
-                                    }
-                                ),
-                                get_changed_color(
-                                    editing_settings.click_to_drag
-                                        != current_settings.click_to_drag,
-                                ),
-                                20,
-                            ) {
-                                editing_settings.click_to_drag = !editing_settings.click_to_drag;
-                            }
+                                vec2(0., start + lower_down * 1.6),
+                                vec2(TOGGLE_WIDTH, TOGGLE_HEIGHT),
+                                "Click to drag:",
+                                TOGGLE_TEXT_SIZE,
+                                current_settings.click_to_drag,
+                                &mut editing_settings.click_to_drag,
+                            );
 
                             self.render_text(
                                 game_assets,
@@ -1061,12 +1031,12 @@ impl UiRenderer {
             size.y * 2. * self.mult,
         );
 
-        const BUTTON_RATIO: f32 = BUTTON_SIZE.x / BUTTON_SIZE.y;
+        const BUTTON_RATIO: f32 = 1.75;
 
         let button_size = vec2(size.y * BUTTON_RATIO, size.y);
         let button_center_pos = center_pos + vec2(size.x - button_size.x, 0.0) / 2.;
 
-        self.render_button(
+        if self.render_button(
             game_assets,
             id,
             mouse_pos,
@@ -1074,8 +1044,10 @@ impl UiRenderer {
             button_size,
             if *value { "On" } else { "Off" },
             get_changed_color(*value != prev_value),
-            (button_size.y * 0.65) as u16,
-        );
+            (button_size.y * 0.6) as u16,
+        ) {
+            *value = !*value;
+        }
 
         draw_text_ex(
             text,

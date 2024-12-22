@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 circular-buffer = "0.1.9"
-macroquad = {git = "https://github.com/not-fl3/macroquad", rev = "2e48cf9", features = ["audio"]}
+macroquad = {git = "https://github.com/inzan17/macroquad", branch = "ball-in-a-box", features = ["audio"]}
 nanoserde = {git = "https://github.com/inzan17/nanoserde", rev = "6e42d4c"}
 quad-rand = "0.2.2"
 

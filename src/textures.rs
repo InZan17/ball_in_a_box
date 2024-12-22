@@ -72,7 +72,10 @@ pub fn find_texture(current_string: &str) -> Option<(String, Texture2D)> {
         unreachable!()
     };
 
-    return Some((ball_name, Texture2D::from_file_with_format(&bytes, None)));
+    return Some((
+        ball_name,
+        Texture2D::from_file_with_format(&bytes, None).ok()?,
+    ));
 }
 
 pub fn get_random_texture() -> Option<(String, Texture2D)> {
@@ -98,5 +101,8 @@ pub fn get_random_texture() -> Option<(String, Texture2D)> {
         unreachable!()
     };
 
-    return Some((ball_name, Texture2D::from_file_with_format(&bytes, None)));
+    return Some((
+        ball_name,
+        Texture2D::from_file_with_format(&bytes, None).ok()?,
+    ));
 }

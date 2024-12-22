@@ -1,32 +1,13 @@
 use std::{fs, path::PathBuf, str::FromStr};
 
-use macroquad::{prelude::*, texture::Texture2D};
+use macroquad::{
+    prelude::*,
+    quad_gl::shader::{FRAGMENT, VERTEX},
+    texture::Texture2D,
+};
 use miniquad::{BlendFactor, BlendState, BlendValue, Equation};
 
 use crate::log_panic;
-
-const VERTEX: &str = r#"#version 100
-attribute vec3 position;
-attribute vec2 texcoord;
-attribute vec4 color0;
-attribute vec4 normal;
-varying lowp vec2 uv;
-varying lowp vec4 color;
-uniform mat4 Model;
-uniform mat4 Projection;
-void main() {
-gl_Position=Projection*Model*vec4(position, 1);
-color=color0/255.0;
-uv=texcoord;
-}"#;
-
-pub const FRAGMENT: &str = r#"#version 100
-varying lowp vec4 color;
-varying lowp vec2 uv;
-uniform sampler2D Texture;
-void main() {
-gl_FragColor=color * texture2D(Texture, uv);
-}"#;
 
 pub struct GameAssets {
     pub missing_texture: Texture2D,
@@ -50,12 +31,12 @@ pub fn load_texture(
     if let Some(mut pack_path) = pack_path {
         pack_path.push(asset_name);
         if let Ok(bytes) = fs::read(pack_path) {
-            return Texture2D::from_file_with_format(&bytes, None);
+            return Texture2D::from_file_with_format(&bytes, None).unwrap();
         }
     }
     assets_path.push(asset_name);
     if let Ok(bytes) = fs::read(assets_path) {
-        return Texture2D::from_file_with_format(&bytes, None);
+        return Texture2D::from_file_with_format(&bytes, None).unwrap();
     }
 
     missing_texture.clone()

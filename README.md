@@ -19,7 +19,7 @@ A game about a ball, in a box.
 To add custom balls, open the `balls` folder and put your image in there, and then type the name of your image inside the game. (No need to restart the game) Just make sure it's a PNG as it will not work with any other format.
 
 ## Custom sounds
-To add custom sounds, open the `sounds` folder and make a new folder with the name of your sound pack. Then, add your sounds into the folder. (Name doesn't matter) Then type the name of your sound pack inside the game. (No need to restart the game) Just make sure it's an OGG as it will not work with any other format.
+To add custom sounds, open the `sounds` folder and make a new folder with the name of your sound pack. Then, add your sounds into the folder. (Name doesn't matter) Then type the name of your sound pack inside the game. (No need to restart the game) Just make sure it's an OGG or WAV as it will not work with any other format.
 
 ## Custom assets
 To add custom assets, open the `asset_packs` folder and make a new folder with the name of your asset pack. Then, add all of your assets into the folder and rename them to the asset you wanna override. (Look inside the `assets` folder) Then type the name of your asset pack inside the game. (No need to restart the game) Just make sure the file names and file formats match.

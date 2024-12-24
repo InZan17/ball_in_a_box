@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf, str::FromStr};
+use std::{fs, io::ErrorKind, path::PathBuf};
 
 use macroquad::{
     prelude::*,
@@ -7,7 +7,7 @@ use macroquad::{
 };
 use miniquad::{BlendFactor, BlendState, BlendValue, Equation};
 
-use crate::log_panic;
+use crate::error_log::ErrorLogs;
 
 pub struct GameAssets {
     pub missing_texture: Texture2D,
@@ -27,19 +27,52 @@ pub fn load_texture(
     mut assets_path: PathBuf,
     pack_path: Option<PathBuf>,
     missing_texture: &Texture2D,
+    error_logs: &mut ErrorLogs,
 ) -> Texture2D {
     if let Some(mut pack_path) = pack_path {
         pack_path.push(asset_name);
-        if let Ok(bytes) = fs::read(pack_path) {
-            return Texture2D::from_file_with_format(&bytes, None).unwrap();
+        if let Some(bytes) = match fs::read(&pack_path) {
+            Ok(bytes) => Some(bytes),
+            Err(err) => {
+                if err.kind() == ErrorKind::NotFound {
+                    None
+                } else {
+                    error_logs.display_error(format!(
+                        "Failed to read texture bytes from \"{}\": {err}",
+                        pack_path.to_string_lossy()
+                    ));
+                    return missing_texture.clone();
+                }
+            }
+        } {
+            return Texture2D::from_file_with_format(&bytes, None).unwrap_or_else(|err| {
+                error_logs.display_error(format!(
+                    "Failed to read texture data from \"{}\": {err}",
+                    pack_path.to_string_lossy()
+                ));
+                missing_texture.clone()
+            });
         }
     }
     assets_path.push(asset_name);
-    if let Ok(bytes) = fs::read(assets_path) {
-        return Texture2D::from_file_with_format(&bytes, None).unwrap();
+    match fs::read(&assets_path) {
+        Ok(bytes) => {
+            return Texture2D::from_file_with_format(&bytes, None).unwrap_or_else(|err| {
+                error_logs.display_error(format!(
+                    "Failed to read texture data from \"{}\": {err}",
+                    assets_path.to_string_lossy()
+                ));
+                missing_texture.clone()
+            });
+        }
+        Err(err) => {
+            error_logs.display_error(format!(
+                "Failed to read texture bytes from \"{}\": {err}",
+                assets_path.to_string_lossy()
+            ));
+            missing_texture.clone()
+        }
     }
-
-    missing_texture.clone()
 }
 
 pub fn load_assets_string(
@@ -47,102 +80,148 @@ pub fn load_assets_string(
     mut assets_path: PathBuf,
     pack_path: Option<PathBuf>,
     missing_string: &str,
+    error_logs: &mut ErrorLogs,
 ) -> String {
     if let Some(mut pack_path) = pack_path {
         pack_path.push(asset_name);
-        if let Ok(string) = fs::read_to_string(pack_path) {
+        if let Some(string) = match fs::read_to_string(&pack_path) {
+            Ok(string) => Some(string),
+            Err(err) => {
+                if err.kind() == ErrorKind::NotFound {
+                    None
+                } else {
+                    error_logs.display_error(format!(
+                        "Failed to read string from \"{}\": {err}",
+                        pack_path.to_string_lossy()
+                    ));
+                    return missing_string.to_string();
+                }
+            }
+        } {
             return string;
         }
     }
 
     assets_path.push(asset_name);
-    if let Ok(string) = fs::read_to_string(assets_path) {
-        return string;
+    match fs::read_to_string(&assets_path) {
+        Ok(string) => string,
+        Err(err) => {
+            error_logs.display_error(format!(
+                "Failed to read string from \"{}\": {err}",
+                assets_path.to_string_lossy()
+            ));
+            missing_string.to_string()
+        }
     }
-
-    missing_string.to_string()
 }
 
 pub fn load_assets_font(
     asset_name: &str,
     mut assets_path: PathBuf,
     pack_path: Option<PathBuf>,
+    error_logs: &mut ErrorLogs,
 ) -> Option<Font> {
     if let Some(mut pack_path) = pack_path {
         pack_path.push(asset_name);
-        if let Ok(bytes) = fs::read(&pack_path) {
-            return Some(match load_ttf_font_from_bytes(&bytes) {
-                Ok(font) => font,
-                Err(err) => {
-                    log_panic(&format!(
-                        "Failed to load {} font. {err}",
+        if let Some(bytes) = match fs::read(&pack_path) {
+            Ok(bytes) => Some(bytes),
+            Err(err) => {
+                if err.kind() == ErrorKind::NotFound {
+                    None
+                } else {
+                    error_logs.display_error(format!(
+                        "Failed to read font bytes from \"{}\": {err}",
                         pack_path.to_string_lossy()
                     ));
-                    unreachable!()
+                    return None;
                 }
-            });
+            }
+        } {
+            return match load_ttf_font_from_bytes(&bytes) {
+                Ok(font) => Some(font),
+                Err(err) => {
+                    error_logs.display_error(format!(
+                        "Failed to read font data from \"{}\": {err}",
+                        pack_path.to_string_lossy()
+                    ));
+                    None
+                }
+            };
         }
     }
-
     assets_path.push(asset_name);
-    if let Ok(bytes) = fs::read(&assets_path) {
-        return Some(match load_ttf_font_from_bytes(&bytes) {
-            Ok(font) => font,
-            Err(err) => {
-                log_panic(&format!(
-                    "Failed to load {} font. {err}",
-                    assets_path.to_string_lossy()
-                ));
-                unreachable!()
-            }
-        });
+    match fs::read(&assets_path) {
+        Ok(bytes) => {
+            return match load_ttf_font_from_bytes(&bytes) {
+                Ok(font) => Some(font),
+                Err(err) => {
+                    error_logs.display_error(format!(
+                        "Failed to read font data from \"{}\": {err}",
+                        assets_path.to_string_lossy()
+                    ));
+                    None
+                }
+            };
+        }
+        Err(err) => {
+            error_logs.display_error(format!(
+                "Failed to read font bytes from \"{}\": {err}",
+                assets_path.to_string_lossy()
+            ));
+            None
+        }
     }
-
-    None
 }
 
 impl GameAssets {
-    pub fn new(pack_path: Option<PathBuf>, missing_texture: Texture2D) -> Self {
-        let Ok(assets_path) = PathBuf::from_str("./assets") else {
-            log_panic("Failed to get assets path.");
-            unreachable!()
-        };
+    pub fn new(
+        pack_path: Option<PathBuf>,
+        missing_texture: Texture2D,
+        error_logs: &mut ErrorLogs,
+    ) -> Self {
+        let assets_path = PathBuf::from("./assets");
         Self {
             box_background_texture: load_texture(
                 "box_background.png",
                 assets_path.clone(),
                 pack_path.clone(),
                 &missing_texture,
+                error_logs,
             ),
             box_side_texture: load_texture(
                 "box_side.png",
                 assets_path.clone(),
                 pack_path.clone(),
                 &missing_texture,
+                error_logs,
             ),
             menu_background: load_texture(
                 "menu_background.png",
                 assets_path.clone(),
                 pack_path.clone(),
                 &missing_texture,
+                error_logs,
             ),
             menu_button: load_texture(
                 "menu_button.png",
                 assets_path.clone(),
                 pack_path.clone(),
                 &missing_texture,
+                error_logs,
             ),
             slider_background: load_texture(
                 "slider_background.png",
                 assets_path.clone(),
                 pack_path.clone(),
                 &missing_texture,
+                error_logs,
             ),
             slider_bar: load_texture(
                 "slider_bar.png",
                 assets_path.clone(),
                 pack_path.clone(),
                 &missing_texture,
+                error_logs,
             ),
             ball_material: match load_material(
                 ShaderSource::Glsl {
@@ -152,6 +231,7 @@ impl GameAssets {
                         assets_path.clone(),
                         pack_path.clone(),
                         FRAGMENT,
+                        error_logs,
                     ),
                 },
                 MaterialParams {
@@ -181,7 +261,7 @@ impl GameAssets {
             ) {
                 Ok(material) => material,
                 Err(err) => {
-                    log_panic(&format!("Failed to create ball material. {err}"));
+                    error_logs.panic_error(&format!("Failed to create ball material. {err}"));
                     unreachable!()
                 }
             },
@@ -193,6 +273,7 @@ impl GameAssets {
                         assets_path.clone(),
                         pack_path.clone(),
                         FRAGMENT,
+                        error_logs,
                     ),
                 },
                 MaterialParams {
@@ -213,19 +294,23 @@ impl GameAssets {
             ) {
                 Ok(material) => material,
                 Err(err) => {
-                    log_panic(&format!("Failed to create shadow material. {err}"));
+                    error_logs.panic_error(&format!("Failed to create shadow material. {err}"));
                     unreachable!()
                 }
             },
-            font: load_assets_font("font.ttf", assets_path, pack_path),
+            font: load_assets_font("font.ttf", assets_path, pack_path, error_logs),
             missing_texture,
         }
     }
 }
 
-pub fn list_available_packs() -> Vec<(String, PathBuf)> {
-    let Ok(read_dir) = fs::read_dir("./asset_packs") else {
-        return Vec::new();
+pub fn list_available_packs(error_logs: &mut ErrorLogs) -> Vec<(String, PathBuf)> {
+    let read_dir = match fs::read_dir("./asset_packs") {
+        Ok(read_dir) => read_dir,
+        Err(err) => {
+            error_logs.display_error(format!("Failed to read the \"asset_packs\" folder: {err}"));
+            return Vec::new();
+        }
     };
 
     read_dir
@@ -233,10 +318,10 @@ pub fn list_available_packs() -> Vec<(String, PathBuf)> {
             let entry = match entry {
                 Ok(entry) => entry,
                 Err(err) => {
-                    log_panic(&format!(
+                    error_logs.display_error(format!(
                         "Failed to get DirEntry looking for available sounds. {err}"
                     ));
-                    unreachable!()
+                    return None;
                 }
             };
 
@@ -256,14 +341,14 @@ pub fn list_available_packs() -> Vec<(String, PathBuf)> {
         .collect()
 }
 
-pub fn find_pack(current_string: &str) -> Option<(String, PathBuf)> {
+pub fn find_pack(current_string: &str, error_logs: &mut ErrorLogs) -> Option<(String, PathBuf)> {
     if current_string.is_empty() {
         return None;
     }
 
     let mut selected_pack: Option<(String, PathBuf)> = None;
 
-    for (pack_name, pack_path) in list_available_packs() {
+    for (pack_name, pack_path) in list_available_packs(error_logs) {
         if current_string.ends_with(&pack_name.to_ascii_lowercase()) {
             if let Some((selected_pack_name, _)) = &selected_pack {
                 if selected_pack_name.len() > pack_name.len() {

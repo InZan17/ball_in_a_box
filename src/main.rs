@@ -1,9 +1,6 @@
-use core::str;
 use std::{
     f32::consts::PI,
-    fs::OpenOptions,
-    io::Write,
-    panic, thread,
+    thread,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
@@ -11,6 +8,7 @@ use assets::{find_pack, GameAssets};
 use ball::Ball;
 use circular_buffer::CircularBuffer;
 use conf::{Icon, Platform};
+use error_log::ErrorLogs;
 use macroquad::{audio::set_sound_volume, prelude::*, rand};
 use miniquad::*;
 use settings::{read_settings_file, write_settings_file, Settings};
@@ -23,6 +21,7 @@ use window::{
 
 pub mod assets;
 pub mod ball;
+pub mod error_log;
 pub mod settings;
 pub mod sounds;
 pub mod textures;
@@ -94,28 +93,19 @@ impl FromTuple for Vec2 {
     }
 }
 
-pub fn log_panic(message: &str) {
-    if let Ok(mut log_file) = OpenOptions::new()
-        .create(true)
-        .write(true)
-        .open("crash_info.txt")
-    {
-        let _ = log_file.write(message.as_bytes());
-    };
-    panic!("{}", message)
-}
-
 #[macroquad::main(window_conf)]
 async fn main() {
     {
         let start = SystemTime::now();
         let seed = start
             .duration_since(UNIX_EPOCH)
-            .and_then(|duration| Ok(duration.as_nanos() as u64))
-            .unwrap_or(0);
+            .unwrap_or_else(|err| err.duration())
+            .as_nanos() as u64;
 
         rand::srand(seed);
     }
+
+    let mut error_logs = ErrorLogs::new();
 
     let mut settings = read_settings_file().unwrap_or_else(|| {
         let settings = Settings::default();
@@ -133,7 +123,7 @@ async fn main() {
     missing_texture.set_filter(macroquad::texture::FilterMode::Nearest);
 
     let pack_path = if let Some(last_asset_pack) = &settings.last_asset_pack {
-        if let Some((_, pack_path)) = find_pack(last_asset_pack) {
+        if let Some((_, pack_path)) = find_pack(last_asset_pack, &mut error_logs) {
             Some(pack_path)
         } else {
             None
@@ -142,23 +132,23 @@ async fn main() {
         None
     };
 
-    let mut game_assets = GameAssets::new(pack_path, missing_texture);
+    let mut game_assets = GameAssets::new(pack_path, missing_texture, &mut error_logs);
 
     let mut ball = {
-        let option_sounds = find_sounds(&settings.last_sounds).await;
+        let option_sounds = find_sounds(&settings.last_sounds, &mut error_logs).await;
 
         let sounds = if let Some(sounds) = option_sounds {
             sounds
         } else {
-            get_random_sounds()
+            get_random_sounds(&mut error_logs)
                 .await
                 .unwrap_or_else(|| (settings.last_sounds.clone(), Vec::new()))
         };
 
         Ball::new(
-            find_texture(&settings.last_ball)
+            find_texture(&settings.last_ball, &mut error_logs)
                 .unwrap_or_else(|| {
-                    get_random_texture().unwrap_or_else(|| {
+                    get_random_texture(&mut error_logs).unwrap_or_else(|| {
                         (
                             settings.last_ball.clone(),
                             game_assets.missing_texture.clone(),
@@ -313,30 +303,34 @@ async fn main() {
 
             text_input.push(character.to_ascii_lowercase());
 
-            if let Some((ball_name, texture)) = find_texture(&text_input) {
+            if let Some((ball_name, texture)) = find_texture(&text_input, &mut error_logs) {
                 ball.texture = texture;
                 settings.last_ball = ball_name.clone();
                 editing_settings.last_ball = ball_name;
                 write_settings_file(&settings);
             }
 
-            if let Some((sounds_name, sounds)) = find_sounds(&text_input).await {
+            if let Some((sounds_name, sounds)) = find_sounds(&text_input, &mut error_logs).await {
                 ball.sounds = sounds.clone();
                 settings.last_sounds = sounds_name.clone();
                 editing_settings.last_sounds = sounds_name;
                 write_settings_file(&settings);
             }
 
-            if let Some((pack_name, pack_path)) = find_pack(&text_input) {
+            if let Some((pack_name, pack_path)) = find_pack(&text_input, &mut error_logs) {
                 settings.last_asset_pack = Some(pack_name.clone());
                 editing_settings.last_asset_pack = Some(pack_name);
                 write_settings_file(&settings);
-                game_assets = GameAssets::new(Some(pack_path), game_assets.missing_texture)
+                game_assets = GameAssets::new(
+                    Some(pack_path),
+                    game_assets.missing_texture,
+                    &mut error_logs,
+                )
             } else if text_input.ends_with("none") && settings.last_asset_pack.is_some() {
                 settings.last_asset_pack = None;
                 editing_settings.last_asset_pack = None;
                 write_settings_file(&settings);
-                game_assets = GameAssets::new(None, game_assets.missing_texture)
+                game_assets = GameAssets::new(None, game_assets.missing_texture, &mut error_logs)
             }
         }
         if is_key_pressed(KeyCode::Backspace) {
@@ -599,20 +593,21 @@ async fn main() {
             });
             set_swap_interval(if settings.vsync { 1 } else { 0 });
             if change_ball {
-                if let Some((_, texture)) = find_texture(&settings.last_ball) {
+                if let Some((_, texture)) = find_texture(&settings.last_ball, &mut error_logs) {
                     ball.texture = texture
                 }
             }
 
             if change_sounds {
-                if let Some((_, sounds)) = find_sounds(&settings.last_sounds).await {
+                if let Some((_, sounds)) = find_sounds(&settings.last_sounds, &mut error_logs).await
+                {
                     ball.sounds = sounds;
                 }
             }
 
             if change_assets {
                 let pack_path = if let Some(last_asset_pack) = &settings.last_asset_pack {
-                    if let Some((_, pack_path)) = find_pack(last_asset_pack) {
+                    if let Some((_, pack_path)) = find_pack(last_asset_pack, &mut error_logs) {
                         Some(pack_path)
                     } else {
                         None
@@ -621,7 +616,8 @@ async fn main() {
                     None
                 };
 
-                game_assets = GameAssets::new(pack_path, game_assets.missing_texture)
+                game_assets =
+                    GameAssets::new(pack_path, game_assets.missing_texture, &mut error_logs)
             }
         }
 
@@ -654,6 +650,8 @@ async fn main() {
                 }
             }
         }
+
+        error_logs.render_errors(-box_size, box_size.x * 2.);
 
         if settings.max_fps < FPS_LIMIT {
             let min_fps_delta = 1. / settings.max_fps as f64;

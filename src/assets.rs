@@ -79,9 +79,8 @@ pub fn load_assets_string(
     asset_name: &str,
     mut assets_path: PathBuf,
     pack_path: Option<PathBuf>,
-    missing_string: &str,
     error_logs: &mut ErrorLogs,
-) -> String {
+) -> Option<String> {
     if let Some(mut pack_path) = pack_path {
         pack_path.push(asset_name);
         if let Some(string) = match fs::read_to_string(&pack_path) {
@@ -94,23 +93,23 @@ pub fn load_assets_string(
                         "Failed to read string from \"{}\": {err}",
                         pack_path.to_string_lossy()
                     ));
-                    return missing_string.to_string();
+                    return None;
                 }
             }
         } {
-            return string;
+            return Some(string);
         }
     }
 
     assets_path.push(asset_name);
     match fs::read_to_string(&assets_path) {
-        Ok(string) => string,
+        Ok(string) => Some(string),
         Err(err) => {
             error_logs.display_error(format!(
                 "Failed to read string from \"{}\": {err}",
                 assets_path.to_string_lossy()
             ));
-            missing_string.to_string()
+            return None;
         }
     }
 }
@@ -173,6 +172,150 @@ pub fn load_assets_font(
     }
 }
 
+pub fn load_shadow_material(
+    assets_path: PathBuf,
+    pack_path: Option<PathBuf>,
+    error_logs: &mut ErrorLogs,
+) -> Material {
+    if let Some(fragment) = load_assets_string("shadow.frag", assets_path, pack_path, error_logs) {
+        match load_material(
+            ShaderSource::Glsl {
+                vertex: VERTEX,
+                fragment: &fragment,
+            },
+            MaterialParams {
+                uniforms: vec![
+                    UniformDesc::new("in_shadow", UniformType::Float1),
+                    UniformDesc::new("shadow_strength", UniformType::Float1),
+                ],
+                pipeline_params: PipelineParams {
+                    color_blend: Some(BlendState::new(
+                        Equation::Add,
+                        BlendFactor::Value(BlendValue::SourceAlpha),
+                        BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
+                    )),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+        ) {
+            Ok(material) => return material,
+            Err(err) => {
+                error_logs.display_error(format!("Failed to create shadow material: {err}"));
+            }
+        };
+    }
+
+    match load_material(
+        ShaderSource::Glsl {
+            vertex: VERTEX,
+            fragment: FRAGMENT,
+        },
+        MaterialParams {
+            uniforms: vec![
+                UniformDesc::new("in_shadow", UniformType::Float1),
+                UniformDesc::new("shadow_strength", UniformType::Float1),
+            ],
+            pipeline_params: PipelineParams {
+                color_blend: Some(BlendState::new(
+                    Equation::Add,
+                    BlendFactor::Value(BlendValue::SourceAlpha),
+                    BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
+                )),
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+    ) {
+        Ok(material) => return material,
+        Err(err) => {
+            error_logs.panic_error(&format!("Failed to create shadow material: {err}"));
+            unreachable!()
+        }
+    };
+}
+
+pub fn load_ball_material(
+    assets_path: PathBuf,
+    pack_path: Option<PathBuf>,
+    error_logs: &mut ErrorLogs,
+) -> Material {
+    if let Some(fragment) = load_assets_string("ball.frag", assets_path, pack_path, error_logs) {
+        match load_material(
+            ShaderSource::Glsl {
+                vertex: VERTEX,
+                fragment: &fragment,
+            },
+            MaterialParams {
+                uniforms: vec![
+                    UniformDesc::new("rotation", UniformType::Float1),
+                    UniformDesc::new("ceil_distance", UniformType::Float1),
+                    UniformDesc::new("floor_distance", UniformType::Float1),
+                    UniformDesc::new("left_distance", UniformType::Float1),
+                    UniformDesc::new("right_distance", UniformType::Float1),
+                    UniformDesc::new("ball_radius", UniformType::Float1),
+                    UniformDesc::new("ambient_occlusion_focus", UniformType::Float1),
+                    UniformDesc::new("ambient_occlusion_strength", UniformType::Float1),
+                    UniformDesc::new("ambient_light", UniformType::Float1),
+                    UniformDesc::new("specular_focus", UniformType::Float1),
+                    UniformDesc::new("specular_strength", UniformType::Float1),
+                ],
+                pipeline_params: PipelineParams {
+                    color_blend: Some(BlendState::new(
+                        Equation::Add,
+                        BlendFactor::Value(BlendValue::SourceAlpha),
+                        BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
+                    )),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+        ) {
+            Ok(material) => return material,
+            Err(err) => {
+                error_logs.display_error(format!("Failed to create ball material: {err}"));
+            }
+        };
+    }
+
+    match load_material(
+        ShaderSource::Glsl {
+            vertex: VERTEX,
+            fragment: FRAGMENT,
+        },
+        MaterialParams {
+            uniforms: vec![
+                UniformDesc::new("rotation", UniformType::Float1),
+                UniformDesc::new("ceil_distance", UniformType::Float1),
+                UniformDesc::new("floor_distance", UniformType::Float1),
+                UniformDesc::new("left_distance", UniformType::Float1),
+                UniformDesc::new("right_distance", UniformType::Float1),
+                UniformDesc::new("ball_radius", UniformType::Float1),
+                UniformDesc::new("ambient_occlusion_focus", UniformType::Float1),
+                UniformDesc::new("ambient_occlusion_strength", UniformType::Float1),
+                UniformDesc::new("ambient_light", UniformType::Float1),
+                UniformDesc::new("specular_focus", UniformType::Float1),
+                UniformDesc::new("specular_strength", UniformType::Float1),
+            ],
+            pipeline_params: PipelineParams {
+                color_blend: Some(BlendState::new(
+                    Equation::Add,
+                    BlendFactor::Value(BlendValue::SourceAlpha),
+                    BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
+                )),
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+    ) {
+        Ok(material) => return material,
+        Err(err) => {
+            error_logs.panic_error(&format!("Failed to create ball material: {err}"));
+            unreachable!()
+        }
+    };
+}
+
 impl GameAssets {
     pub fn new(
         pack_path: Option<PathBuf>,
@@ -223,81 +366,12 @@ impl GameAssets {
                 &missing_texture,
                 error_logs,
             ),
-            ball_material: match load_material(
-                ShaderSource::Glsl {
-                    vertex: VERTEX,
-                    fragment: &load_assets_string(
-                        "ball.frag",
-                        assets_path.clone(),
-                        pack_path.clone(),
-                        FRAGMENT,
-                        error_logs,
-                    ),
-                },
-                MaterialParams {
-                    uniforms: vec![
-                        UniformDesc::new("rotation", UniformType::Float1),
-                        UniformDesc::new("ceil_distance", UniformType::Float1),
-                        UniformDesc::new("floor_distance", UniformType::Float1),
-                        UniformDesc::new("left_distance", UniformType::Float1),
-                        UniformDesc::new("right_distance", UniformType::Float1),
-                        UniformDesc::new("ball_radius", UniformType::Float1),
-                        UniformDesc::new("ambient_occlusion_focus", UniformType::Float1),
-                        UniformDesc::new("ambient_occlusion_strength", UniformType::Float1),
-                        UniformDesc::new("ambient_light", UniformType::Float1),
-                        UniformDesc::new("specular_focus", UniformType::Float1),
-                        UniformDesc::new("specular_strength", UniformType::Float1),
-                    ],
-                    pipeline_params: PipelineParams {
-                        color_blend: Some(BlendState::new(
-                            Equation::Add,
-                            BlendFactor::Value(BlendValue::SourceAlpha),
-                            BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
-                        )),
-                        ..Default::default()
-                    },
-                    ..Default::default()
-                },
-            ) {
-                Ok(material) => material,
-                Err(err) => {
-                    error_logs.panic_error(&format!("Failed to create ball material. {err}"));
-                    unreachable!()
-                }
-            },
-            shadow_material: match load_material(
-                ShaderSource::Glsl {
-                    vertex: VERTEX,
-                    fragment: &&load_assets_string(
-                        "shadow.frag",
-                        assets_path.clone(),
-                        pack_path.clone(),
-                        FRAGMENT,
-                        error_logs,
-                    ),
-                },
-                MaterialParams {
-                    uniforms: vec![
-                        UniformDesc::new("in_shadow", UniformType::Float1),
-                        UniformDesc::new("shadow_strength", UniformType::Float1),
-                    ],
-                    pipeline_params: PipelineParams {
-                        color_blend: Some(BlendState::new(
-                            Equation::Add,
-                            BlendFactor::Value(BlendValue::SourceAlpha),
-                            BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
-                        )),
-                        ..Default::default()
-                    },
-                    ..Default::default()
-                },
-            ) {
-                Ok(material) => material,
-                Err(err) => {
-                    error_logs.panic_error(&format!("Failed to create shadow material. {err}"));
-                    unreachable!()
-                }
-            },
+            ball_material: load_ball_material(assets_path.clone(), pack_path.clone(), error_logs),
+            shadow_material: load_shadow_material(
+                assets_path.clone(),
+                pack_path.clone(),
+                error_logs,
+            ),
             font: load_assets_font("font.ttf", assets_path, pack_path, error_logs),
             missing_texture,
         }

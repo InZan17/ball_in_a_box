@@ -18,6 +18,8 @@ pub fn render_mouse_tutorial(
     const CURSOR_SIZE: f32 = 150.;
     const CURSOR_HALF_SIZE: f32 = -CURSOR_SIZE / 2.;
 
+    const SPACING: f32 = 5.;
+
     const DRAW_TEXTURE_PARAMS: DrawTextureParams = DrawTextureParams {
         dest_size: Some(vec2(CURSOR_SIZE, CURSOR_SIZE)),
         source: None,
@@ -44,14 +46,21 @@ pub fn render_mouse_tutorial(
         let alpha = (time_since / FADE_TIME * FADE_SPEED).min(1.0);
         draw_texture_ex(
             &game_assets.mouse_normal,
-            0.,
+            SPACING,
             start_y + CURSOR_HALF_SIZE,
             Color::new(1., 1., 1., alpha),
             DRAW_TEXTURE_PARAMS,
         );
         draw_texture_ex(
             &game_assets.mouse_normal,
-            -CURSOR_SIZE,
+            -CURSOR_SIZE - SPACING,
+            start_y + CURSOR_HALF_SIZE,
+            Color::new(1., 1., 1., alpha),
+            DRAW_TEXTURE_PARAMS,
+        );
+        draw_texture_ex(
+            &game_assets.slash,
+            -CURSOR_SIZE / 2.,
             start_y + CURSOR_HALF_SIZE,
             Color::new(1., 1., 1., alpha),
             DRAW_TEXTURE_PARAMS,
@@ -61,7 +70,7 @@ pub fn render_mouse_tutorial(
         if time_since * CLICK_SPEED < CLICK_TIME {
             draw_texture_ex(
                 &game_assets.mouse_hold_move,
-                0.,
+                SPACING,
                 start_y + CURSOR_HALF_SIZE,
                 WHITE,
                 DRAW_TEXTURE_PARAMS,
@@ -69,7 +78,7 @@ pub fn render_mouse_tutorial(
         } else {
             draw_texture_ex(
                 &game_assets.mouse_normal_move,
-                0.,
+                SPACING,
                 start_y + CURSOR_HALF_SIZE,
                 WHITE,
                 DRAW_TEXTURE_PARAMS,
@@ -77,7 +86,14 @@ pub fn render_mouse_tutorial(
         }
         draw_texture_ex(
             &game_assets.mouse_hold_move,
-            -CURSOR_SIZE,
+            -CURSOR_SIZE - SPACING,
+            start_y + CURSOR_HALF_SIZE,
+            WHITE,
+            DRAW_TEXTURE_PARAMS,
+        );
+        draw_texture_ex(
+            &game_assets.slash,
+            -CURSOR_SIZE / 2.,
             start_y + CURSOR_HALF_SIZE,
             WHITE,
             DRAW_TEXTURE_PARAMS,
@@ -87,14 +103,21 @@ pub fn render_mouse_tutorial(
         let move_precentage = time_since / MOVE_DURATION;
         draw_texture_ex(
             &game_assets.mouse_normal_move,
-            0.,
+            SPACING,
             start_y.lerp(end_y, move_precentage) + CURSOR_HALF_SIZE,
             WHITE,
             DRAW_TEXTURE_PARAMS,
         );
         draw_texture_ex(
             &game_assets.mouse_hold_move,
-            -CURSOR_SIZE,
+            -CURSOR_SIZE - SPACING,
+            start_y.lerp(end_y, move_precentage) + CURSOR_HALF_SIZE,
+            WHITE,
+            DRAW_TEXTURE_PARAMS,
+        );
+        draw_texture_ex(
+            &game_assets.slash,
+            -CURSOR_SIZE / 2.,
             start_y.lerp(end_y, move_precentage) + CURSOR_HALF_SIZE,
             WHITE,
             DRAW_TEXTURE_PARAMS,
@@ -104,7 +127,7 @@ pub fn render_mouse_tutorial(
         if time_since * CLICK_SPEED < CLICK_TIME {
             draw_texture_ex(
                 &game_assets.mouse_normal_move,
-                0.,
+                SPACING,
                 end_y + CURSOR_HALF_SIZE,
                 WHITE,
                 DRAW_TEXTURE_PARAMS,
@@ -112,7 +135,7 @@ pub fn render_mouse_tutorial(
         } else {
             draw_texture_ex(
                 &game_assets.mouse_hold_move,
-                0.,
+                SPACING,
                 end_y + CURSOR_HALF_SIZE,
                 WHITE,
                 DRAW_TEXTURE_PARAMS,
@@ -120,7 +143,14 @@ pub fn render_mouse_tutorial(
         }
         draw_texture_ex(
             &game_assets.mouse_hold_move,
-            -CURSOR_SIZE,
+            -CURSOR_SIZE - SPACING,
+            end_y + CURSOR_HALF_SIZE,
+            WHITE,
+            DRAW_TEXTURE_PARAMS,
+        );
+        draw_texture_ex(
+            &game_assets.slash,
+            -CURSOR_SIZE / 2.,
             end_y + CURSOR_HALF_SIZE,
             WHITE,
             DRAW_TEXTURE_PARAMS,
@@ -130,14 +160,21 @@ pub fn render_mouse_tutorial(
         let alpha = ((1.0 - time_since / FADE_TIME) * FADE_SPEED).min(1.0);
         draw_texture_ex(
             &game_assets.mouse_normal,
-            0.,
+            SPACING,
             end_y + CURSOR_HALF_SIZE,
             Color::new(1., 1., 1., alpha),
             DRAW_TEXTURE_PARAMS,
         );
         draw_texture_ex(
             &game_assets.mouse_normal,
-            -CURSOR_SIZE,
+            -CURSOR_SIZE - SPACING,
+            end_y + CURSOR_HALF_SIZE,
+            Color::new(1., 1., 1., alpha),
+            DRAW_TEXTURE_PARAMS,
+        );
+        draw_texture_ex(
+            &game_assets.slash,
+            -CURSOR_SIZE / 2.,
             end_y + CURSOR_HALF_SIZE,
             Color::new(1., 1., 1., alpha),
             DRAW_TEXTURE_PARAMS,
@@ -146,7 +183,7 @@ pub fn render_mouse_tutorial(
 }
 
 pub fn render_menu_tutorial(game_assets: &GameAssets, time: f32) {
-    const CLICK_TIME: f32 = 0.15;
+    const CLICK_TIME: f32 = 0.175;
     const WAIT_TIME: f32 = 1.25;
     const FADE_IN_SPEED: f32 = 2.0;
     const CYCLE_DURATION: f32 = WAIT_TIME + CLICK_TIME * 3.;
@@ -154,6 +191,10 @@ pub fn render_menu_tutorial(game_assets: &GameAssets, time: f32) {
     const CURSOR_SIZE: f32 = 150.;
     const CURSOR_HALF_SIZE: f32 = -CURSOR_SIZE / 2.;
     const ESC_DOWN_OFFSET: f32 = 10.;
+
+    const ESC_LEFT_OFFSET: f32 = 15.;
+
+    const SPACING: f32 = 5.;
 
     const DRAW_TEXTURE_PARAMS: DrawTextureParams = DrawTextureParams {
         dest_size: Some(vec2(CURSOR_SIZE, CURSOR_SIZE)),
@@ -171,29 +212,29 @@ pub fn render_menu_tutorial(game_assets: &GameAssets, time: f32) {
     if cycle_time < WAIT_TIME {
         draw_texture_ex(
             &game_assets.mouse_normal,
-            0.,
-            0. + CURSOR_HALF_SIZE,
+            SPACING,
+            CURSOR_HALF_SIZE,
             Color::new(1., 1., 1., alpha),
             DRAW_TEXTURE_PARAMS,
         );
         draw_texture_ex(
             &game_assets.esc_normal,
-            -CURSOR_SIZE,
-            0. + CURSOR_HALF_SIZE,
+            -CURSOR_SIZE - SPACING - ESC_LEFT_OFFSET,
+            CURSOR_HALF_SIZE,
             Color::new(1., 1., 1., alpha),
             DRAW_TEXTURE_PARAMS,
         );
     } else if cycle_time < WAIT_TIME + CLICK_TIME {
         draw_texture_ex(
             &game_assets.mouse_hold,
-            0.,
-            0. + CURSOR_HALF_SIZE,
+            SPACING,
+            CURSOR_HALF_SIZE,
             WHITE,
             DRAW_TEXTURE_PARAMS,
         );
         draw_texture_ex(
             &game_assets.esc_hold,
-            -CURSOR_SIZE,
+            -CURSOR_SIZE - SPACING - ESC_LEFT_OFFSET,
             ESC_DOWN_OFFSET + CURSOR_HALF_SIZE,
             WHITE,
             DRAW_TEXTURE_PARAMS,
@@ -201,14 +242,14 @@ pub fn render_menu_tutorial(game_assets: &GameAssets, time: f32) {
     } else if cycle_time < WAIT_TIME + CLICK_TIME * 2. {
         draw_texture_ex(
             &game_assets.mouse_normal,
-            0.,
-            0. + CURSOR_HALF_SIZE,
+            SPACING,
+            CURSOR_HALF_SIZE,
             WHITE,
             DRAW_TEXTURE_PARAMS,
         );
         draw_texture_ex(
             &game_assets.esc_hold,
-            -CURSOR_SIZE,
+            -CURSOR_SIZE - SPACING - ESC_LEFT_OFFSET,
             ESC_DOWN_OFFSET + CURSOR_HALF_SIZE,
             WHITE,
             DRAW_TEXTURE_PARAMS,
@@ -216,17 +257,25 @@ pub fn render_menu_tutorial(game_assets: &GameAssets, time: f32) {
     } else if cycle_time < WAIT_TIME + CLICK_TIME * 3. {
         draw_texture_ex(
             &game_assets.mouse_hold,
-            0.,
-            0. + CURSOR_HALF_SIZE,
+            SPACING,
+            CURSOR_HALF_SIZE,
             WHITE,
             DRAW_TEXTURE_PARAMS,
         );
         draw_texture_ex(
             &game_assets.esc_hold,
-            -CURSOR_SIZE,
+            -CURSOR_SIZE - SPACING - ESC_LEFT_OFFSET,
             ESC_DOWN_OFFSET + CURSOR_HALF_SIZE,
             WHITE,
             DRAW_TEXTURE_PARAMS,
         );
     }
+
+    draw_texture_ex(
+        &game_assets.slash,
+        -CURSOR_SIZE / 2.,
+        CURSOR_HALF_SIZE,
+        Color::new(1., 1., 1., alpha),
+        DRAW_TEXTURE_PARAMS,
+    );
 }

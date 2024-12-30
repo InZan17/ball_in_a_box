@@ -23,6 +23,7 @@ pub struct GameAssets {
     pub mouse_hold_move: Texture2D,
     pub esc_normal: Texture2D,
     pub esc_hold: Texture2D,
+    pub slash: Texture2D,
     pub ball_material: Material,
     pub shadow_material: Material,
     pub font: Option<Font>,
@@ -409,6 +410,13 @@ impl GameAssets {
             ),
             esc_hold: load_texture(
                 "esc_hold.png",
+                assets_path.clone(),
+                pack_path.clone(),
+                &missing_texture,
+                error_logs,
+            ),
+            slash: load_texture(
+                "slash.png",
                 assets_path.clone(),
                 pack_path.clone(),
                 &missing_texture,

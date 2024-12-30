@@ -14,6 +14,7 @@ use miniquad::*;
 use settings::{read_settings_file, write_settings_file, Settings};
 use sounds::{find_sounds, get_random_sounds};
 use textures::{find_texture, get_random_texture};
+use tutorial::render_mouse_tutorial;
 use ui::{SettingsState, UiRenderer, MENU_SIZE};
 use window::{
     get_window_position, set_mouse_cursor, set_swap_interval, set_window_position, set_window_size,
@@ -25,6 +26,7 @@ pub mod error_log;
 pub mod settings;
 pub mod sounds;
 pub mod textures;
+pub mod tutorial;
 pub mod ui;
 
 include!(concat!(env!("OUT_DIR"), "/icon_data.rs"));
@@ -32,6 +34,10 @@ include!(concat!(env!("OUT_DIR"), "/icon_data.rs"));
 const FPS_LIMIT: u32 = 500;
 
 const BACKSPACES_BEFORE_MISSING: u8 = 7;
+
+const TUTORIAL_WAIT: f32 = 7.3;
+
+const WINDOW_DISTANCE_BEFORE_UNDERSTAND: f32 = 100.0;
 
 pub fn window_conf() -> Conf {
     let settings = read_settings_file().unwrap_or_default();
@@ -117,7 +123,7 @@ async fn main() {
         2,
         2,
         &[
-            255, 0, 220, 255, 1, 0, 1, 255, 1, 0, 1, 255, 255, 0, 220, 255,
+            255, 0, 255, 255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 255, 255,
         ],
     );
     missing_texture.set_filter(macroquad::texture::FilterMode::Nearest);
@@ -188,6 +194,10 @@ async fn main() {
 
     let mut frames_after_start: u8 = 0;
     let mut prev_render_time = get_time();
+    let mut time_since_start = 0.;
+
+    let mut total_window_distance = 0.;
+    let mut time_of_understanding = None;
 
     let mut times_clicked_backspace: u8 = 0;
 
@@ -212,6 +222,8 @@ async fn main() {
             frames_after_start += 1;
             delta_time = 0.0
         }
+
+        time_since_start += delta_time;
 
         let box_thickness = settings.box_thickness as f32;
 
@@ -483,6 +495,17 @@ async fn main() {
             );
         }
 
+        // Update distance and check if it has traveled far enough for the person to understand the tutorial.
+        // This will fail if the person accidentally does a "click-to-drag" and is confused as to why the window is now following the cursor.
+        // Idk how I would go about detecting that tho.
+        total_window_distance += visual_delta_pos.length();
+
+        if time_of_understanding.is_none()
+            && total_window_distance > WINDOW_DISTANCE_BEFORE_UNDERSTAND
+        {
+            time_of_understanding = Some(time_since_start);
+        }
+
         // Render
 
         // Background
@@ -563,6 +586,16 @@ async fn main() {
             set_mouse_cursor(CursorIcon::Move);
         } else {
             set_mouse_cursor(CursorIcon::Pointer);
+        }
+
+        // Tutorial
+        if time_since_start > TUTORIAL_WAIT {
+            render_mouse_tutorial(
+                &game_assets,
+                time_since_start - TUTORIAL_WAIT,
+                time_of_understanding.and_then(|time| Some(time - TUTORIAL_WAIT)),
+                box_size,
+            );
         }
 
         // Settings

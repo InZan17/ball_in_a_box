@@ -14,7 +14,7 @@ use miniquad::*;
 use settings::{read_settings_file, write_settings_file, Settings};
 use sounds::{find_sounds, get_random_sounds};
 use textures::{find_texture, get_random_texture};
-use tutorial::render_mouse_tutorial;
+use tutorial::{render_menu_tutorial, render_mouse_tutorial};
 use ui::{SettingsState, UiRenderer, MENU_SIZE};
 use window::{
     get_window_position, set_mouse_cursor, set_swap_interval, set_window_position, set_window_size,
@@ -35,9 +35,10 @@ const FPS_LIMIT: u32 = 500;
 
 const BACKSPACES_BEFORE_MISSING: u8 = 7;
 
-const TUTORIAL_WAIT: f32 = 7.3;
-
+const MOUSE_TUTORIAL_WAIT: f32 = 7.25;
 const WINDOW_DISTANCE_BEFORE_UNDERSTAND: f32 = 100.0;
+
+const MENU_TUTORIAL_WAIT: f32 = 7.;
 
 pub fn window_conf() -> Conf {
     let settings = read_settings_file().unwrap_or_default();
@@ -197,7 +198,11 @@ async fn main() {
     let mut time_since_start = 0.;
 
     let mut total_window_distance = 0.;
-    let mut time_of_understanding = None;
+    let mut time_of_understanding_move = if settings.understands_moving {
+        Some(0.0)
+    } else {
+        None
+    };
 
     let mut times_clicked_backspace: u8 = 0;
 
@@ -500,10 +505,13 @@ async fn main() {
         // Idk how I would go about detecting that tho.
         total_window_distance += visual_delta_pos.length();
 
-        if time_of_understanding.is_none()
+        if time_of_understanding_move.is_none()
             && total_window_distance > WINDOW_DISTANCE_BEFORE_UNDERSTAND
         {
-            time_of_understanding = Some(time_since_start);
+            settings.understands_moving = true;
+            editing_settings.understands_moving = true;
+            write_settings_file(&settings);
+            time_of_understanding_move = Some(time_since_start);
         }
 
         // Render
@@ -589,13 +597,24 @@ async fn main() {
         }
 
         // Tutorial
-        if time_since_start > TUTORIAL_WAIT {
+        if time_since_start > MOUSE_TUTORIAL_WAIT {
             render_mouse_tutorial(
                 &game_assets,
-                time_since_start - TUTORIAL_WAIT,
-                time_of_understanding.and_then(|time| Some(time - TUTORIAL_WAIT)),
+                time_since_start - MOUSE_TUTORIAL_WAIT,
+                time_of_understanding_move.and_then(|time| Some(time - MOUSE_TUTORIAL_WAIT)),
                 box_size,
             );
+        }
+
+        if !settings.understands_menu {
+            if let Some(time_of_understanding_move) = time_of_understanding_move {
+                if time_since_start - time_of_understanding_move > MENU_TUTORIAL_WAIT {
+                    render_menu_tutorial(
+                        &game_assets,
+                        time_since_start - time_of_understanding_move - MENU_TUTORIAL_WAIT,
+                    )
+                }
+            }
         }
 
         // Settings
@@ -675,6 +694,11 @@ async fn main() {
                     }
                 }
             } else {
+                if !settings.understands_menu {
+                    settings.understands_menu = true;
+                    editing_settings.understands_menu = true;
+                    write_settings_file(&settings);
+                }
                 settings_state = SettingsState::Open;
                 ui_renderer.reset_focused();
 

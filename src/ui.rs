@@ -823,7 +823,13 @@ impl UiRenderer {
                     DARKRED_TEXT_COLOR,
                     20,
                 ) {
+                    let understands_moving = editing_settings.understands_moving;
+                    let understands_menu = editing_settings.understands_menu;
+
                     *editing_settings = self.default_settings.clone();
+
+                    editing_settings.understands_moving = understands_moving;
+                    editing_settings.understands_menu = understands_menu;
                 }
             }
 

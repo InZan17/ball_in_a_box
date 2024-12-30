@@ -40,6 +40,8 @@ pub struct DeserializeSettings {
     click_to_drag: Option<bool>,
     last_sounds: Option<String>,
     last_asset_pack: Option<String>,
+    understands_moving: Option<bool>,
+    understands_menu: Option<bool>,
 }
 
 impl DeserializeSettings {
@@ -177,6 +179,12 @@ impl DeserializeSettings {
             last_ball: self.last_ball.unwrap_or(default_settings.last_ball),
             last_sounds: self.last_sounds.unwrap_or(default_settings.last_sounds),
             last_asset_pack: self.last_asset_pack,
+            understands_moving: self
+                .understands_moving
+                .unwrap_or(default_settings.understands_moving),
+            understands_menu: self
+                .understands_menu
+                .unwrap_or(default_settings.understands_menu),
         };
         (settings, has_none)
     }
@@ -225,6 +233,9 @@ pub struct Settings {
     pub last_ball: String,
     pub last_sounds: String,
     pub last_asset_pack: Option<String>,
+
+    pub understands_moving: bool,
+    pub understands_menu: bool,
 }
 
 impl Settings {
@@ -323,6 +334,9 @@ impl Default for Settings {
             last_ball: "grinning".to_string(),
             last_sounds: "thud".to_string(),
             last_asset_pack: None,
+
+            understands_moving: false,
+            understands_menu: false,
         }
     }
 }

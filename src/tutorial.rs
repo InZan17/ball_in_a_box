@@ -144,3 +144,89 @@ pub fn render_mouse_tutorial(
         );
     }
 }
+
+pub fn render_menu_tutorial(game_assets: &GameAssets, time: f32) {
+    const CLICK_TIME: f32 = 0.15;
+    const WAIT_TIME: f32 = 1.25;
+    const FADE_IN_SPEED: f32 = 2.0;
+    const CYCLE_DURATION: f32 = WAIT_TIME + CLICK_TIME * 3.;
+
+    const CURSOR_SIZE: f32 = 150.;
+    const CURSOR_HALF_SIZE: f32 = -CURSOR_SIZE / 2.;
+    const ESC_DOWN_OFFSET: f32 = 10.;
+
+    const DRAW_TEXTURE_PARAMS: DrawTextureParams = DrawTextureParams {
+        dest_size: Some(vec2(CURSOR_SIZE, CURSOR_SIZE)),
+        source: None,
+        rotation: 0.,
+        flip_x: false,
+        flip_y: false,
+        pivot: None,
+    };
+
+    let alpha = (time * FADE_IN_SPEED).min(1.);
+
+    let cycle_time = time % CYCLE_DURATION;
+
+    if cycle_time < WAIT_TIME {
+        draw_texture_ex(
+            &game_assets.mouse_normal,
+            0.,
+            0. + CURSOR_HALF_SIZE,
+            Color::new(1., 1., 1., alpha),
+            DRAW_TEXTURE_PARAMS,
+        );
+        draw_texture_ex(
+            &game_assets.esc_normal,
+            -CURSOR_SIZE,
+            0. + CURSOR_HALF_SIZE,
+            Color::new(1., 1., 1., alpha),
+            DRAW_TEXTURE_PARAMS,
+        );
+    } else if cycle_time < WAIT_TIME + CLICK_TIME {
+        draw_texture_ex(
+            &game_assets.mouse_hold,
+            0.,
+            0. + CURSOR_HALF_SIZE,
+            WHITE,
+            DRAW_TEXTURE_PARAMS,
+        );
+        draw_texture_ex(
+            &game_assets.esc_hold,
+            -CURSOR_SIZE,
+            ESC_DOWN_OFFSET + CURSOR_HALF_SIZE,
+            WHITE,
+            DRAW_TEXTURE_PARAMS,
+        );
+    } else if cycle_time < WAIT_TIME + CLICK_TIME * 2. {
+        draw_texture_ex(
+            &game_assets.mouse_normal,
+            0.,
+            0. + CURSOR_HALF_SIZE,
+            WHITE,
+            DRAW_TEXTURE_PARAMS,
+        );
+        draw_texture_ex(
+            &game_assets.esc_hold,
+            -CURSOR_SIZE,
+            ESC_DOWN_OFFSET + CURSOR_HALF_SIZE,
+            WHITE,
+            DRAW_TEXTURE_PARAMS,
+        );
+    } else if cycle_time < WAIT_TIME + CLICK_TIME * 3. {
+        draw_texture_ex(
+            &game_assets.mouse_hold,
+            0.,
+            0. + CURSOR_HALF_SIZE,
+            WHITE,
+            DRAW_TEXTURE_PARAMS,
+        );
+        draw_texture_ex(
+            &game_assets.esc_hold,
+            -CURSOR_SIZE,
+            ESC_DOWN_OFFSET + CURSOR_HALF_SIZE,
+            WHITE,
+            DRAW_TEXTURE_PARAMS,
+        );
+    }
+}

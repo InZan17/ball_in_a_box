@@ -77,6 +77,8 @@ impl DeserializeSettings {
             || self.last_ball.is_none()
             || self.last_sounds.is_none()
             || self.last_asset_pack.is_none()
+            || self.understands_moving.is_none()
+            || self.understands_menu.is_none()
     }
 
     pub fn to_settings(self) -> (Settings, bool) {
@@ -178,7 +180,9 @@ impl DeserializeSettings {
             quick_turn: self.quick_turn.unwrap_or(default_settings.quick_turn),
             last_ball: self.last_ball.unwrap_or(default_settings.last_ball),
             last_sounds: self.last_sounds.unwrap_or(default_settings.last_sounds),
-            last_asset_pack: self.last_asset_pack,
+            last_asset_pack: self
+                .last_asset_pack
+                .unwrap_or(default_settings.last_asset_pack),
             understands_moving: self
                 .understands_moving
                 .unwrap_or(default_settings.understands_moving),
@@ -232,7 +236,7 @@ pub struct Settings {
 
     pub last_ball: String,
     pub last_sounds: String,
-    pub last_asset_pack: Option<String>,
+    pub last_asset_pack: String,
 
     pub understands_moving: bool,
     pub understands_menu: bool,
@@ -333,7 +337,7 @@ impl Default for Settings {
 
             last_ball: "grinning".to_string(),
             last_sounds: "thud".to_string(),
-            last_asset_pack: None,
+            last_asset_pack: "".to_string(),
 
             understands_moving: false,
             understands_menu: false,

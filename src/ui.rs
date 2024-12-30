@@ -719,10 +719,10 @@ impl UiRenderer {
                                 vec2(10., 10.),
                                 &format!(
                                     "Current asset pack: {}",
-                                    if let Some(pack_name) = &editing_settings.last_asset_pack {
-                                        pack_name.as_str()
-                                    } else {
+                                    if editing_settings.last_asset_pack.is_empty() {
                                         "None"
+                                    } else {
+                                        &editing_settings.last_asset_pack
                                     }
                                 ),
                                 18,

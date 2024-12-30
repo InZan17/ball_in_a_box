@@ -129,8 +129,8 @@ async fn main() {
     );
     missing_texture.set_filter(macroquad::texture::FilterMode::Nearest);
 
-    let pack_path = if let Some(last_asset_pack) = &settings.last_asset_pack {
-        if let Some((_, pack_path)) = find_pack(last_asset_pack, &mut error_logs) {
+    let pack_path = if !settings.last_asset_pack.is_empty() {
+        if let Some((_, pack_path)) = find_pack(&settings.last_asset_pack, &mut error_logs) {
             Some(pack_path)
         } else {
             None
@@ -335,17 +335,17 @@ async fn main() {
             }
 
             if let Some((pack_name, pack_path)) = find_pack(&text_input, &mut error_logs) {
-                settings.last_asset_pack = Some(pack_name.clone());
-                editing_settings.last_asset_pack = Some(pack_name);
+                settings.last_asset_pack = pack_name.clone();
+                editing_settings.last_asset_pack = pack_name;
                 write_settings_file(&settings);
                 game_assets = GameAssets::new(
                     Some(pack_path),
                     game_assets.missing_texture,
                     &mut error_logs,
                 )
-            } else if text_input.ends_with("none") && settings.last_asset_pack.is_some() {
-                settings.last_asset_pack = None;
-                editing_settings.last_asset_pack = None;
+            } else if text_input.ends_with("none") && !settings.last_asset_pack.is_empty() {
+                settings.last_asset_pack = String::new();
+                editing_settings.last_asset_pack = String::new();
                 write_settings_file(&settings);
                 game_assets = GameAssets::new(None, game_assets.missing_texture, &mut error_logs)
             }
@@ -658,8 +658,10 @@ async fn main() {
             }
 
             if change_assets {
-                let pack_path = if let Some(last_asset_pack) = &settings.last_asset_pack {
-                    if let Some((_, pack_path)) = find_pack(last_asset_pack, &mut error_logs) {
+                let pack_path = if !settings.last_asset_pack.is_empty() {
+                    if let Some((_, pack_path)) =
+                        find_pack(&settings.last_asset_pack, &mut error_logs)
+                    {
                         Some(pack_path)
                     } else {
                         None

@@ -32,4 +32,4 @@ Or if your monitor is higher than 60fps, you can try only setting `Max FPS` to y
 These aren't guaranteed to fix it, so just do whichever one is the least laggy.
 
 ## Compiling
-When compiling for release I use this command: `RUSTFLAGS="-Zlocation-detail=none -Zfmt-debug=none" cargo +nightly build -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort --target x86_64-pc-windows-gnu --release`.
+When compiling for release I use this command: `RUSTFLAGS="-Zlocation-detail=none -Zfmt-debug=none" cargo +nightly-2024-12-10 build -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort --target x86_64-pc-windows-gnu --release`.

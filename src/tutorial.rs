@@ -41,145 +41,73 @@ pub fn render_mouse_tutorial(
     let start_y = -box_size.y / 3.;
     let end_y = box_size.y / 3.;
 
+    let y_pos;
+    let alpha;
+    let left_texture;
+    let right_texture;
+
     if cycle_time < FADE_TIME {
         let time_since = cycle_time;
-        let alpha = (time_since / FADE_TIME * FADE_SPEED).min(1.0);
-        draw_texture_ex(
-            &game_assets.mouse_normal,
-            SPACING,
-            start_y + CURSOR_HALF_SIZE,
-            Color::new(1., 1., 1., alpha),
-            DRAW_TEXTURE_PARAMS,
-        );
-        draw_texture_ex(
-            &game_assets.mouse_normal,
-            -CURSOR_SIZE - SPACING,
-            start_y + CURSOR_HALF_SIZE,
-            Color::new(1., 1., 1., alpha),
-            DRAW_TEXTURE_PARAMS,
-        );
-        draw_texture_ex(
-            &game_assets.slash,
-            -CURSOR_SIZE / 2.,
-            start_y + CURSOR_HALF_SIZE,
-            Color::new(1., 1., 1., alpha),
-            DRAW_TEXTURE_PARAMS,
-        );
+        alpha = (time_since / FADE_TIME * FADE_SPEED).min(1.0);
+        y_pos = start_y;
+        right_texture = &game_assets.mouse_normal;
+        left_texture = &game_assets.mouse_normal;
     } else if cycle_time - FADE_TIME < CLICK_TIME {
         let time_since = cycle_time - FADE_TIME;
+        alpha = 1.0;
+        y_pos = start_y;
         if time_since * CLICK_SPEED < CLICK_TIME {
-            draw_texture_ex(
-                &game_assets.mouse_hold_move,
-                SPACING,
-                start_y + CURSOR_HALF_SIZE,
-                WHITE,
-                DRAW_TEXTURE_PARAMS,
-            );
+            right_texture = &game_assets.mouse_hold_move;
         } else {
-            draw_texture_ex(
-                &game_assets.mouse_normal_move,
-                SPACING,
-                start_y + CURSOR_HALF_SIZE,
-                WHITE,
-                DRAW_TEXTURE_PARAMS,
-            );
+            right_texture = &game_assets.mouse_normal_move;
         }
-        draw_texture_ex(
-            &game_assets.mouse_hold_move,
-            -CURSOR_SIZE - SPACING,
-            start_y + CURSOR_HALF_SIZE,
-            WHITE,
-            DRAW_TEXTURE_PARAMS,
-        );
-        draw_texture_ex(
-            &game_assets.slash,
-            -CURSOR_SIZE / 2.,
-            start_y + CURSOR_HALF_SIZE,
-            WHITE,
-            DRAW_TEXTURE_PARAMS,
-        );
+        left_texture = &game_assets.mouse_hold_move;
     } else if cycle_time - FADE_TIME - CLICK_TIME < MOVE_DURATION {
         let time_since = cycle_time - FADE_TIME - CLICK_TIME;
         let move_precentage = time_since / MOVE_DURATION;
-        draw_texture_ex(
-            &game_assets.mouse_normal_move,
-            SPACING,
-            start_y.lerp(end_y, move_precentage) + CURSOR_HALF_SIZE,
-            WHITE,
-            DRAW_TEXTURE_PARAMS,
-        );
-        draw_texture_ex(
-            &game_assets.mouse_hold_move,
-            -CURSOR_SIZE - SPACING,
-            start_y.lerp(end_y, move_precentage) + CURSOR_HALF_SIZE,
-            WHITE,
-            DRAW_TEXTURE_PARAMS,
-        );
-        draw_texture_ex(
-            &game_assets.slash,
-            -CURSOR_SIZE / 2.,
-            start_y.lerp(end_y, move_precentage) + CURSOR_HALF_SIZE,
-            WHITE,
-            DRAW_TEXTURE_PARAMS,
-        );
+        alpha = 1.0;
+        y_pos = start_y.lerp(end_y, move_precentage);
+        right_texture = &game_assets.mouse_normal_move;
+        left_texture = &game_assets.mouse_hold_move;
     } else if cycle_time - FADE_TIME - CLICK_TIME - MOVE_DURATION < CLICK_TIME {
         let time_since = cycle_time - FADE_TIME - CLICK_TIME - MOVE_DURATION;
+        alpha = 1.0;
+        y_pos = end_y;
         if time_since * CLICK_SPEED < CLICK_TIME {
-            draw_texture_ex(
-                &game_assets.mouse_normal_move,
-                SPACING,
-                end_y + CURSOR_HALF_SIZE,
-                WHITE,
-                DRAW_TEXTURE_PARAMS,
-            );
+            right_texture = &game_assets.mouse_normal_move;
         } else {
-            draw_texture_ex(
-                &game_assets.mouse_hold_move,
-                SPACING,
-                end_y + CURSOR_HALF_SIZE,
-                WHITE,
-                DRAW_TEXTURE_PARAMS,
-            );
+            right_texture = &game_assets.mouse_hold_move;
         }
-        draw_texture_ex(
-            &game_assets.mouse_hold_move,
-            -CURSOR_SIZE - SPACING,
-            end_y + CURSOR_HALF_SIZE,
-            WHITE,
-            DRAW_TEXTURE_PARAMS,
-        );
-        draw_texture_ex(
-            &game_assets.slash,
-            -CURSOR_SIZE / 2.,
-            end_y + CURSOR_HALF_SIZE,
-            WHITE,
-            DRAW_TEXTURE_PARAMS,
-        );
+        left_texture = &game_assets.mouse_hold_move;
     } else {
         let time_since = cycle_time - FADE_TIME - CLICK_TIME - MOVE_DURATION - CLICK_TIME;
-        let alpha = ((1.0 - time_since / FADE_TIME) * FADE_SPEED).min(1.0);
-        draw_texture_ex(
-            &game_assets.mouse_normal,
-            SPACING,
-            end_y + CURSOR_HALF_SIZE,
-            Color::new(1., 1., 1., alpha),
-            DRAW_TEXTURE_PARAMS,
-        );
-        draw_texture_ex(
-            &game_assets.mouse_normal,
-            -CURSOR_SIZE - SPACING,
-            end_y + CURSOR_HALF_SIZE,
-            Color::new(1., 1., 1., alpha),
-            DRAW_TEXTURE_PARAMS,
-        );
-        draw_texture_ex(
-            &game_assets.slash,
-            -CURSOR_SIZE / 2.,
-            end_y + CURSOR_HALF_SIZE,
-            Color::new(1., 1., 1., alpha),
-            DRAW_TEXTURE_PARAMS,
-        );
+        alpha = ((1.0 - time_since / FADE_TIME) * FADE_SPEED).min(1.0);
+        y_pos = end_y;
+        right_texture = &game_assets.mouse_normal;
+        left_texture = &game_assets.mouse_normal;
     }
+
+    draw_texture_ex(
+        right_texture,
+        SPACING,
+        y_pos + CURSOR_HALF_SIZE,
+        Color::new(1., 1., 1., alpha),
+        DRAW_TEXTURE_PARAMS,
+    );
+    draw_texture_ex(
+        left_texture,
+        -CURSOR_SIZE - SPACING,
+        y_pos + CURSOR_HALF_SIZE,
+        Color::new(1., 1., 1., alpha),
+        DRAW_TEXTURE_PARAMS,
+    );
+    draw_texture_ex(
+        &game_assets.slash,
+        -CURSOR_SIZE / 2.,
+        y_pos + CURSOR_HALF_SIZE,
+        Color::new(1., 1., 1., alpha),
+        DRAW_TEXTURE_PARAMS,
+    );
 }
 
 pub fn render_menu_tutorial(game_assets: &GameAssets, time: f32) {

@@ -208,7 +208,7 @@ pub fn load_shadow_material(
         ) {
             Ok(material) => return material,
             Err(err) => {
-                error_logs.display_error(format!("Failed to create shadow material: {err}"));
+                error_logs.display_error(format!("Failed to create custom shadow material: {err}"));
             }
         };
     }
@@ -236,8 +236,9 @@ pub fn load_shadow_material(
     ) {
         Ok(material) => return material,
         Err(err) => {
-            error_logs.panic_error(&format!("Failed to create shadow material: {err}"));
-            unreachable!()
+            let error_message = format!("Failed to create shadow material: {err}");
+            error_logs.add_error(&error_message);
+            panic!("{error_message}")
         }
     };
 }
@@ -280,7 +281,7 @@ pub fn load_ball_material(
         ) {
             Ok(material) => return material,
             Err(err) => {
-                error_logs.display_error(format!("Failed to create ball material: {err}"));
+                error_logs.display_error(format!("Failed to create custom ball material: {err}"));
             }
         };
     }
@@ -317,8 +318,9 @@ pub fn load_ball_material(
     ) {
         Ok(material) => return material,
         Err(err) => {
-            error_logs.panic_error(&format!("Failed to create ball material: {err}"));
-            unreachable!()
+            let error_message = format!("Failed to create ball material: {err}");
+            error_logs.add_error(&error_message);
+            panic!("{error_message}")
         }
     };
 }

@@ -26,11 +26,6 @@ impl ErrorLogs {
     pub fn new() -> Self {
         Self(CircularBuffer::new())
     }
-    /// Adds a error to the log file and panics.
-    pub fn panic_error(&self, error: &str) {
-        self.add_error(&error);
-        panic!("{}", error)
-    }
     /// Adds a error to the log file aswell as displaying it inside the game.
     pub fn display_error(&mut self, error: String) {
         self.add_error(&error);

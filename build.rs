@@ -1,4 +1,4 @@
-// This code was taken from this project made by jumbledFox.
+// This code was derived from build.rs from this project made by jumbledFox.
 // https://github.com/jumbledFox/minesweeper/blob/master/build.rs
 
 use std::{env, fs::File, io::Write, path::Path};
@@ -12,12 +12,9 @@ fn main() {
     let ico_path = Path::new(&out_dir).join("icon.ico");
     let mut f = File::create(&dest_path).expect("Failed to create file");
 
-    for (name, path, size) in [
-        ("SMALL", "dev_assets/icon.png", 16),
-        ("MEDIUM", "dev_assets/icon.png", 32),
-        ("BIG", "dev_assets/icon.png", 64),
-    ] {
-        let img = image::open(path).expect("Failed to open image");
+    let img = image::open("dev_assets/icon.png").expect("Failed to open image");
+
+    for (name, size) in [("SMALL", 16), ("MEDIUM", 32), ("BIG", 64)] {
         let resized = img.resize(size, size, FilterType::Gaussian);
         let img_bytes = resized.as_bytes();
         write!(
@@ -41,7 +38,7 @@ fn main() {
                             .expect("Failed to convert icon path to a str"),
                     )
                     .compile()
-                    .expect("Failed to compile WIndowsResource");
+                    .expect("Failed to compile WindowsResource");
             }
         }
     }

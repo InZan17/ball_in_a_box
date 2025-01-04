@@ -1,10 +1,11 @@
 # Ball in a Box
-A game about a ball, in a box.
+Ball in a Box is a desktop toy where you have a box, and inside of it is a ball. You are able to interact with the ball by moving the box around. And if you bounce the ball fast enough, it makes a pretty cool sound!
 
 ## Credits
 - The game uses [Macroquad](https://macroquad.rs/) which was made by [not-fl3](https://github.com/not-fl3).
-- The font used is called "Fredericka The Great".
-- The balls comes from a toy called "Emoji Splat Ball".
+- The font this game uses is called "Fredericka The Great".
+- The balls in the game comes from a real life toy called "Emoji Splat Ball".
+- Thanks to [jumbledFox](https://github.com/jumbledFox) for letting me use their [build.rs](https://github.com/jumbledFox/minesweeper/blob/master/build.rs) file for this project!
 - The rest of the assets and programming was done by me. (Zan)
 
 ## Controls
@@ -30,6 +31,9 @@ The ball might not smoothly follow the  window. I haven't found a solid way to s
 Or if your monitor is higher than 60fps, you can try only setting `Max FPS` to your monitors frame-rate.
 
 These aren't guaranteed to fix it, so just do whichever one is the least laggy.
+
+## License
+The code for this game is licensed under the MIT license, and the assets for this game are licensed under the CC BY-SA 4.0 license.
 
 ## Compiling
 When compiling for release I compile the binary on a Linux machine and use this command: `cargo build --target x86_64-pc-windows-gnu --release`.

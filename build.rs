@@ -3,7 +3,7 @@
 
 use std::{env, fs::File, io::Write, path::Path};
 
-use image::{imageops::FilterType, ImageFormat};
+use image::{imageops::FilterType, EncodableLayout, ImageFormat};
 use winresource::WindowsResource;
 
 fn main() {
@@ -15,7 +15,7 @@ fn main() {
     let img = image::open("dev_assets/icon.png").expect("Failed to open image");
 
     for (name, size) in [("SMALL", 16), ("MEDIUM", 32), ("BIG", 64)] {
-        let resized = img.resize(size, size, FilterType::Gaussian);
+        let resized = img.resize(size, size, FilterType::Gaussian).to_rgba8();
         let img_bytes = resized.as_bytes();
         write!(
             f,

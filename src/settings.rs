@@ -303,7 +303,7 @@ impl Default for Settings {
             min_hit_speed: 120.,
             gravity_strength: 3.5,
             air_friction: 0.14,
-            max_velocity: 200.,
+            max_velocity: 125.,
 
             ball_bounciness: 0.9,
             ball_radius: 90,
@@ -335,7 +335,7 @@ impl Default for Settings {
             quick_turn: true,
             click_to_drag: true,
 
-            last_ball: "grinning".to_string(),
+            last_ball: "smile".to_string(),
             last_sounds: "thud".to_string(),
             last_asset_pack: "".to_string(),
 

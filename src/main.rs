@@ -351,7 +351,7 @@ async fn main() {
                     game_assets.missing_texture,
                     &mut error_logs,
                 )
-            } else if text_input.ends_with("none") && !settings.last_asset_pack.is_empty() {
+            } else if (text_input.ends_with("none") || text_input.ends_with("box")) && !settings.last_asset_pack.is_empty() {
                 settings.last_asset_pack = String::new();
                 editing_settings.last_asset_pack = String::new();
                 write_settings_file(&settings);
@@ -696,12 +696,9 @@ async fn main() {
                 settings_state = SettingsState::Closed;
 
                 if activated_with_double_click {
+                    // When double clicking to close, it may end up being in drag mode, which feels a bit weird.
+                    moved_during_hold = true;
                     do_drag = true;
-                    if hovering_menu {
-                        // When double clicking on the menu, it will end up being in drag mode, which feels a bit weird.
-                        // This is to make sure it's not.
-                        moved_during_hold = true;
-                    }
                 }
             } else {
                 if !settings.understands_menu {
@@ -714,6 +711,12 @@ async fn main() {
 
                 if hovering_menu {
                     do_drag = false;
+                }
+
+                if activated_with_double_click {
+                    // Even when the mouse is in a valid spot to drag, it feels a bit weird for the mouse to still be dragging when opening the menu.
+                    moved_during_hold = true;
+                    do_drag = true;
                 }
             }
         }

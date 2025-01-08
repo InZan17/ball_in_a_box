@@ -14,7 +14,7 @@ Ball in a Box is a desktop toy where you have a box, and inside of it is a ball.
 - To close the game, open the menu and then click `Quit`. Or you could just do Alt + F4.
 - To change ball, simply type in the name of the ball. When you first download the game you will have `grinning` and `distress`.
 - To change sounds, simply type in the name of the sound pack. When you first download the game you will have `thud` and `pop`.
-- To change assets, simply type in the name of the asset pack. When you first download the game you will have `none` (no asset pack active) and `inverted`.
+- To change assets, simply type in the name of the asset pack. When you first download the game you will have `none`/`box` (no asset pack active) and `inverted`.
 
 ## Custom balls
 To add custom balls, open the `balls` folder and put your image in there, and then type the name of your image inside the game. (No need to restart the game) Just make sure it's a PNG as it will not work with any other format.

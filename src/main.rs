@@ -645,8 +645,32 @@ async fn main() {
                 set_sound_volume(sound, settings.audio_volume);
             }
             ball.radius = settings.ball_radius as f32;
+            let new_box_size = vec2(settings.box_width as f32, settings.box_height as f32);
+            let box_size_difference = new_box_size - box_size;
+            let new_window_position =
+                Vec2::from_i32_tuple(get_window_position()) - (box_size_difference / 2.).round();
+
+            let window_rect = Rect::new(
+                new_window_position.x,
+                new_window_position.y,
+                new_box_size.x,
+                new_box_size.y,
+            );
+
+            let window_position_offset = vec2(
+                (current_mouse_position.x - window_rect.left() - 1.0).min(0.0)
+                    + (current_mouse_position.x - window_rect.right() + 1.0).max(0.0),
+                (current_mouse_position.y - window_rect.top() - 1.0).min(0.0)
+                    + (current_mouse_position.y - window_rect.bottom() + 1.0).max(0.0),
+            );
+
+            let new_window_position = new_window_position + window_position_offset;
+
+            set_window_position(new_window_position.x as _, new_window_position.y as _);
             set_window_size(settings.box_width, settings.box_height);
-            box_size = vec2(settings.box_width as f32, settings.box_height as f32);
+
+            box_size = new_box_size;
+
             set_camera(&Camera2D {
                 zoom: vec2(1. / box_size.x, 1. / box_size.y),
                 ..Default::default()

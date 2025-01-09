@@ -1,4 +1,7 @@
-#version 120
+#version 100
+
+precision highp float;
+
 varying lowp vec2 uv;
 varying lowp vec4 color;
 
@@ -14,6 +17,6 @@ float easing_function(float x) {
 void main() {
     vec2 minus_one_to_one_uv = uv * 2.0 - 1.0;
 
-    float darkness = 1.0 - length(minus_one_to_one_uv) - in_shadow / 3;
+    float darkness = 1.0 - length(minus_one_to_one_uv) - in_shadow / 3.0;
     gl_FragColor = vec4(0.,0., 0., easing_function(clamp(darkness, 0.0, 1.0)) * shadow_strength / (2. + in_shadow * 2.));
 }

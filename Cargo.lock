@@ -240,7 +240,7 @@ checksum = "60302e4db3a61da70c0cb7991976248362f30319e88850c487b9b95bbf059e00"
 [[package]]
 name = "miniquad"
 version = "0.4.7"
-source = "git+https://github.com/InZan17/miniquad?branch=ball-in-a-box#c7a8c46852381b93859c836efd2e4504fab8d810"
+source = "git+https://github.com/InZan17/miniquad?branch=ball-in-a-box#7895659afbdfac077a63d95cdec94ea722c358c9"
 dependencies = [
  "libc",
  "ndk-sys",
@@ -350,7 +350,7 @@ checksum = "5a651516ddc9168ebd67b24afd085a718be02f8858fe406591b013d101ce2f40"
 [[package]]
 name = "quad-snd"
 version = "0.2.8"
-source = "git+https://github.com/InZan17/quad-snd?branch=ball-in-a-box#8019b300ac87d2b5b84180f702ec4693e109b675"
+source = "git+https://github.com/InZan17/quad-snd?branch=ball-in-a-box#a0f7d12e275a55c69e22dbb7673f5c269b99d896"
 dependencies = [
  "audir-sles",
  "audrey",
@@ -385,9 +385,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.94"
+version = "2.0.96"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "987bc0be1cdea8b10216bd06e2ca407d40b9543468fafd3ddfb02f36e77f71f3"
+checksum = "d5d0adab1ae378d7f53bdebc67a39f1f151407ef230f0ce2883572f5d8985c80"
 dependencies = [
  "proc-macro2",
  "quote",

@@ -36,4 +36,4 @@ These aren't guaranteed to fix it, so just do whichever one is the least laggy.
 The code for this game is licensed under the MIT license, and the assets for this game are licensed under the CC BY-SA 4.0 license.
 
 ## Compiling
-When compiling for release I compile the binary on a Linux machine and use this command: `cargo build --target x86_64-pc-windows-gnu --release`.
+When compiling for the Windows release I compile the binary on a Linux machine and use this command: `cargo build --target x86_64-pc-windows-gnu --release`.
